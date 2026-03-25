@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Screener AI - Powered by Gemini</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #06b6d4;
+            --accent-dark: #0891b2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-main: #0a0f1e;
+            --bg-card: rgba(30, 41, 59, 0.4);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border: rgba(148, 163, 184, 0.1);
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans 3', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+            animation: bgShift 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes bgShift {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        /* Grain Texture Overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1000;
+            mix-blend-mode: overlay;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        /* Glass Card */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px var(--shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 48px var(--shadow);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.2s; }
+        .card:nth-child(4) { animation-delay: 0.3s; }
+        .card:nth-child(5) { animation-delay: 0.4s; }
+
+        /* API Key Section */
+        .api-section {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .api-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .api-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-indicator.active {
+            background: var(--success);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .toggle-icon {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        .api-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .api-content.open {
+            max-height: 200px;
+            margin-top: 1.5rem;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-icon {
+            font-size: 1.8rem;
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section-content.open {
+            max-height: 2000px;
+        }
+
+        /* Input Styles */
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 0.875rem 1.125rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: 'Source Sans 3', sans-serif;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        /* Filter Grid */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.6) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            animation: scaleIn 0.5s ease-out backwards;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .result-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+            box-shadow: 0 8px 24px rgba(6, 182, 212, 0.2);
+        }
+
+        .candidate-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .candidate-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .score-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success) 0%, var(--accent) 100%);
+            border-radius: 4px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-text {
+            text-align: right;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .candidate-highlights {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .highlight-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .highlight-icon {
+            color: var(--success);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+            border: none;
+            box-shadow: 0 8px 24px rgba(6, 182, 212, 0.4);
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 12px 32px rgba(6, 182, 212, 0.6);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--primary-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 8px 24px var(--shadow);
+            z-index: 2000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .flex {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mt-2 {
+            margin-top: 2rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Resume Screener AI</h1>
+            <p class="subtitle">Powered by Google Gemini • Smart Resume Analysis</p>
+        </header>
+
+        <!-- API Key Section -->
+        <div class="api-section">
+            <div class="api-header" onclick="toggleSection('api')">
+                <h3>
+                    <span class="status-indicator" id="apiStatus"></span>
+                    Gemini API Configuration
+                </h3>
+                <span class="toggle-icon" id="apiToggle">▼</span>
+            </div>
+            <div class="api-content" id="apiContent">
+                <div class="input-group">
+                    <label for="geminiKey">🔑 Gemini API Key</label>
+                    <input 
+                        type="password" 
+                        id="geminiKey" 
+                        placeholder="Enter your Gemini API key..."
+                        onchange="saveApiKey()"
+                    >
+                    <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
+                        Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: var(--accent);">Google AI Studio</a>
+                    </small>
+                </div>
+                <div class="input-group">
+                    <label for="sheetsId">📊 Google Sheets ID (for JD Database)</label>
+                    <input 
+                        type="text" 
+                        id="sheetsId" 
+                        placeholder="Enter Google Sheets ID..."
+                        onchange="saveSheetsId()"
+                    >
+                    <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
+                        From your sheet URL: docs.google.com/spreadsheets/d/<strong>SHEETS_ID</strong>/edit
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card">
+            <div class="section-header" onclick="toggleSection('upload')">
+                <h2>
+                    <span class="section-icon">📁</span>
+                    Upload Resumes
+                </h2>
+                <span class="toggle-icon" id="uploadToggle">▼</span>
+            </div>
+            <div class="section-content open" id="uploadContent">
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()" 
+                     ondrop="handleDrop(event)" 
+                     ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)">
+                    <div class="upload-icon">📤</div>
+                    <h3>Drop files here or click to browse</h3>
+                    <p style="color: var(--text-muted); margin-top: 0.5rem;">Supports PDF, DOC, DOCX</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
+                </div>
+                
+                <div class="input-group">
+                    <label for="driveLink">🔗 Or paste Google Drive folder link</label>
+                    <div class="flex">
+                        <input type="text" id="driveLink" placeholder="https://drive.google.com/drive/folders/...">
+                        <button class="btn btn-secondary" onclick="loadFromDrive()">Load</button>
+                    </div>
+                </div>
+
+                <div id="filesList" class="mt-2"></div>
+            </div>
+        </div>
+
+        <!-- JD Selection -->
+        <div class="card">
+            <div class="section-header" onclick="toggleSection('jd')">
+                <h2>
+                    <span class="section-icon">📋</span>
+                    Job Description
+                </h2>
+                <span class="toggle-icon" id="jdToggle">▼</span>
+            </div>
+            <div class="section-content open" id="jdContent">
+                <div class="input-group">
+                    <label for="positionSelect">Select Position</label>
+                    <select id="positionSelect" onchange="loadJD()">
+                        <option value="">-- Select Position --</option>
+                    </select>
+                </div>
+                <div id="jdPreview" style="margin-top: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.6); border-radius: 12px; display: none;">
+                    <h4 style="margin-bottom: 0.5rem;">Job Description Preview:</h4>
+                    <p id="jdText" style="color: var(--text-secondary); white-space: pre-wrap;"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card">
+            <div class="section-header" onclick="toggleSection('filters')">
+                <h2>
+                    <span class="section-icon">🔍</span>
+                    Filters
+                </h2>
+                <span class="toggle-icon" id="filtersToggle">▼</span>
+            </div>
+            <div class="section-content open" id="filtersContent">
+                <div class="filter-grid">
+                    <div class="input-group">
+                        <label for="minExp">Minimum Experience (years)</label>
+                        <input type="text" id="minExp" placeholder="e.g., 2">
+                    </div>
+                    <div class="input-group">
+                        <label for="maxExp">Maximum Experience (years)</label>
+                        <input type="text" id="maxExp" placeholder="e.g., 5">
+                    </div>
+                    <div class="input-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" placeholder="e.g., Hyderabad, Remote">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="analyzeResumes()" style="width: 100%; margin-top: 1rem;">
+                    <span id="analyzeBtn">🚀 Analyze Resumes</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="card">
+            <div class="section-header" onclick="toggleSection('results')">
+                <h2>
+                    <span class="section-icon">📊</span>
+                    Results
+                    <span id="resultCount" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;"></span>
+                </h2>
+                <span class="toggle-icon open" id="resultsToggle">▼</span>
+            </div>
+            <div class="section-content open" id="resultsContent">
+                <div id="resultsGrid" class="results-grid">
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <h3>No results yet</h3>
+                        <p>Upload resumes and run analysis to see results here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="exportResults()" title="Export Results">
+        💾
+    </button>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Global state
+        let uploadedFiles = [];
+        let currentJD = '';
+        let analysisResults = [];
+        let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
+        let sheetsId = localStorage.getItem('sheetsId') || '';
+
+        // Initialize
+        window.onload = function() {
+            if (geminiApiKey) {
+                document.getElementById('geminiKey').value = geminiApiKey;
+                updateApiStatus(true);
+            }
+            if (sheetsId) {
+                document.getElementById('sheetsId').value = sheetsId;
+                loadPositions();
+            }
+        };
+
+        // Toggle sections
+        function toggleSection(section) {
+            const content = document.getElementById(section + 'Content');
+            const toggle = document.getElementById(section + 'Toggle');
+            const isOpen = content.classList.contains('open');
+            
+            if (isOpen) {
+                content.classList.remove('open');
+                toggle.classList.remove('open');
+            } else {
+                content.classList.add('open');
+                toggle.classList.add('open');
+            }
+        }
+
+        // API Key management
+        function saveApiKey() {
+            geminiApiKey = document.getElementById('geminiKey').value;
+            localStorage.setItem('geminiApiKey', geminiApiKey);
+            updateApiStatus(!!geminiApiKey);
+            showToast('API key saved successfully!', 'success');
+        }
+
+        function saveSheetsId() {
+            sheetsId = document.getElementById('sheetsId').value;
+            localStorage.setItem('sheetsId', sheetsId);
+            loadPositions();
+            showToast('Sheets ID saved successfully!', 'success');
+        }
+
+        function updateApiStatus(active) {
+            const indicator = document.getElementById('apiStatus');
+            if (active) {
+                indicator.classList.add('active');
+            } else {
+                indicator.classList.remove('active');
+            }
+        }
+
+        // File upload handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            uploadedFiles = Array.from(files);
+            displayFilesList();
+            showToast(`${files.length} file(s) uploaded successfully!`, 'success');
+        }
+
+        function displayFilesList() {
+            const container = document.getElementById('filesList');
+            if (uploadedFiles.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <h4 style="margin-bottom: 1rem;">Uploaded Files (${uploadedFiles.length}):</h4>
+                <div style="display: grid; gap: 0.5rem;">
+                    ${uploadedFiles.map((file, i) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(15, 23, 42, 0.6); border-radius: 8px;">
+                            <span>📄 ${file.name}</span>
+                            <span style="color: var(--text-muted);">${(file.size / 1024).toFixed(2)} KB</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Google Drive integration (placeholder)
+        async function loadFromDrive() {
+            const driveLink = document.getElementById('driveLink').value;
+            if (!driveLink) {
+                showToast('Please enter a Google Drive link', 'error');
+                return;
+            }
+            showToast('Google Drive integration requires backend setup. Please use direct upload for now.', 'error');
+        }
+
+        // Google Sheets integration
+        async function loadPositions() {
+            if (!sheetsId) {
+                showToast('Please configure Google Sheets ID first', 'error');
+                return;
+            }
+
+            try {
+                // Make sheet public and use this URL pattern
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetsId}/gviz/tq?tqx=out:json&sheet=JD`;
+                const response = await fetch(sheetUrl);
+                const text = await response.text();
+                
+                // Parse Google Sheets JSON response
+                const json = JSON.parse(text.substring(47).slice(0, -2));
+                const rows = json.table.rows;
+                
+                const select = document.getElementById('positionSelect');
+                select.innerHTML = '<option value="">-- Select Position --</option>';
+                
+                rows.forEach((row, index) => {
+                    if (index > 0 && row.c[0]) { // Skip header
+                        const position = row.c[0].v;
+                        select.innerHTML += `<option value="${index}">${position}</option>`;
+                    }
+                });
+                
+                showToast('Positions loaded successfully!', 'success');
+            } catch (error) {
+                console.error('Error loading positions:', error);
+                showToast('Error loading positions. Make sure sheet is public and has a "JD" tab.', 'error');
+            }
+        }
+
+        async function loadJD() {
+            const select = document.getElementById('positionSelect');
+            const rowIndex = select.value;
+            
+            if (!rowIndex) {
+                document.getElementById('jdPreview').style.display = 'none';
+                return;
+            }
+
+            try {
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetsId}/gviz/tq?tqx=out:json&sheet=JD`;
+                const response = await fetch(sheetUrl);
+                const text = await response.text();
+                const json = JSON.parse(text.substring(47).slice(0, -2));
+                const row = json.table.rows[rowIndex];
+                
+                currentJD = row.c[1] ? row.c[1].v : '';
+                
+                document.getElementById('jdText').textContent = currentJD;
+                document.getElementById('jdPreview').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading JD:', error);
+                showToast('Error loading job description', 'error');
+            }
+        }
+
+        // PDF parsing
+        async function extractTextFromPDF(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let text = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map(item => item.str).join(' ') + '\n';
+                }
+                
+                return text;
+            } catch (error) {
+                console.error('Error parsing PDF:', error);
+                return '';
+            }
+        }
+
+        // Gemini AI analysis
+        async function analyzeWithGemini(resumeText, jd, filters) {
+            if (!geminiApiKey) {
+                throw new Error('Gemini API key not configured');
+            }
+
+            const prompt = `You are an expert resume screener. Analyze this resume against the job description and filters.
+
+Job Description:
+${jd}
+
+Filters:
+- Experience: ${filters.minExp || 0} - ${filters.maxExp || 'unlimited'} years
+- Location: ${filters.location || 'any'}
+
+Resume:
+${resumeText}
+
+Provide analysis in JSON format:
+{
+    "name": "candidate name",
+    "email": "email if found",
+    "phone": "phone if found",
+    "experience_years": number,
+    "location": "location",
+    "match_score": number (0-100),
+    "key_skills": ["skill1", "skill2"],
+    "highlights": ["highlight1", "highlight2", "highlight3"],
+    "summary": "brief summary"
+}`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }]
+                })
+            });
+
+            const data = await response.json();
+            
+            if (!data.candidates || !data.candidates[0]) {
+                throw new Error('Invalid response from Gemini API');
+            }
+
+            const resultText = data.candidates[0].content.parts[0].text;
+            const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+            
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('Could not parse JSON from response');
+            }
+        }
+
+        // Main analysis function
+        async function analyzeResumes() {
+            if (!geminiApiKey) {
+                showToast('Please configure Gemini API key first', 'error');
+                return;
+            }
+
+            if (uploadedFiles.length === 0) {
+                showToast('Please upload resumes first', 'error');
+                return;
+            }
+
+            if (!currentJD) {
+                showToast('Please select a job description', 'error');
+                return;
+            }
+
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.innerHTML = '<span class="spinner"></span> Analyzing...';
+
+            const filters = {
+                minExp: document.getElementById('minExp').value,
+                maxExp: document.getElementById('maxExp').value,
+                location: document.getElementById('location').value
+            };
+
+            analysisResults = [];
+
+            try {
+                for (const file of uploadedFiles) {
+                    let resumeText = '';
+                    
+                    if (file.type === 'application/pdf') {
+                        resumeText = await extractTextFromPDF(file);
+                    } else {
+                        // For DOC/DOCX, you'd need a library like mammoth.js
+                        resumeText = await file.text();
+                    }
+
+                    const analysis = await analyzeWithGemini(resumeText, currentJD, filters);
+                    analysis.filename = file.name;
+                    
+                    // Apply filters
+                    const meetsExpFilter = (!filters.minExp || analysis.experience_years >= parseInt(filters.minExp)) &&
+                                         (!filters.maxExp || analysis.experience_years <= parseInt(filters.maxExp));
+                    
+                    const meetsLocationFilter = !filters.location || 
+                                               analysis.location.toLowerCase().includes(filters.location.toLowerCase());
+                    
+                    if (meetsExpFilter && meetsLocationFilter) {
+                        analysisResults.push(analysis);
+                    }
+                }
+
+                analysisResults.sort((a, b) => b.match_score - a.match_score);
+                displayResults();
+                showToast('Analysis completed successfully!', 'success');
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showToast('Error during analysis: ' + error.message, 'error');
+            } finally {
+                analyzeBtn.innerHTML = '🚀 Analyze Resumes';
+            }
+        }
+
+        // Display results
+        function displayResults() {
+            const container = document.getElementById('resultsGrid');
+            const countLabel = document.getElementById('resultCount');
+            
+            if (analysisResults.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🔍</div>
+                        <h3>No matching candidates</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                `;
+                countLabel.textContent = '';
+                return;
+            }
+
+            countLabel.textContent = `(${analysisResults.length} candidates)`;
+            
+            container.innerHTML = analysisResults.map((result, index) => `
+                <div class="result-card" style="animation-delay: ${index * 0.1}s;">
+                    <div class="candidate-name">${result.name}</div>
+                    <div class="candidate-meta">
+                        <span>📍 ${result.location}</span>
+                        <span>💼 ${result.experience_years} years</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-fill" style="width: ${result.match_score}%;"></div>
+                    </div>
+                    <div class="score-text">${result.match_score}% Match</div>
+                    
+                    <div class="candidate-highlights">
+                        <strong style="display: block; margin-bottom: 0.5rem;">Key Highlights:</strong>
+                        ${result.highlights.map(h => `
+                            <div class="highlight-item">
+                                <span class="highlight-icon">✓</span>
+                                <span>${h}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    ${result.email ? `<div style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;">📧 ${result.email}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Export results
+        function exportResults() {
+            if (analysisResults.length === 0) {
+                showToast('No results to export', 'error');
+                return;
+            }
+
+            const csv = [
+                ['Name', 'Email', 'Phone', 'Location', 'Experience (Years)', 'Match Score', 'Summary'].join(','),
+                ...analysisResults.map(r => [
+                    r.name,
+                    r.email || '',
+                    r.phone || '',
+                    r.location,
+                    r.experience_years,
+                    r.match_score,
+                    `"${r.summary}"`
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `resume-analysis-${Date.now()}.csv`;
+            a.click();
+            
+            showToast('Results exported successfully!', 'success');
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+</body>
+</html>
