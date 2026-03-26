@@ -635,6 +635,46 @@
             .resume-overlay { width: 100%; border-left: none; border-top: 1px solid var(--border-accent); }
         }
 
+        /* ─── Provider Toggle ─── */
+        .provider-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .provider-btn {
+            flex: 1;
+            padding: 0.55rem 0.5rem;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--text-muted);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .provider-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+
+        .provider-btn.active {
+            background: rgba(6, 182, 212, 0.12);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .provider-badge {
+            display: block;
+            font-size: 0.64rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .provider-btn.active .provider-badge { color: var(--accent); opacity: 0.75; }
+
         .main-content::-webkit-scrollbar { width: 5px; }
         .main-content::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.15); border-radius: 4px; }
     </style>
@@ -662,11 +702,37 @@
                     <span class="s-toggle open" id="apiToggle">▼</span>
                 </div>
                 <div class="s-content open" id="apiContent">
+                    <!-- Provider Toggle -->
                     <div class="form-group">
-                        <label for="geminiKey">Gemini API Key</label>
-                        <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveApiKey()">
-                        <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                        <label>AI Provider</label>
+                        <div class="provider-toggle">
+                            <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">
+                                ⚡ Groq <span class="provider-badge">Fast · Free</span>
+                            </button>
+                            <button class="provider-btn" id="btnGemini" onclick="switchProvider('gemini')">
+                                ✦ Gemini <span class="provider-badge">Google</span>
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Groq fields -->
+                    <div id="groqFields">
+                        <div class="form-group">
+                            <label for="groqKey">Groq API Key</label>
+                            <input type="password" id="groqKey" placeholder="gsk_..." onchange="saveGroqKey()">
+                            <small class="hint">Get free key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM free</small>
+                        </div>
+                    </div>
+
+                    <!-- Gemini fields -->
+                    <div id="geminiFields" style="display:none;">
+                        <div class="form-group">
+                            <label for="geminiKey">Gemini API Key</label>
+                            <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveGeminiKey()">
+                            <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM free</small>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="sheetsId">Google Sheets ID</label>
                         <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
@@ -675,7 +741,7 @@
                     <div class="form-group">
                         <label for="apiDelay">API Call Delay (seconds)</label>
                         <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
-                        <small class="hint">Delay before each API call (default: 2.0s) - Prevents rate limits</small>
+                        <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
                     </div>
                 </div>
             </div>
@@ -782,10 +848,9 @@
         <div style="margin: 0 1.5rem 1rem; padding: 0.75rem 1rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: start; gap: 0.6rem;">
             <span style="font-size: 1rem;">🛡️</span>
             <div>
-                <strong style="color: var(--success);">Robust Rate Limiting Active</strong>
+                <strong style="color: var(--success);">Rate Limiting Active</strong>
                 <div style="margin-top: 0.25rem; line-height: 1.5;" id="rateLimitInfo">
-                    Each API call is automatically delayed to prevent rate limit errors. 
-                    The rate limiter enforces delays BEFORE calls are made, ensuring 100% compliance.
+                    Each API call is automatically delayed to prevent rate limit errors.
                 </div>
             </div>
         </div>
@@ -829,28 +894,31 @@
     let currentJD      = '';
     let analysisResults = [];
     let geminiApiKey   = localStorage.getItem('geminiApiKey') || '';
+    let groqApiKey     = localStorage.getItem('groqApiKey') || '';
+    let selectedProvider = localStorage.getItem('selectedProvider') || 'groq';
     let sheetsId       = localStorage.getItem('sheetsId') || '';
     let resumeDropOpen = false;
     let fileStatuses   = {};
 
     // ─── Init ───
     window.onload = function () {
-        if (geminiApiKey) {
-            document.getElementById('geminiKey').value = geminiApiKey;
-            updateConnStatus(true);
-        }
+        // Restore provider selection
+        switchProvider(selectedProvider, true);
+
+        if (geminiApiKey) document.getElementById('geminiKey').value = geminiApiKey;
+        if (groqApiKey)   document.getElementById('groqKey').value   = groqApiKey;
+        updateConnStatus(!!(selectedProvider === 'groq' ? groqApiKey : geminiApiKey));
+
         if (sheetsId) {
             document.getElementById('sheetsId').value = sheetsId;
             loadPositions();
         }
-        // Load saved API delay
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
-        
+
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // Separate click handler for upload zone to avoid double-trigger
         document.getElementById('uploadZone').addEventListener('click', function (e) {
             if (!e.target.closest('input')) {
                 document.getElementById('fileInput').click();
@@ -858,19 +926,53 @@
         });
     };
     
+    // ─── Provider Switch ───
+    function switchProvider(p, silent) {
+        selectedProvider = p;
+        localStorage.setItem('selectedProvider', p);
+
+        const isGroq = p === 'groq';
+        document.getElementById('groqFields').style.display   = isGroq ? 'block' : 'none';
+        document.getElementById('geminiFields').style.display = isGroq ? 'none'  : 'block';
+        document.getElementById('btnGroq').classList.toggle('active', isGroq);
+        document.getElementById('btnGemini').classList.toggle('active', !isGroq);
+
+        // Set sensible default delay per provider
+        const providerDefault = isGroq ? 2000 : 5000;
+        if (!localStorage.getItem('apiDelayMs')) {
+            API_DELAY_MS = providerDefault;
+        } else {
+            API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs'));
+        }
+        const delayInput = document.getElementById('apiDelay');
+        if (delayInput) delayInput.value = (API_DELAY_MS / 1000).toFixed(1);
+
+        rateLimiter.updateDelay(API_DELAY_MS);
+
+        const key = isGroq ? groqApiKey : geminiApiKey;
+        updateConnStatus(!!key);
+        updateRateLimitInfo();
+        if (!silent) showToast(`Switched to ${isGroq ? 'Groq ⚡' : 'Gemini ✦'}`, 'success');
+    }
+
     function updateRateLimitInfo() {
         const info = document.getElementById('rateLimitInfo');
-        if (info) {
-            const delayS = (API_DELAY_MS / 1000).toFixed(1);
-            const reqPerMin = Math.floor(60000 / API_DELAY_MS);
-            info.innerHTML = `
-                Each API call is automatically delayed by <strong>${delayS}s</strong> to prevent rate limit errors. 
-                The rate limiter enforces delays BEFORE calls are made, ensuring 100% compliance.
-                <span style="color: var(--text-muted); display: block; margin-top: 0.25rem;">
-                    Free tier: 60 req/min • Current rate: ~${reqPerMin} req/min ✓
-                </span>
-            `;
-        }
+        const hint = document.getElementById('delayHint');
+        if (!info) return;
+        const delayS = (API_DELAY_MS / 1000).toFixed(1);
+        const reqPerMin = Math.floor(60000 / API_DELAY_MS);
+        const isGroq = selectedProvider === 'groq';
+        const limitRPM = isGroq ? 30 : 15;
+        const safe = reqPerMin <= limitRPM - 2;
+
+        info.innerHTML = `
+            Each API call is delayed by <strong>${delayS}s</strong> to prevent rate limit errors.
+            <span style="color:var(--text-muted);display:block;margin-top:0.25rem;">
+                ${isGroq ? '⚡ Groq' : '✦ Gemini'} free tier: ${limitRPM} RPM &nbsp;·&nbsp;
+                Current: ~${reqPerMin} req/min &nbsp;${safe ? '<span style="color:var(--success)">✓ Safe</span>' : '<span style="color:var(--danger)">⚠️ Too fast!</span>'}
+            </span>
+        `;
+        if (hint) hint.textContent = `${isGroq ? 'Groq: keep ≥ 2s (30 RPM)' : 'Gemini: keep ≥ 5s (15 RPM)'}`;
     }
 
     // ─── Sidebar Toggles ───
@@ -882,12 +984,19 @@
         toggle.classList.toggle('open', !isOpen);
     }
 
-    // ─── API Key ───
-    function saveApiKey() {
+    // ─── API Keys ───
+    function saveGroqKey() {
+        groqApiKey = document.getElementById('groqKey').value.trim();
+        localStorage.setItem('groqApiKey', groqApiKey);
+        updateConnStatus(!!groqApiKey);
+        showToast('Groq API key saved!', 'success');
+    }
+
+    function saveGeminiKey() {
         geminiApiKey = document.getElementById('geminiKey').value.trim();
         localStorage.setItem('geminiApiKey', geminiApiKey);
         updateConnStatus(!!geminiApiKey);
-        showToast('API key saved!', 'success');
+        showToast('Gemini API key saved!', 'success');
     }
 
     function saveSheetsId() {
@@ -912,8 +1021,9 @@
 
     function updateConnStatus(active) {
         const badge = document.getElementById('connBadge');
+        const providerLabel = selectedProvider === 'groq' ? '⚡ Groq' : '✦ Gemini';
         badge.className = 'conn-badge' + (active ? ' connected' : '');
-        badge.innerHTML = `<span class="conn-dot"></span>${active ? 'Gemini connected' : 'Not connected'}`;
+        badge.innerHTML = `<span class="conn-dot"></span>${active ? providerLabel + ' connected' : 'Not connected'}`;
     }
 
     // ─── File Upload ───
@@ -1070,12 +1180,8 @@
         }
     }
 
-    // ─── Gemini API ───
-    // FIX: Updated from deprecated 'gemini-pro' → 'gemini-2.0-flash'
-    const GEMINI_MODEL = 'gemini-2.0-flash';
-    
     // ─── ROBUST Rate Limiting System ───
-    let API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs')) || 2000; // Default 2.0s between calls (SAFER)
+    let API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs')) || 2000; // Groq default 2s (30 RPM) · Gemini needs 5s (15 RPM)
     
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -1134,11 +1240,12 @@
         throw lastError;
     }
 
-    async function analyzeWithGemini(resumeText, jd, filters) {
-        if (!geminiApiKey) throw new Error('No API key configured');
+    async function analyzeWithProvider(resumeText, jd, filters) {
+        const isGroq = selectedProvider === 'groq';
+        const activeKey = isGroq ? groqApiKey : geminiApiKey;
+        if (!activeKey) throw new Error(`No ${isGroq ? 'Groq' : 'Gemini'} API key configured`);
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
 
-        // CRITICAL: Wait for rate limiter slot BEFORE making API call
         await rateLimiter.waitForSlot();
 
         const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description and return ONLY valid JSON (no markdown fences, no extra text).
@@ -1167,65 +1274,84 @@ Return exactly this JSON:
   "summary": "one-sentence profile"
 }`;
 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+        let raw;
 
-        let res;
-        try {
-            res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
-                })
-            });
-        } catch (networkErr) {
-            throw new Error('Network error reaching Gemini API');
+        if (isGroq) {
+            // ─── Groq (OpenAI-compatible) ───
+            let res;
+            try {
+                res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${groqApiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: 0.2,
+                        max_tokens: 1024
+                    })
+                });
+            } catch { throw new Error('Network error reaching Groq API'); }
+
+            if (!res.ok) {
+                let errMsg = `HTTP ${res.status}`;
+                try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
+                if (res.status === 401) throw new Error('Groq API key invalid — check console.groq.com');
+                if (res.status === 429) throw new Error('Rate limit hit — increase delay or wait');
+                throw new Error(`Groq error: ${errMsg}`);
+            }
+
+            const data = await res.json();
+            raw = data?.choices?.[0]?.message?.content;
+            if (!raw) throw new Error('Groq returned empty response');
+
+        } else {
+            // ─── Gemini ───
+            let res;
+            try {
+                res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+                    })
+                });
+            } catch { throw new Error('Network error reaching Gemini API'); }
+
+            if (!res.ok) {
+                let errMsg = `HTTP ${res.status}`;
+                try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
+                if (res.status === 400) throw new Error('Invalid request — check your API key');
+                if (res.status === 403) throw new Error('API key invalid or lacks permission');
+                if (res.status === 429) throw new Error('Rate limit hit — increase delay to 5s+');
+                throw new Error(`Gemini error: ${errMsg}`);
+            }
+
+            const data = await res.json();
+            if (data.promptFeedback?.blockReason) throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
+            if (!data.candidates?.length) throw new Error('Gemini returned no candidates — check quota/key');
+            const cand = data.candidates[0];
+            if (cand.finishReason === 'SAFETY') throw new Error('Response blocked by Gemini safety filters');
+            raw = cand?.content?.parts?.[0]?.text;
+            if (!raw) throw new Error(`No text in Gemini response (finishReason: ${cand.finishReason || 'unknown'})`);
         }
 
-        if (!res.ok) {
-            let errMsg = `HTTP ${res.status}`;
-            try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
-            if (res.status === 400) throw new Error('Invalid request — check your API key');
-            if (res.status === 403) throw new Error('API key invalid or lacks permission');
-            if (res.status === 429) throw new Error('Rate limit hit — wait a moment and retry');
-            throw new Error(`Gemini error: ${errMsg}`);
-        }
-
-        const data = await res.json();
-
-        // Safety block check
-        if (data.promptFeedback?.blockReason) {
-            throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
-        }
-
-        if (!data.candidates?.length) {
-            console.error('Gemini full response:', JSON.stringify(data));
-            throw new Error('Gemini returned no candidates — check quota/key validity');
-        }
-
-        const cand = data.candidates[0];
-        if (cand.finishReason === 'SAFETY') throw new Error('Response blocked by Gemini safety filters');
-        if (!cand.content?.parts?.[0]?.text) {
-            throw new Error(`No text in Gemini response (finishReason: ${cand.finishReason || 'unknown'})`);
-        }
-
-        const raw = cand.content.parts[0].text.trim();
-        // Strip markdown code fences if model added them despite instruction
-        const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+        // ─── Parse JSON from either provider ───
+        const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
         const match = cleaned.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('Could not find JSON in Gemini response');
-
-        try {
-            return JSON.parse(match[0]);
-        } catch (e) {
-            throw new Error('Malformed JSON from Gemini');
-        }
+        if (!match) throw new Error('Could not find JSON in AI response');
+        try { return JSON.parse(match[0]); }
+        catch { throw new Error('Malformed JSON from AI response'); }
     }
 
     // ─── Analyze — Real-time rendering ───
     async function analyzeResumes() {
-        if (!geminiApiKey)       { showToast('Configure your Gemini API key first', 'error'); return; }
+        if (!geminiApiKey && !groqApiKey) { showToast('Configure your API key first', 'error'); return; }
+        if (selectedProvider === 'groq' && !groqApiKey) { showToast('Configure your Groq API key first', 'error'); return; }
+        if (selectedProvider === 'gemini' && !geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
         if (!uploadedFiles.length) { showToast('Upload at least one resume', 'error'); return; }
         if (!currentJD)          { showToast('Select a job description first', 'error'); return; }
 
@@ -1279,7 +1405,7 @@ Return exactly this JSON:
 
                 // Use retry with backoff for API call
                 const result = await retryWithBackoff(async () => {
-                    return await analyzeWithGemini(text, currentJD, filters);
+                    return await analyzeWithProvider(text, currentJD, filters);
                 });
                 
                 result.filename = file.name;
