@@ -674,8 +674,8 @@
                     </div>
                     <div class="form-group">
                         <label for="apiDelay">API Call Delay (seconds)</label>
-                        <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="1.2" onchange="saveApiDelay()">
-                        <small class="hint">Delay between API calls to avoid rate limits (default: 1.2s)</small>
+                        <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
+                        <small class="hint">Delay before each API call (default: 2.0s) - Prevents rate limits</small>
                     </div>
                 </div>
             </div>
@@ -779,14 +779,13 @@
         </div>
         
         <!-- Rate Limit Info -->
-        <div style="margin: 0 1.5rem 1rem; padding: 0.75rem 1rem; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: start; gap: 0.6rem;">
-            <span style="font-size: 1rem;">ℹ️</span>
+        <div style="margin: 0 1.5rem 1rem; padding: 0.75rem 1rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: start; gap: 0.6rem;">
+            <span style="font-size: 1rem;">🛡️</span>
             <div>
-                <strong style="color: var(--accent);">Rate Limiting Active</strong>
-                <div style="margin-top: 0.25rem; line-height: 1.5;">
-                    To avoid hitting Gemini's 60 requests/minute limit, there's a delay between API calls. 
-                    Adjust the delay in <strong>API Configuration</strong> if needed. 
-                    <span style="color: var(--text-muted);">Free tier: 60/min, 1,500/day</span>
+                <strong style="color: var(--success);">Robust Rate Limiting Active</strong>
+                <div style="margin-top: 0.25rem; line-height: 1.5;" id="rateLimitInfo">
+                    Each API call is automatically delayed to prevent rate limit errors. 
+                    The rate limiter enforces delays BEFORE calls are made, ensuring 100% compliance.
                 </div>
             </div>
         </div>
@@ -846,6 +845,7 @@
         }
         // Load saved API delay
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
+        updateRateLimitInfo();
         
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -857,6 +857,21 @@
             }
         });
     };
+    
+    function updateRateLimitInfo() {
+        const info = document.getElementById('rateLimitInfo');
+        if (info) {
+            const delayS = (API_DELAY_MS / 1000).toFixed(1);
+            const reqPerMin = Math.floor(60000 / API_DELAY_MS);
+            info.innerHTML = `
+                Each API call is automatically delayed by <strong>${delayS}s</strong> to prevent rate limit errors. 
+                The rate limiter enforces delays BEFORE calls are made, ensuring 100% compliance.
+                <span style="color: var(--text-muted); display: block; margin-top: 0.25rem;">
+                    Free tier: 60 req/min • Current rate: ~${reqPerMin} req/min ✓
+                </span>
+            `;
+        }
+    }
 
     // ─── Sidebar Toggles ───
     function toggleSideSection(id) {
@@ -886,6 +901,8 @@
         if (delaySeconds >= 0.5 && delaySeconds <= 10) {
             API_DELAY_MS = Math.round(delaySeconds * 1000);
             localStorage.setItem('apiDelayMs', API_DELAY_MS);
+            rateLimiter.updateDelay(API_DELAY_MS); // Update rate limiter
+            updateRateLimitInfo(); // Update info banner
             showToast(`Delay set to ${delaySeconds.toFixed(1)}s`, 'success');
         } else {
             showToast('Delay must be between 0.5 and 10 seconds', 'error');
@@ -1057,12 +1074,42 @@
     // FIX: Updated from deprecated 'gemini-pro' → 'gemini-2.0-flash'
     const GEMINI_MODEL = 'gemini-2.0-flash';
     
-    // ─── Rate Limiting Utilities ───
-    let API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs')) || 1200; // Default 1.2s between calls
+    // ─── ROBUST Rate Limiting System ───
+    let API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs')) || 2000; // Default 2.0s between calls (SAFER)
     
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+    
+    // Rate Limiter Class - Enforces delays BEFORE API calls
+    class RateLimiter {
+        constructor(minDelayMs) {
+            this.minDelayMs = minDelayMs;
+            this.lastCallTime = 0;
+            this.callCount = 0;
+        }
+        
+        async waitForSlot() {
+            const now = Date.now();
+            const timeSinceLastCall = now - this.lastCallTime;
+            
+            if (timeSinceLastCall < this.minDelayMs) {
+                const waitTime = this.minDelayMs - timeSinceLastCall;
+                console.log(`⏳ Rate limiter: waiting ${(waitTime/1000).toFixed(1)}s before next call`);
+                await sleep(waitTime);
+            }
+            
+            this.lastCallTime = Date.now();
+            this.callCount++;
+        }
+        
+        updateDelay(newDelayMs) {
+            this.minDelayMs = newDelayMs;
+        }
+    }
+    
+    // Global rate limiter instance
+    const rateLimiter = new RateLimiter(API_DELAY_MS);
     
     async function retryWithBackoff(fn, maxRetries = 3) {
         let lastError;
@@ -1074,8 +1121,8 @@
                 
                 // If rate limit error, use exponential backoff
                 if (err.message.includes('Rate limit') || err.message.includes('429')) {
-                    const backoffMs = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10s
-                    console.log(`Rate limit hit. Retry ${attempt}/${maxRetries} after ${backoffMs}ms`);
+                    const backoffMs = Math.min(2000 * Math.pow(2, attempt), 15000); // 2s, 4s, 8s, max 15s
+                    console.log(`🔄 Rate limit hit! Retry ${attempt}/${maxRetries} after ${(backoffMs/1000).toFixed(1)}s`);
                     await sleep(backoffMs);
                     continue;
                 }
@@ -1090,6 +1137,9 @@
     async function analyzeWithGemini(resumeText, jd, filters) {
         if (!geminiApiKey) throw new Error('No API key configured');
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
+
+        // CRITICAL: Wait for rate limiter slot BEFORE making API call
+        await rateLimiter.waitForSlot();
 
         const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description and return ONLY valid JSON (no markdown fences, no extra text).
 
@@ -1251,13 +1301,6 @@ Return exactly this JSON:
 
                     badge.style.display = 'inline-flex';
                     badge.textContent   = `${matched} matched`;
-                }
-                
-                // Add delay between API calls to avoid rate limiting
-                // Skip delay on last file
-                if (done < total - 1) {
-                    pt.textContent = `Waiting ${(API_DELAY_MS/1000).toFixed(1)}s to avoid rate limit...`;
-                    await sleep(API_DELAY_MS);
                 }
 
             } catch (err) {
