@@ -40,7 +40,6 @@
             min-height: 100vh;
         }
 
-        /* Animated Background */
         body::before {
             content: '';
             position: fixed;
@@ -68,13 +67,7 @@
             50% { opacity: 0.75; transform: scale(1.04); }
         }
 
-        /* ─── APP SHELL ─── */
-        .app-shell {
-            display: flex;
-            height: 100vh;
-            position: relative;
-            z-index: 1;
-        }
+        .app-shell { display: flex; height: 100vh; position: relative; z-index: 1; }
 
         /* ─── SIDEBAR ─── */
         .sidebar {
@@ -87,7 +80,7 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: visible;
             position: sticky;
             top: 0;
             scrollbar-width: thin;
@@ -97,10 +90,7 @@
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.2); border-radius: 4px; }
 
-        .sidebar-header {
-            padding: 1.5rem 1.5rem 1rem;
-            border-bottom: 1px solid var(--border);
-        }
+        .sidebar-header { padding: 1.5rem 1.5rem 1rem; border-bottom: 1px solid var(--border); }
 
         .sidebar-logo {
             font-family: 'Outfit', sans-serif;
@@ -114,13 +104,8 @@
             margin-bottom: 0.25rem;
         }
 
-        .sidebar-subtitle {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            font-weight: 300;
-        }
+        .sidebar-subtitle { font-size: 0.75rem; color: var(--text-muted); font-weight: 300; }
 
-        /* Connection status badge */
         .conn-badge {
             display: inline-flex;
             align-items: center;
@@ -142,66 +127,25 @@
             color: var(--success);
         }
 
-        .conn-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: currentColor;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
+        .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s ease-in-out infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
         .sidebar-body { padding: 1.25rem 1.5rem; flex: 1; display: flex; flex-direction: column; gap: 1.5rem; }
 
-        /* Sidebar Sections */
-        .s-section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            user-select: none;
-            margin-bottom: 0.75rem;
-        }
-
-        .s-section-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        .s-toggle {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            transition: transform 0.3s ease;
-        }
-
+        .s-section-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; margin-bottom: 0.75rem; }
+        .s-section-title { font-family: 'Outfit', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+        .s-toggle { font-size: 0.7rem; color: var(--text-muted); transition: transform 0.3s ease; }
         .s-toggle.open { transform: rotate(180deg); }
 
-        .s-content {
-            overflow: hidden;
-            max-height: 0;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        /* FIX: overflow:visible on .open so absolutely-positioned dropdown is not clipped */
+        .s-content { overflow: hidden; max-height: 0; transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1); }
+        .s-content.open { max-height: 800px; overflow: visible; }
 
-        .s-content.open { max-height: 600px; }
-
-        /* Input Styles */
         .form-group { margin-bottom: 1rem; }
 
-        label {
-            display: block;
-            margin-bottom: 0.4rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
+        label { display: block; margin-bottom: 0.4rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
 
-        input[type="text"],
-        input[type="password"],
-        select {
+        input[type="text"], input[type="password"], select {
             width: 100%;
             padding: 0.6rem 0.875rem;
             background: rgba(15, 23, 42, 0.7);
@@ -213,26 +157,16 @@
             font-family: 'Source Sans 3', sans-serif;
         }
 
-        input[type="text"]:focus,
-        input[type="password"]:focus,
-        select:focus {
+        input[type="text"]:focus, input[type="password"]:focus, select:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
         }
 
         select option { background: #0f172a; color: #f1f5f9; }
-
-        small.hint {
-            display: block;
-            margin-top: 0.3rem;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-        }
-
+        small.hint { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: var(--text-muted); }
         small.hint a { color: var(--accent); text-decoration: none; }
 
-        /* Upload Zone */
         .upload-zone {
             border: 1.5px dashed var(--border);
             border-radius: 12px;
@@ -243,20 +177,14 @@
             margin-bottom: 0.75rem;
         }
 
-        .upload-zone:hover, .upload-zone.dragover {
-            border-color: var(--accent);
-            background: rgba(6, 182, 212, 0.05);
-        }
-
+        .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: rgba(6, 182, 212, 0.05); }
         .upload-zone input[type="file"] { display: none; }
-
         .upload-icon { font-size: 2rem; opacity: 0.5; display: block; margin-bottom: 0.4rem; }
-
         .upload-zone p { font-size: 0.82rem; color: var(--text-secondary); }
         .upload-zone small { font-size: 0.72rem; color: var(--text-muted); }
 
-        /* Resume Dropdown */
-        .resume-dropdown-wrapper { position: relative; }
+        /* Resume Dropdown - z-index ensures it floats above siblings */
+        .resume-dropdown-wrapper { position: relative; z-index: 200; }
 
         .resume-dropdown-trigger {
             display: flex;
@@ -273,27 +201,22 @@
         }
 
         .resume-dropdown-trigger:hover { border-color: var(--accent); }
-
-        .resume-dropdown-trigger.active {
-            border-color: var(--accent);
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-        }
+        .resume-dropdown-trigger.active { border-color: var(--accent); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
         .resume-dropdown-list {
             position: absolute;
             top: 100%;
             left: 0; right: 0;
-            background: rgba(15, 23, 42, 0.98);
-            backdrop-filter: blur(16px);
+            background: #0d1526;
             border: 1px solid var(--accent);
             border-top: none;
             border-bottom-left-radius: 9px;
             border-bottom-right-radius: 9px;
-            z-index: 200;
+            z-index: 9999;
             max-height: 200px;
             overflow-y: auto;
             display: none;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
         }
 
         .resume-dropdown-list.open { display: block; }
@@ -304,25 +227,22 @@
             justify-content: space-between;
             padding: 0.6rem 0.875rem;
             font-size: 0.82rem;
-            cursor: pointer;
-            transition: background 0.15s ease;
             border-bottom: 1px solid var(--border);
+            transition: background 0.15s ease;
         }
 
         .resume-dropdown-item:last-child { border-bottom: none; }
         .resume-dropdown-item:hover { background: rgba(6, 182, 212, 0.08); }
 
-        .resume-remove {
-            color: var(--danger);
-            cursor: pointer;
-            font-size: 0.9rem;
-            padding: 0 4px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
+        .resume-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-right: 6px; }
+        .status-pending   { background: var(--text-muted); }
+        .status-analyzing { background: var(--warning); animation: pulse 0.8s ease-in-out infinite; }
+        .status-done      { background: var(--success); }
+        .status-error     { background: var(--danger); }
+
+        .resume-remove { color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 0 4px; opacity: 0.7; transition: opacity 0.2s; }
         .resume-remove:hover { opacity: 1; }
 
-        /* JD Preview */
         .jd-preview-box {
             padding: 0.75rem;
             background: rgba(6, 182, 212, 0.04);
@@ -339,11 +259,15 @@
         }
 
         .jd-preview-box.visible { display: block; }
-
-        /* Filter row */
         .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-        /* Analyze Button */
+        /* Progress */
+        .progress-wrap { display: none; margin-top: 0.875rem; }
+        .progress-wrap.visible { display: block; }
+        .progress-label { font-size: 0.74rem; color: var(--text-muted); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }
+        .progress-bar { height: 4px; background: rgba(148, 163, 184, 0.15); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); border-radius: 2px; transition: width 0.5s ease; width: 0%; }
+
         .btn-analyze {
             width: 100%;
             padding: 0.75rem;
@@ -356,20 +280,10 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
         }
 
-        .btn-analyze:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(6, 182, 212, 0.4);
-        }
-
-        .btn-analyze:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .btn-analyze:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(6, 182, 212, 0.4); }
+        .btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .spinner {
             display: inline-block;
@@ -385,13 +299,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ─── MAIN CONTENT ─── */
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-        }
+        .main-content { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
 
         .main-header {
             padding: 1.25rem 2rem 1rem;
@@ -406,56 +314,18 @@
             z-index: 50;
         }
 
-        .results-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
+        .results-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 0.6rem; }
 
-        .result-badge {
-            font-size: 0.75rem;
-            padding: 2px 9px;
-            background: rgba(6, 182, 212, 0.15);
-            border: 1px solid var(--border-accent);
-            border-radius: 20px;
-            color: var(--accent);
-            font-weight: 500;
-        }
+        .result-badge { font-size: 0.75rem; padding: 2px 9px; background: rgba(6, 182, 212, 0.15); border: 1px solid var(--border-accent); border-radius: 20px; color: var(--accent); font-weight: 500; }
 
         .header-actions { display: flex; gap: 0.75rem; align-items: center; }
 
-        .btn-export {
-            padding: 0.45rem 1rem;
-            border: 1px solid var(--border-accent);
-            background: transparent;
-            color: var(--accent);
-            border-radius: 8px;
-            font-size: 0.82rem;
-            font-family: 'Outfit', sans-serif;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+        .btn-export { padding: 0.45rem 1rem; border: 1px solid var(--border-accent); background: transparent; color: var(--accent); border-radius: 8px; font-size: 0.82rem; font-family: 'Outfit', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        .btn-export:hover { background: rgba(6, 182, 212, 0.1); }
 
-        .btn-export:hover {
-            background: rgba(6, 182, 212, 0.1);
-        }
+        .results-body { padding: 1.5rem 2rem; flex: 1; }
 
-        .results-body {
-            padding: 1.5rem 2rem;
-            flex: 1;
-        }
-
-        /* ─── RESULTS GRID ─── */
-        .results-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.25rem;
-        }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
 
         /* ─── RESULT CARD ─── */
         .result-card {
@@ -466,35 +336,16 @@
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             animation: cardIn 0.5s ease-out backwards;
-            cursor: pointer;
         }
 
-        @keyframes cardIn {
-            from { opacity: 0; transform: translateY(20px) scale(0.97); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
+        @keyframes cardIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-        .result-card:hover {
-            border-color: var(--border-accent);
-            box-shadow: 0 8px 32px rgba(6, 182, 212, 0.15);
-            transform: translateY(-2px);
-        }
+        .result-card:hover { border-color: var(--border-accent); box-shadow: 0 8px 32px rgba(6, 182, 212, 0.15); transform: translateY(-2px); }
+        .result-card.expanded { border-color: var(--accent); }
 
-        .result-card.expanded {
-            border-color: var(--accent);
-        }
+        .card-top { padding: 1.1rem 1.25rem; }
 
-        /* Card Top */
-        .card-top {
-            padding: 1.1rem 1.25rem;
-        }
-
-        .card-header-row {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 0.75rem;
-        }
+        .card-header-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem; }
 
         .candidate-avatar {
             width: 40px; height: 40px;
@@ -512,211 +363,246 @@
         }
 
         .candidate-info { flex: 1; min-width: 0; }
+        .candidate-name { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .candidate-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
 
-        .candidate-name {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .candidate-meta {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .score-badge {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
+        .score-badge { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700; flex-shrink: 0; }
         .score-high { color: var(--accent); }
         .score-mid  { color: var(--warning); }
         .score-low  { color: var(--danger); }
 
-        .score-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(148, 163, 184, 0.15);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 0.875rem;
-        }
-
-        .score-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        .score-bar { width: 100%; height: 4px; background: rgba(148, 163, 184, 0.15); border-radius: 2px; overflow: hidden; margin-bottom: 0.875rem; }
+        .score-fill { height: 100%; border-radius: 2px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .fill-high { background: linear-gradient(90deg, var(--success), var(--accent)); }
         .fill-mid  { background: linear-gradient(90deg, var(--warning), #f97316); }
         .fill-low  { background: linear-gradient(90deg, var(--danger), #f97316); }
 
-        /* Skill Tags */
-        .skill-tags {
+        .skill-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .skill-tag { padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent); }
+        .more-tag { padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; color: var(--text-muted); background: rgba(148, 163, 184, 0.08); border: 1px solid var(--border); }
+
+        /* Card Actions */
+        .card-actions {
             display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
+            align-items: center;
+            padding: 0.5rem 1.25rem;
+            border-top: 1px solid var(--border);
+            gap: 0.5rem;
         }
 
-        .skill-tag {
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            background: rgba(6, 182, 212, 0.1);
-            border: 1px solid rgba(6, 182, 212, 0.2);
-            color: var(--accent);
-        }
-
-        .more-tag {
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            background: rgba(148, 163, 184, 0.08);
-            border: 1px solid var(--border);
-        }
-
-        /* Card Expand Toggle */
         .card-expand-toggle {
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 0.4rem;
-            padding: 0.6rem 1.25rem;
-            border-top: 1px solid var(--border);
             font-size: 0.78rem;
             color: var(--text-muted);
             transition: all 0.2s ease;
             user-select: none;
+            cursor: pointer;
+            flex: 1;
+            justify-content: center;
+            padding: 0.35rem 0;
         }
 
-        .result-card:hover .card-expand-toggle { color: var(--accent); }
-        .result-card.expanded .card-expand-toggle { color: var(--accent); background: rgba(6, 182, 212, 0.04); }
-
-        .expand-chevron {
-            transition: transform 0.3s ease;
-            font-size: 0.65rem;
-        }
-
+        .card-expand-toggle:hover { color: var(--accent); }
+        .result-card.expanded .card-expand-toggle { color: var(--accent); }
+        .expand-chevron { transition: transform 0.3s ease; font-size: 0.65rem; }
         .result-card.expanded .expand-chevron { transform: rotate(180deg); }
 
-        /* ─── EXPANDED DETAIL PANEL ─── */
-        .card-detail {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .card-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
 
-        .card-detail.open { max-height: 1000px; }
-
-        .detail-inner {
-            padding: 1.25rem;
-            border-top: 1px solid var(--border);
-            background: rgba(6, 182, 212, 0.02);
-        }
-
-        .detail-section {
-            margin-bottom: 1.1rem;
-        }
-
-        .detail-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--accent);
-            margin-bottom: 0.5rem;
-        }
-
-        .detail-text {
-            font-size: 0.83rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        /* Skills Have / Missing */
-        .skills-split {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-        }
-
-        .skills-col-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
-
-        .skills-col-label.have { color: var(--success); }
-        .skills-col-label.missing { color: var(--danger); }
-
-        .skill-item {
-            display: flex;
+        /* View Resume Button */
+        .btn-view-resume {
+            display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.35rem;
-        }
-
-        .skill-item .dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
+            gap: 4px;
+            padding: 0.3rem 0.75rem;
+            border: 1px solid var(--border-accent);
+            background: rgba(6, 182, 212, 0.06);
+            color: var(--accent);
+            border-radius: 7px;
+            font-size: 0.75rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
             flex-shrink: 0;
         }
 
+        .btn-view-resume:hover { background: rgba(6, 182, 212, 0.15); box-shadow: 0 0 12px rgba(6, 182, 212, 0.2); }
+
+        .card-detail { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-detail.open { max-height: 1000px; }
+
+        .detail-inner { padding: 1.25rem; border-top: 1px solid var(--border); background: rgba(6, 182, 212, 0.02); }
+        .detail-section { margin-bottom: 1.1rem; }
+        .detail-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+        .detail-text { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.6; }
+
+        .skills-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .skills-col-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .skills-col-label.have { color: var(--success); }
+        .skills-col-label.missing { color: var(--danger); }
+
+        .skill-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; }
+        .skill-item .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
         .dot-have    { background: var(--success); }
         .dot-missing { background: var(--danger); }
 
-        .rating-reason {
-            font-size: 0.83rem;
-            color: var(--text-secondary);
-            line-height: 1.65;
-            padding: 0.75rem;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 9px;
-            border-left: 3px solid var(--accent);
+        .rating-reason { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.65; padding: 0.75rem; background: rgba(15, 23, 42, 0.6); border-radius: 9px; border-left: 3px solid var(--accent); }
+        .contact-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .contact-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted); }
+
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 2rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1; }
+        .empty-icon { font-size: 3.5rem; opacity: 0.35; margin-bottom: 1rem; }
+        .empty-state h3 { font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-secondary); }
+        .empty-state p { font-size: 0.85rem; }
+
+        /* ─── OVERLAY SIDEBAR ─── */
+        .overlay-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(4px);
+            z-index: 800;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
         }
 
-        .contact-row {
+        .overlay-backdrop.open { opacity: 1; pointer-events: all; }
+
+        .resume-overlay {
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: 440px;
+            max-width: 95vw;
+            background: rgba(9, 14, 28, 0.98);
+            backdrop-filter: blur(24px);
+            border-left: 1px solid var(--border-accent);
+            z-index: 900;
             display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .contact-item {
+        .resume-overlay.open { transform: translateX(0); box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5); }
+
+        .overlay-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 0.4rem;
-            font-size: 0.8rem;
-            color: var(--text-muted);
+            gap: 1rem;
+            flex-shrink: 0;
+            background: rgba(15, 23, 42, 0.6);
         }
 
-        /* Empty state */
-        .empty-state {
+        .overlay-avatar {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--success) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #0a0f1e;
+            flex-shrink: 0;
+        }
+
+        .overlay-name-block { flex: 1; min-width: 0; }
+        .overlay-name { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .overlay-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+        .overlay-score-ring {
+            flex-shrink: 0;
+            width: 56px; height: 56px;
+            border-radius: 50%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 5rem 2rem;
-            text-align: center;
-            color: var(--text-muted);
-            grid-column: 1 / -1;
+            border: 3px solid var(--border);
         }
 
-        .empty-icon { font-size: 3.5rem; opacity: 0.35; margin-bottom: 1rem; }
-        .empty-state h3 { font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-secondary); }
-        .empty-state p { font-size: 0.85rem; }
+        .overlay-score-ring.ring-high { border-color: var(--accent); }
+        .overlay-score-ring.ring-mid  { border-color: var(--warning); }
+        .overlay-score-ring.ring-low  { border-color: var(--danger); }
+
+        .overlay-score-num { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; line-height: 1; }
+        .overlay-score-label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .overlay-close {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .overlay-close:hover { border-color: var(--danger); color: var(--danger); background: rgba(239, 68, 68, 0.08); }
+
+        .overlay-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(6,182,212,0.2) transparent;
+        }
+
+        .overlay-body::-webkit-scrollbar { width: 4px; }
+        .overlay-body::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.2); border-radius: 4px; }
+
+        .overlay-section { margin-bottom: 1.5rem; }
+
+        .overlay-section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .overlay-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+        .overlay-stat-box { padding: 0.75rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 10px; text-align: center; }
+        .overlay-stat-box .stat-val { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--accent); display: block; }
+        .overlay-stat-box .stat-lbl { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+        .overlay-score-bar { height: 6px; background: rgba(148, 163, 184, 0.15); border-radius: 3px; overflow: hidden; margin: 0.5rem 0; }
+        .overlay-score-fill { height: 100%; border-radius: 3px; }
+
+        .overlay-skill-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .overlay-skill-tag { padding: 3px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+        .overlay-skill-tag.have { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
+        .overlay-skill-tag.missing { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: var(--danger); }
+        .overlay-skill-tag.neutral { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent); }
+
+        .overlay-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; }
+        .overlay-highlight-item { display: flex; gap: 0.6rem; margin-bottom: 0.5rem; font-size: 0.83rem; color: var(--text-secondary); }
+        .overlay-highlight-item::before { content: '▸'; color: var(--accent); flex-shrink: 0; }
+
+        .overlay-contact-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+        .overlay-contact-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.83rem; color: var(--text-secondary); padding: 0.5rem 0.75rem; background: rgba(15, 23, 42, 0.5); border-radius: 8px; border: 1px solid var(--border); }
+
+        .rating-box { padding: 0.875rem; background: rgba(15, 23, 42, 0.7); border-radius: 10px; border-left: 3px solid var(--accent); font-size: 0.83rem; color: var(--text-secondary); line-height: 1.65; }
+
+        .filename-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; color: var(--text-muted); }
 
         /* Toast */
         .toast {
@@ -727,9 +613,9 @@
             background: var(--primary-light);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 0.75rem 1.25rem;
+            padding: 0.75rem 1.5rem;
             box-shadow: 0 8px 32px var(--shadow);
-            z-index: 9000;
+            z-index: 9999;
             opacity: 0;
             transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 0.87rem;
@@ -740,16 +626,15 @@
         .toast.success { border-color: var(--success); }
         .toast.error { border-color: var(--danger); }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .app-shell { flex-direction: column; height: auto; }
             .sidebar { width: 100%; height: auto; position: relative; }
             .main-content { height: auto; }
             .results-grid { grid-template-columns: 1fr; }
             .skills-split { grid-template-columns: 1fr; }
+            .resume-overlay { width: 100%; border-left: none; border-top: 1px solid var(--border-accent); }
         }
 
-        /* Scrollbar for main */
         .main-content::-webkit-scrollbar { width: 5px; }
         .main-content::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.15); border-radius: 4px; }
     </style>
@@ -797,7 +682,7 @@
                     <span class="s-toggle open" id="uploadToggle">▼</span>
                 </div>
                 <div class="s-content open" id="uploadContent">
-                    <div class="upload-zone" onclick="document.getElementById('fileInput').click()"
+                    <div class="upload-zone" id="uploadZone"
                          ondrop="handleDrop(event)"
                          ondragover="handleDragOver(event)"
                          ondragleave="handleDragLeave(event)">
@@ -807,19 +692,28 @@
                         <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
                     </div>
 
-                    <!-- Resume Dropdown -->
                     <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;">
                         <label style="margin-bottom:0.4rem;">Loaded Resumes</label>
                         <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
                             <span id="resumeDropLabel">0 files loaded</span>
-                            <span id="resumeDropChevron" style="font-size:0.65rem; transition:transform 0.3s;">▼</span>
+                            <span id="resumeDropChevron" style="font-size:0.65rem;transition:transform 0.3s;">▼</span>
                         </div>
                         <div class="resume-dropdown-list" id="resumeDropList"></div>
+                    </div>
+
+                    <div class="progress-wrap" id="progressWrap">
+                        <div class="progress-label">
+                            <span id="progressText">Analyzing…</span>
+                            <span id="progressCount">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Job Description -->
+            <!-- Position -->
             <div>
                 <div class="s-section-header" onclick="toggleSideSection('jd')">
                     <span class="s-section-title">Position</span>
@@ -860,7 +754,6 @@
                 </div>
             </div>
 
-            <!-- Analyze Button -->
             <button class="btn-analyze" onclick="analyzeResumes()" id="analyzeBtn">
                 🚀 Analyze Resumes
             </button>
@@ -892,17 +785,36 @@
     </div>
 </div>
 
-<!-- Toast -->
+<!-- Overlay -->
+<div class="overlay-backdrop" id="overlayBackdrop" onclick="closeOverlay()"></div>
+
+<div class="resume-overlay" id="resumeOverlay">
+    <div class="overlay-header">
+        <div class="overlay-avatar" id="overlayAvatar"></div>
+        <div class="overlay-name-block">
+            <div class="overlay-name" id="overlayName"></div>
+            <div class="overlay-meta" id="overlayMeta"></div>
+        </div>
+        <div class="overlay-score-ring" id="overlayScoreRing">
+            <span class="overlay-score-num" id="overlayScoreNum"></span>
+            <span class="overlay-score-label">Match</span>
+        </div>
+        <button class="overlay-close" onclick="closeOverlay()">✕</button>
+    </div>
+    <div class="overlay-body" id="overlayBody"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-    // ─── Global State ───
-    let uploadedFiles = [];
-    let currentJD = '';
+    // ─── State ───
+    let uploadedFiles  = [];
+    let currentJD      = '';
     let analysisResults = [];
-    let geminiApiKey = localStorage.getItem('geminiApiKey') || '';
-    let sheetsId = localStorage.getItem('sheetsId') || '';
+    let geminiApiKey   = localStorage.getItem('geminiApiKey') || '';
+    let sheetsId       = localStorage.getItem('sheetsId') || '';
     let resumeDropOpen = false;
+    let fileStatuses   = {};
 
     // ─── Init ───
     window.onload = function () {
@@ -914,7 +826,15 @@
             document.getElementById('sheetsId').value = sheetsId;
             loadPositions();
         }
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Separate click handler for upload zone to avoid double-trigger
+        document.getElementById('uploadZone').addEventListener('click', function (e) {
+            if (!e.target.closest('input')) {
+                document.getElementById('fileInput').click();
+            }
+        });
     };
 
     // ─── Sidebar Toggles ───
@@ -938,7 +858,6 @@
         sheetsId = document.getElementById('sheetsId').value.trim();
         localStorage.setItem('sheetsId', sheetsId);
         loadPositions();
-        showToast('Sheets ID saved!', 'success');
     }
 
     function updateConnStatus(active) {
@@ -957,36 +876,56 @@
     }
 
     function handleFiles(files) {
-        const newFiles = Array.from(files);
-        newFiles.forEach(f => {
-            if (!uploadedFiles.find(x => x.name === f.name)) uploadedFiles.push(f);
+        const valid = Array.from(files).filter(f =>
+            ['pdf','doc','docx'].includes(f.name.split('.').pop().toLowerCase())
+        );
+        let added = 0;
+        valid.forEach(f => {
+            if (!uploadedFiles.find(x => x.name === f.name)) {
+                uploadedFiles.push(f);
+                fileStatuses[f.name] = 'pending';
+                added++;
+            }
         });
-        renderResumeDropdown();
-        showToast(`${newFiles.length} file(s) added!`, 'success');
+        if (added > 0) {
+            renderResumeDropdown();
+            showToast(`${added} file${added !== 1 ? 's' : ''} added!`, 'success');
+        } else if (!valid.length) {
+            showToast('Only PDF, DOC, DOCX supported', 'error');
+        } else {
+            showToast('File(s) already loaded', 'error');
+        }
+        document.getElementById('fileInput').value = '';
     }
 
     function renderResumeDropdown() {
-        const wrapper  = document.getElementById('resumeDropdownWrapper');
-        const label    = document.getElementById('resumeDropLabel');
-        const listEl   = document.getElementById('resumeDropList');
+        const wrapper = document.getElementById('resumeDropdownWrapper');
+        const label   = document.getElementById('resumeDropLabel');
+        const listEl  = document.getElementById('resumeDropList');
 
-        if (uploadedFiles.length === 0) {
+        if (!uploadedFiles.length) {
             wrapper.style.display = 'none';
+            closeResumeDropdown();
             return;
         }
 
         wrapper.style.display = 'block';
-        label.textContent = `${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} loaded`;
+        label.textContent = `${uploadedFiles.length} file${uploadedFiles.length !== 1 ? 's' : ''} loaded`;
 
-        listEl.innerHTML = uploadedFiles.map((f, i) => `
+        listEl.innerHTML = uploadedFiles.map((f, i) => {
+            const st = fileStatuses[f.name] || 'pending';
+            return `
             <div class="resume-dropdown-item">
-                <span>📄 ${truncate(f.name, 28)}</span>
-                <div style="display:flex;align-items:center;gap:8px;">
+                <span style="display:flex;align-items:center;flex:1;min-width:0;overflow:hidden;">
+                    <span class="resume-status-dot status-${st}"></span>
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.name}">📄 ${truncate(f.name, 26)}</span>
+                </span>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                     <span style="color:var(--text-muted);font-size:0.72rem;">${(f.size/1024).toFixed(0)} KB</span>
                     <span class="resume-remove" onclick="removeResume(${i},event)" title="Remove">✕</span>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     }
 
     function truncate(str, len) {
@@ -995,31 +934,33 @@
 
     function removeResume(index, e) {
         e.stopPropagation();
+        const fname = uploadedFiles[index]?.name;
+        if (fname) delete fileStatuses[fname];
         uploadedFiles.splice(index, 1);
         renderResumeDropdown();
-        if (uploadedFiles.length === 0) closeResumeDropdown();
     }
 
     function toggleResumeDropdown() {
         resumeDropOpen = !resumeDropOpen;
-        const list    = document.getElementById('resumeDropList');
-        const trigger = document.getElementById('resumeDropTrigger');
-        const chevron = document.getElementById('resumeDropChevron');
-        list.classList.toggle('open', resumeDropOpen);
-        trigger.classList.toggle('active', resumeDropOpen);
-        chevron.style.transform = resumeDropOpen ? 'rotate(180deg)' : '';
+        document.getElementById('resumeDropList').classList.toggle('open', resumeDropOpen);
+        document.getElementById('resumeDropTrigger').classList.toggle('active', resumeDropOpen);
+        document.getElementById('resumeDropChevron').style.transform = resumeDropOpen ? 'rotate(180deg)' : '';
     }
 
     function closeResumeDropdown() {
         resumeDropOpen = false;
-        document.getElementById('resumeDropList').classList.remove('open');
-        document.getElementById('resumeDropTrigger').classList.remove('active');
-        document.getElementById('resumeDropChevron').style.transform = '';
+        const el = document.getElementById('resumeDropList');
+        if (el) el.classList.remove('open');
+        const tr = document.getElementById('resumeDropTrigger');
+        if (tr) tr.classList.remove('active');
+        const ch = document.getElementById('resumeDropChevron');
+        if (ch) ch.style.transform = '';
     }
 
-    document.addEventListener('click', (e) => {
-        if (resumeDropOpen && !document.getElementById('resumeDropdownWrapper').contains(e.target)) {
-            closeResumeDropdown();
+    document.addEventListener('click', e => {
+        if (resumeDropOpen) {
+            const wrapper = document.getElementById('resumeDropdownWrapper');
+            if (wrapper && !wrapper.contains(e.target)) closeResumeDropdown();
         }
     });
 
@@ -1031,16 +972,13 @@
             const res  = await fetch(url);
             const text = await res.text();
             const json = JSON.parse(text.substring(47).slice(0, -2));
-            const rows = json.table.rows;
             const sel  = document.getElementById('positionSelect');
             sel.innerHTML = '<option value="">-- Select Position --</option>';
-            rows.forEach((row, i) => {
-                if (i > 0 && row.c[0]) {
-                    sel.innerHTML += `<option value="${i}">${row.c[0].v}</option>`;
-                }
+            json.table.rows.forEach((row, i) => {
+                if (i > 0 && row.c[0]) sel.innerHTML += `<option value="${i}">${row.c[0].v}</option>`;
             });
             showToast('Positions loaded!', 'success');
-        } catch (err) {
+        } catch {
             showToast('Error loading positions. Check Sheets ID & sharing.', 'error');
         }
     }
@@ -1059,7 +997,7 @@
             currentJD  = row.c[1] ? row.c[1].v : '';
             preview.textContent = currentJD;
             preview.classList.add('visible');
-        } catch (err) {
+        } catch {
             showToast('Error loading job description', 'error');
         }
     }
@@ -1075,175 +1013,257 @@
                 const content = await page.getTextContent();
                 text += content.items.map(it => it.str).join(' ') + '\n';
             }
-            return text;
-        } catch { return ''; }
+            return text.trim();
+        } catch (err) {
+            console.warn('PDF extraction error:', err);
+            return '';
+        }
     }
 
-    // ─── Gemini Analysis ───
-    async function analyzeWithGemini(resumeText, jd, filters) {
-        if (!geminiApiKey) throw new Error('No API key');
+    // ─── Gemini API ───
+    // FIX: Updated from deprecated 'gemini-pro' → 'gemini-2.0-flash'
+    const GEMINI_MODEL = 'gemini-2.0-flash';
 
-        const prompt = `You are an expert technical recruiter. Analyze this resume against the job description and return ONLY valid JSON, no markdown fences.
+    async function analyzeWithGemini(resumeText, jd, filters) {
+        if (!geminiApiKey) throw new Error('No API key configured');
+        if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
+
+        const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description and return ONLY valid JSON (no markdown fences, no extra text).
 
 Job Description:
 ${jd}
 
-Filters: Experience ${filters.minExp || 0}-${filters.maxExp || 'unlimited'} years, Location: ${filters.location || 'any'}
+Filters: Experience ${filters.minExp || 0}–${filters.maxExp || 'unlimited'} yrs, Location: ${filters.location || 'any'}
 
 Resume:
-${resumeText}
+${resumeText.slice(0, 7500)}
 
-Return JSON:
+Return exactly this JSON:
 {
   "name": "full name or Unknown",
   "email": "email or null",
   "phone": "phone or null",
-  "experience_years": number,
+  "experience_years": <number>,
   "location": "city or Remote",
-  "match_score": number 0-100,
-  "key_skills": ["up to 6 skills found in resume"],
-  "skills_present": ["skills from JD that candidate HAS"],
-  "skills_missing": ["skills from JD that candidate LACKS"],
-  "highlights": ["2-3 key highlights"],
-  "rating_reason": "2-3 sentence explanation of why you gave this exact score — mention specific strengths and gaps relative to the JD",
-  "summary": "1 sentence profile"
+  "match_score": <integer 0-100>,
+  "key_skills": ["up to 6 skills from resume"],
+  "skills_present": ["JD skills candidate HAS"],
+  "skills_missing": ["JD skills candidate LACKS"],
+  "highlights": ["2-3 standout achievements"],
+  "rating_reason": "2-3 sentences on why this exact score — cite strengths and gaps",
+  "summary": "one-sentence profile"
 }`;
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+
+        let res;
+        try {
+            res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+                })
+            });
+        } catch (networkErr) {
+            throw new Error('Network error reaching Gemini API');
+        }
+
+        if (!res.ok) {
+            let errMsg = `HTTP ${res.status}`;
+            try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
+            if (res.status === 400) throw new Error('Invalid request — check your API key');
+            if (res.status === 403) throw new Error('API key invalid or lacks permission');
+            if (res.status === 429) throw new Error('Rate limit hit — wait a moment and retry');
+            throw new Error(`Gemini error: ${errMsg}`);
+        }
 
         const data = await res.json();
-        if (!data.candidates?.[0]) throw new Error('Empty response from Gemini');
-        const raw = data.candidates[0].content.parts[0].text;
-        const match = raw.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('Could not parse JSON');
-        return JSON.parse(match[0]);
+
+        // Safety block check
+        if (data.promptFeedback?.blockReason) {
+            throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
+        }
+
+        if (!data.candidates?.length) {
+            console.error('Gemini full response:', JSON.stringify(data));
+            throw new Error('Gemini returned no candidates — check quota/key validity');
+        }
+
+        const cand = data.candidates[0];
+        if (cand.finishReason === 'SAFETY') throw new Error('Response blocked by Gemini safety filters');
+        if (!cand.content?.parts?.[0]?.text) {
+            throw new Error(`No text in Gemini response (finishReason: ${cand.finishReason || 'unknown'})`);
+        }
+
+        const raw = cand.content.parts[0].text.trim();
+        // Strip markdown code fences if model added them despite instruction
+        const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('Could not find JSON in Gemini response');
+
+        try {
+            return JSON.parse(match[0]);
+        } catch (e) {
+            throw new Error('Malformed JSON from Gemini');
+        }
     }
 
-    // ─── Main Analyze ───
+    // ─── Analyze — Real-time rendering ───
     async function analyzeResumes() {
-        if (!geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
+        if (!geminiApiKey)       { showToast('Configure your Gemini API key first', 'error'); return; }
         if (!uploadedFiles.length) { showToast('Upload at least one resume', 'error'); return; }
-        if (!currentJD) { showToast('Select a job description first', 'error'); return; }
+        if (!currentJD)          { showToast('Select a job description first', 'error'); return; }
 
-        const btn = document.getElementById('analyzeBtn');
+        const btn  = document.getElementById('analyzeBtn');
+        const grid = document.getElementById('resultsGrid');
+        const badge = document.getElementById('resultBadge');
+
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Analyzing…';
 
         const filters = {
-            minExp: document.getElementById('minExp').value,
-            maxExp: document.getElementById('maxExp').value,
+            minExp:   document.getElementById('minExp').value,
+            maxExp:   document.getElementById('maxExp').value,
             location: document.getElementById('location').value
         };
 
         analysisResults = [];
-        const grid = document.getElementById('resultsGrid');
-        grid.innerHTML = `<div class="empty-state"><div class="empty-icon" style="animation:spin 1s linear infinite">⚙️</div><h3>Analyzing resumes…</h3><p>Please wait while AI processes each file</p></div>`;
+        grid.innerHTML  = '';
+        badge.style.display = 'none';
 
-        try {
-            for (const file of uploadedFiles) {
+        // Progress
+        const pw = document.getElementById('progressWrap');
+        const pf = document.getElementById('progressFill');
+        const pt = document.getElementById('progressText');
+        const pc = document.getElementById('progressCount');
+        pw.classList.add('visible');
+        pf.style.width = '0%';
+
+        const total = uploadedFiles.length;
+        let done    = 0;
+        let matched = 0;
+
+        // Reset statuses
+        uploadedFiles.forEach(f => { fileStatuses[f.name] = 'pending'; });
+        renderResumeDropdown();
+
+        for (const file of uploadedFiles) {
+            fileStatuses[file.name] = 'analyzing';
+            renderResumeDropdown();
+            pt.textContent = `Analyzing: ${truncate(file.name, 22)}`;
+
+            try {
                 let text = '';
-                if (file.type === 'application/pdf') text = await extractTextFromPDF(file);
-                else text = await file.text().catch(() => '');
+                if (file.type === 'application/pdf') {
+                    text = await extractTextFromPDF(file);
+                } else {
+                    text = await file.text().catch(() => '');
+                }
+
+                if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable');
 
                 const result = await analyzeWithGemini(text, currentJD, filters);
                 result.filename = file.name;
 
                 const okExp = (!filters.minExp || result.experience_years >= +filters.minExp) &&
-                              (!filters.maxExp || result.experience_years <= +filters.maxExp);
+                              (!filters.maxExp  || result.experience_years <= +filters.maxExp);
                 const okLoc = !filters.location ||
-                              result.location.toLowerCase().includes(filters.location.toLowerCase());
+                              (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
 
-                if (okExp && okLoc) analysisResults.push(result);
+                fileStatuses[file.name] = 'done';
+
+                if (okExp && okLoc) {
+                    matched++;
+                    analysisResults.push(result);
+
+                    // Sort & re-render immediately
+                    const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+                    grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
+
+                    badge.style.display = 'inline-flex';
+                    badge.textContent   = `${matched} matched`;
+                }
+
+            } catch (err) {
+                fileStatuses[file.name] = 'error';
+                console.error(`${file.name}:`, err);
+                showToast(`"${truncate(file.name, 20)}": ${err.message}`, 'error');
             }
 
-            analysisResults.sort((a, b) => b.match_score - a.match_score);
-            displayResults();
-            showToast(`Analysis done! ${analysisResults.length} candidates matched.`, 'success');
-        } catch (err) {
-            showToast('Analysis error: ' + err.message, 'error');
-            console.error(err);
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '🚀 Analyze Resumes';
-        }
-    }
-
-    // ─── Display Results ───
-    function displayResults() {
-        const grid  = document.getElementById('resultsGrid');
-        const badge = document.getElementById('resultBadge');
-
-        if (!analysisResults.length) {
-            badge.style.display = 'none';
-            grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>No matching candidates</h3><p>Try relaxing your filters</p></div>`;
-            return;
+            done++;
+            pf.style.width = `${(done / total) * 100}%`;
+            pc.textContent = `${done}/${total}`;
+            renderResumeDropdown();
         }
 
-        badge.style.display = 'inline-flex';
-        badge.textContent   = `${analysisResults.length} candidate${analysisResults.length > 1 ? 's' : ''}`;
+        // Final sort
+        analysisResults.sort((a, b) => b.match_score - a.match_score);
+        grid.innerHTML = analysisResults.length
+            ? analysisResults.map((r, i) => buildCard(r, i)).join('')
+            : `<div class="empty-state"><div class="empty-icon">🔍</div><h3>No matching candidates</h3><p>Try relaxing filters or verify your API key</p></div>`;
 
-        grid.innerHTML = analysisResults.map((r, i) => buildCard(r, i)).join('');
+        badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
+        if (analysisResults.length) badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
+
+        pt.textContent = 'Analysis complete ✓';
+        setTimeout(() => pw.classList.remove('visible'), 2500);
+
+        showToast(`Done! ${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''} matched.`, 'success');
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Analyze Resumes';
     }
 
-    function scoreClass(s) {
-        if (s >= 75) return 'score-high';
-        if (s >= 50) return 'score-mid';
-        return 'score-low';
-    }
-
-    function fillClass(s) {
-        if (s >= 75) return 'fill-high';
-        if (s >= 50) return 'fill-mid';
-        return 'fill-low';
-    }
+    // ─── Card Helpers ───
+    function scoreClass(s) { return s >= 75 ? 'score-high' : s >= 50 ? 'score-mid' : 'score-low'; }
+    function fillClass(s)  { return s >= 75 ? 'fill-high'  : s >= 50 ? 'fill-mid'  : 'fill-low';  }
+    function ringClass(s)  { return s >= 75 ? 'ring-high'  : s >= 50 ? 'ring-mid'  : 'ring-low';  }
 
     function initials(name) {
-        const parts = (name || 'UN').split(' ');
-        return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+        const p = (name || 'UN').trim().split(/\s+/);
+        return ((p[0][0] || '') + (p[1] ? p[1][0] : (p[0][1] || ''))).toUpperCase();
     }
 
     function buildCard(r, i) {
-        const skills     = (r.key_skills || []).slice(0, 4);
+        const skills      = (r.key_skills || []).slice(0, 4);
         const extraSkills = (r.key_skills || []).length - skills.length;
-        const present    = r.skills_present || [];
-        const missing    = r.skills_missing || [];
+        const present     = r.skills_present || [];
+        const missing     = r.skills_missing || [];
 
         return `
-        <div class="result-card" id="card-${i}" style="animation-delay:${i * 0.08}s" onclick="toggleCard(${i})">
+        <div class="result-card" id="card-${i}" style="animation-delay:${i * 0.06}s">
             <div class="card-top">
                 <div class="card-header-row">
                     <div style="display:flex;align-items:center;flex:1;min-width:0;">
                         <div class="candidate-avatar">${initials(r.name)}</div>
                         <div class="candidate-info">
                             <div class="candidate-name">${r.name}</div>
-                            <div class="candidate-meta">📍 ${r.location} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs</div>
+                            <div class="candidate-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs</div>
                         </div>
                     </div>
                     <div class="score-badge ${scoreClass(r.match_score)}">${r.match_score}%</div>
                 </div>
-
                 <div class="score-bar">
                     <div class="score-fill ${fillClass(r.match_score)}" style="width:${r.match_score}%"></div>
                 </div>
-
                 <div class="skill-tags">
                     ${skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
                     ${extraSkills > 0 ? `<span class="more-tag">+${extraSkills} more</span>` : ''}
                 </div>
             </div>
 
-            <div class="card-expand-toggle">
-                <span>View Analysis</span>
-                <span class="expand-chevron">▼</span>
+            <div class="card-actions">
+                <div class="card-expand-toggle" onclick="toggleCard(${i})">
+                    <span>View Analysis</span>
+                    <span class="expand-chevron">▼</span>
+                </div>
+                <div class="card-divider"></div>
+                <button class="btn-view-resume" onclick="openOverlay(${i})">👁 View</button>
             </div>
 
             <div class="card-detail" id="detail-${i}">
                 <div class="detail-inner">
-
                     ${r.rating_reason ? `
                     <div class="detail-section">
                         <div class="detail-label">Why this score?</div>
@@ -1253,16 +1273,12 @@ Return JSON:
                     <div class="detail-section">
                         <div class="skills-split">
                             <div>
-                                <div class="skills-col-label have">✓ Skills Present</div>
-                                ${present.length ? present.map(s => `
-                                    <div class="skill-item"><span class="dot dot-have"></span>${s}</div>
-                                `).join('') : '<div class="skill-item" style="color:var(--text-muted)">—</div>'}
+                                <div class="skills-col-label have">✓ Present</div>
+                                ${present.length ? present.map(s => `<div class="skill-item"><span class="dot dot-have"></span>${s}</div>`).join('') : '<div class="skill-item" style="color:var(--text-muted)">—</div>'}
                             </div>
                             <div>
-                                <div class="skills-col-label missing">✗ Skills Missing</div>
-                                ${missing.length ? missing.map(s => `
-                                    <div class="skill-item"><span class="dot dot-missing"></span>${s}</div>
-                                `).join('') : '<div class="skill-item" style="color:var(--text-muted)">None</div>'}
+                                <div class="skills-col-label missing">✗ Missing</div>
+                                ${missing.length ? missing.map(s => `<div class="skill-item"><span class="dot dot-missing"></span>${s}</div>`).join('') : '<div class="skill-item" style="color:var(--text-muted)">None</div>'}
                             </div>
                         </div>
                     </div>
@@ -1287,7 +1303,6 @@ Return JSON:
                             ${r.phone ? `<div class="contact-item">📞 ${r.phone}</div>` : ''}
                         </div>
                     </div>` : ''}
-
                 </div>
             </div>
         </div>`;
@@ -1298,26 +1313,141 @@ Return JSON:
         const detail = document.getElementById(`detail-${i}`);
         const isOpen = detail.classList.contains('open');
 
-        // Close all others
         document.querySelectorAll('.card-detail.open').forEach(d => d.classList.remove('open'));
         document.querySelectorAll('.result-card.expanded').forEach(c => c.classList.remove('expanded'));
 
         if (!isOpen) {
             detail.classList.add('open');
             card.classList.add('expanded');
-            // smooth scroll into view
             setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
         }
     }
 
-    // ─── Export ───
+    // ─── Overlay Sidebar ───
+    function openOverlay(idx) {
+        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+        const r = sorted[idx];
+        if (!r) return;
+
+        // Header
+        document.getElementById('overlayAvatar').textContent = initials(r.name);
+        document.getElementById('overlayName').textContent   = r.name;
+        document.getElementById('overlayMeta').textContent   = `📍 ${r.location || '—'}  ·  💼 ${r.experience_years} yrs`;
+
+        const ring = document.getElementById('overlayScoreRing');
+        ring.className = `overlay-score-ring ${ringClass(r.match_score)}`;
+        const num  = document.getElementById('overlayScoreNum');
+        num.textContent = r.match_score + '%';
+        num.className   = 'overlay-score-num ' + scoreClass(r.match_score);
+
+        const skillsHave    = r.skills_present || [];
+        const skillsMissing = r.skills_missing  || [];
+        const allSkills     = r.key_skills      || [];
+
+        document.getElementById('overlayBody').innerHTML = `
+
+            <div class="overlay-section">
+                <div class="overlay-section-title">📊 Overview</div>
+                <div class="overlay-stat-grid">
+                    <div class="overlay-stat-box">
+                        <span class="stat-val ${scoreClass(r.match_score)}">${r.match_score}%</span>
+                        <div class="stat-lbl">Match Score</div>
+                        <div class="overlay-score-bar">
+                            <div class="overlay-score-fill ${fillClass(r.match_score)}" style="width:${r.match_score}%"></div>
+                        </div>
+                    </div>
+                    <div class="overlay-stat-box">
+                        <span class="stat-val">${r.experience_years}</span>
+                        <div class="stat-lbl">Years Exp</div>
+                    </div>
+                    <div class="overlay-stat-box">
+                        <span class="stat-val" style="color:var(--success);">${skillsHave.length}</span>
+                        <div class="stat-lbl">Skills Match</div>
+                    </div>
+                    <div class="overlay-stat-box">
+                        <span class="stat-val" style="color:var(--danger);">${skillsMissing.length}</span>
+                        <div class="stat-lbl">Skills Gap</div>
+                    </div>
+                </div>
+            </div>
+
+            ${r.rating_reason ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">🎯 Score Reasoning</div>
+                <div class="rating-box">${r.rating_reason}</div>
+            </div>` : ''}
+
+            ${r.summary ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">👤 Profile Summary</div>
+                <div class="overlay-text">${r.summary}</div>
+            </div>` : ''}
+
+            ${allSkills.length ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">🛠 Key Skills</div>
+                <div class="overlay-skill-list">
+                    ${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}
+                </div>
+            </div>` : ''}
+
+            ${(skillsHave.length || skillsMissing.length) ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">✅ Skills vs JD</div>
+                ${skillsHave.length ? `
+                <div style="margin-bottom:0.75rem;">
+                    <div style="font-size:0.7rem;color:var(--success);font-weight:700;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em;">Present</div>
+                    <div class="overlay-skill-list">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div>
+                </div>` : ''}
+                ${skillsMissing.length ? `
+                <div>
+                    <div style="font-size:0.7rem;color:var(--danger);font-weight:700;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em;">Missing</div>
+                    <div class="overlay-skill-list">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div>
+                </div>` : ''}
+            </div>` : ''}
+
+            ${r.highlights?.length ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">⭐ Key Highlights</div>
+                ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+            </div>` : ''}
+
+            ${(r.email || r.phone) ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">📬 Contact</div>
+                <div class="overlay-contact-grid">
+                    ${r.email ? `<div class="overlay-contact-item"><span style="font-size:1rem;">📧</span>${r.email}</div>` : ''}
+                    ${r.phone ? `<div class="overlay-contact-item"><span style="font-size:1rem;">📞</span>${r.phone}</div>` : ''}
+                </div>
+            </div>` : ''}
+
+            ${r.filename ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">📁 Source File</div>
+                <span class="filename-badge">📄 ${r.filename}</span>
+            </div>` : ''}
+        `;
+
+        document.getElementById('overlayBackdrop').classList.add('open');
+        document.getElementById('resumeOverlay').classList.add('open');
+        document.getElementById('overlayBody').scrollTop = 0;
+    }
+
+    function closeOverlay() {
+        document.getElementById('overlayBackdrop').classList.remove('open');
+        document.getElementById('resumeOverlay').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+
+    // ─── Export CSV ───
     function exportResults() {
         if (!analysisResults.length) { showToast('No results to export', 'error'); return; }
         const csv = [
             ['Name','Email','Phone','Location','Experience','Match Score','Summary'].join(','),
             ...analysisResults.map(r => [
-                `"${r.name}"`, r.email||'', r.phone||'', `"${r.location}"`,
-                r.experience_years, r.match_score, `"${r.summary||''}"`
+                `"${r.name}"`, r.email || '', r.phone || '', `"${r.location}"`,
+                r.experience_years, r.match_score, `"${(r.summary || '').replace(/"/g, '""')}"`
             ].join(','))
         ].join('\n');
         const a = Object.assign(document.createElement('a'), {
@@ -1333,7 +1463,8 @@ Return JSON:
         const t = document.getElementById('toast');
         t.textContent = msg;
         t.className = `toast ${type} show`;
-        setTimeout(() => t.classList.remove('show'), 3000);
+        clearTimeout(t._t);
+        t._t = setTimeout(() => t.classList.remove('show'), 3500);
     }
 </script>
 </body>
