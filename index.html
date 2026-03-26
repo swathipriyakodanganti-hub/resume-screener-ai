@@ -665,7 +665,7 @@
                     <div class="form-group">
                         <label for="geminiKey">Gemini API Key</label>
                         <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveApiKey()">
-                        <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                        <small class="hint">Get from <a href="https://console.groq.com/keys" target="_blank">Groq Console</a></small>
                     </div>
                     <div class="form-group">
                         <label for="sheetsId">Google Sheets ID</label>
@@ -1134,22 +1134,14 @@
         throw lastError;
     }
 
-    async function analyzeWithGemini(resumeText, jd, filters) {
+  async function analyzeWithGemini(resumeText, jd, filters) {
         if (!geminiApiKey) throw new Error('No API key configured');
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
 
-        // CRITICAL: Wait for rate limiter slot BEFORE making API call
+        // Wait for rate limiter slot BEFORE making API call
         await rateLimiter.waitForSlot();
 
         const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description and return ONLY valid JSON (no markdown fences, no extra text).
-
-Job Description:
-${jd}
-
-Filters: Experience ${filters.minExp || 0}–${filters.maxExp || 'unlimited'} yrs, Location: ${filters.location || 'any'}
-
-Resume:
-${resumeText.slice(0, 7500)}
 
 Return exactly this JSON:
 {
@@ -1167,61 +1159,57 @@ Return exactly this JSON:
   "summary": "one-sentence profile"
 }`;
 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+        const userContent = `Job Description:\n${jd}\n\nFilters: Experience ${filters.minExp || 0}–${filters.maxExp || 'unlimited'} yrs, Location: ${filters.location || 'any'}\n\nResume:\n${resumeText.slice(0, 7500)}`;
+
+        const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
 
         let res;
         try {
             res = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${geminiApiKey}` // Reusing your existing variable!
+                },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+                    model: 'llama3-70b-8192',
+                    messages: [
+                        { role: 'system', content: prompt },
+                        { role: 'user', content: userContent }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.1
                 })
             });
         } catch (networkErr) {
-            throw new Error('Network error reaching Gemini API');
+            throw new Error('Network error reaching Groq API');
         }
 
         if (!res.ok) {
             let errMsg = `HTTP ${res.status}`;
             try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
-            if (res.status === 400) throw new Error('Invalid request — check your API key');
-            if (res.status === 403) throw new Error('API key invalid or lacks permission');
+            if (res.status === 401) throw new Error('Invalid Groq API key');
             if (res.status === 429) throw new Error('Rate limit hit — wait a moment and retry');
-            throw new Error(`Gemini error: ${errMsg}`);
+            throw new Error(`Groq error: ${errMsg}`);
         }
 
         const data = await res.json();
 
-        // Safety block check
-        if (data.promptFeedback?.blockReason) {
-            throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
+        if (!data.choices?.length) {
+            throw new Error('Groq returned no data');
         }
 
-        if (!data.candidates?.length) {
-            console.error('Gemini full response:', JSON.stringify(data));
-            throw new Error('Gemini returned no candidates — check quota/key validity');
-        }
+        const raw = data.choices[0].message.content.trim();
+        const cleaned = raw.replace(/^
+http://googleusercontent.com/immersive_entry_chip/0
 
-        const cand = data.candidates[0];
-        if (cand.finishReason === 'SAFETY') throw new Error('Response blocked by Gemini safety filters');
-        if (!cand.content?.parts?.[0]?.text) {
-            throw new Error(`No text in Gemini response (finishReason: ${cand.finishReason || 'unknown'})`);
-        }
+### Step 3: Unleash the Speed!
+1. Save your HTML file and refresh the page in your browser. 
+2. Go get your free API key from the new link in the sidebar and paste it in.
+3. Because Groq is so fast, you can now change that **API Call Delay** setting in the sidebar from `2.0` down to **`0.5`** seconds!
 
-        const raw = cand.content.parts[0].text.trim();
-        // Strip markdown code fences if model added them despite instruction
-        const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-        const match = cleaned.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('Could not find JSON in Gemini response');
-
-        try {
-            return JSON.parse(match[0]);
-        } catch (e) {
-            throw new Error('Malformed JSON from Gemini');
-        }
-    }
+Give that a shot and run a couple of test resumes through it. Would you like to review how to export the final data into your Google Sheets once the analysis runs successfully?
+    
 
     // ─── Analyze — Real-time rendering ───
     async function analyzeResumes() {
