@@ -672,6 +672,11 @@
                         <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
                         <small class="hint">From: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit</small>
                     </div>
+                    <div class="form-group">
+                        <label for="apiDelay">API Call Delay (seconds)</label>
+                        <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="1.2" onchange="saveApiDelay()">
+                        <small class="hint">Delay between API calls to avoid rate limits (default: 1.2s)</small>
+                    </div>
                 </div>
             </div>
 
@@ -772,6 +777,19 @@
                 <button class="btn-export" onclick="exportResults()">💾 Export CSV</button>
             </div>
         </div>
+        
+        <!-- Rate Limit Info -->
+        <div style="margin: 0 1.5rem 1rem; padding: 0.75rem 1rem; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: start; gap: 0.6rem;">
+            <span style="font-size: 1rem;">ℹ️</span>
+            <div>
+                <strong style="color: var(--accent);">Rate Limiting Active</strong>
+                <div style="margin-top: 0.25rem; line-height: 1.5;">
+                    To avoid hitting Gemini's 60 requests/minute limit, there's a delay between API calls. 
+                    Adjust the delay in <strong>API Configuration</strong> if needed. 
+                    <span style="color: var(--text-muted);">Free tier: 60/min, 1,500/day</span>
+                </div>
+            </div>
+        </div>
 
         <div class="results-body">
             <div class="results-grid" id="resultsGrid">
@@ -826,6 +844,9 @@
             document.getElementById('sheetsId').value = sheetsId;
             loadPositions();
         }
+        // Load saved API delay
+        document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
+        
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -858,6 +879,18 @@
         sheetsId = document.getElementById('sheetsId').value.trim();
         localStorage.setItem('sheetsId', sheetsId);
         loadPositions();
+    }
+    
+    function saveApiDelay() {
+        const delaySeconds = parseFloat(document.getElementById('apiDelay').value);
+        if (delaySeconds >= 0.5 && delaySeconds <= 10) {
+            API_DELAY_MS = Math.round(delaySeconds * 1000);
+            localStorage.setItem('apiDelayMs', API_DELAY_MS);
+            showToast(`Delay set to ${delaySeconds.toFixed(1)}s`, 'success');
+        } else {
+            showToast('Delay must be between 0.5 and 10 seconds', 'error');
+            document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
+        }
     }
 
     function updateConnStatus(active) {
@@ -1023,6 +1056,36 @@
     // ─── Gemini API ───
     // FIX: Updated from deprecated 'gemini-pro' → 'gemini-2.0-flash'
     const GEMINI_MODEL = 'gemini-2.0-flash';
+    
+    // ─── Rate Limiting Utilities ───
+    let API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs')) || 1200; // Default 1.2s between calls
+    
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    async function retryWithBackoff(fn, maxRetries = 3) {
+        let lastError;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await fn();
+            } catch (err) {
+                lastError = err;
+                
+                // If rate limit error, use exponential backoff
+                if (err.message.includes('Rate limit') || err.message.includes('429')) {
+                    const backoffMs = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10s
+                    console.log(`Rate limit hit. Retry ${attempt}/${maxRetries} after ${backoffMs}ms`);
+                    await sleep(backoffMs);
+                    continue;
+                }
+                
+                // For other errors, don't retry
+                throw err;
+            }
+        }
+        throw lastError;
+    }
 
     async function analyzeWithGemini(resumeText, jd, filters) {
         if (!geminiApiKey) throw new Error('No API key configured');
@@ -1164,7 +1227,11 @@ Return exactly this JSON:
 
                 if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable');
 
-                const result = await analyzeWithGemini(text, currentJD, filters);
+                // Use retry with backoff for API call
+                const result = await retryWithBackoff(async () => {
+                    return await analyzeWithGemini(text, currentJD, filters);
+                });
+                
                 result.filename = file.name;
 
                 const okExp = (!filters.minExp || result.experience_years >= +filters.minExp) &&
@@ -1184,6 +1251,13 @@ Return exactly this JSON:
 
                     badge.style.display = 'inline-flex';
                     badge.textContent   = `${matched} matched`;
+                }
+                
+                // Add delay between API calls to avoid rate limiting
+                // Skip delay on last file
+                if (done < total - 1) {
+                    pt.textContent = `Waiting ${(API_DELAY_MS/1000).toFixed(1)}s to avoid rate limit...`;
+                    await sleep(API_DELAY_MS);
                 }
 
             } catch (err) {
