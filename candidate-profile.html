@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate Profile - Resume Screener AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0e0b1f;
+            --primary-light: #1a1535;
+            --accent: #a78bfa;
+            --accent-dark: #7c5ce1;
+            --accent-glow: rgba(167, 139, 250, 0.25);
+            --amber: #fbbf24;
+            --success: #34d399;
+            --danger: #f87171;
+            --bg-main: #07050f;
+            --bg-card: rgba(22, 17, 44, 0.72);
+            --bg-sidebar: rgba(10, 7, 22, 0.97);
+            --text-primary: #ede9fe;
+            --text-secondary: #c4b5fd;
+            --text-muted: #7c6fa0;
+            --border: rgba(167, 139, 250, 0.1);
+            --border-accent: rgba(167, 139, 250, 0.38);
+            --shadow: rgba(0, 0, 0, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Source Sans 3', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(124, 92, 225, 0.18) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 90% 80%, rgba(251, 191, 36, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 40% at 55% 45%, rgba(52, 211, 153, 0.06) 0%, transparent 45%);
+            animation: bgShift 26s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: screen;
+        }
+
+        @keyframes bgShift {
+            0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+            33% { opacity: 0.8; transform: scale(1.03) rotate(0.5deg); }
+            66% { opacity: 0.9; transform: scale(1.01) rotate(-0.3deg); }
+        }
+
+        .profile-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ─── LEFT PANEL: RESUME ─── */
+        .resume-panel {
+            width: 50%;
+            height: 100vh;
+            background: var(--bg-sidebar);
+            backdrop-filter: blur(40px);
+            border-right: 1px solid var(--border-accent);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .resume-header {
+            padding: 1.75rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(10, 7, 22, 0.6) 0%, transparent 100%);
+        }
+
+        .resume-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .resume-body {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: #1a1a2e;
+        }
+
+        .resume-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .resume-placeholder span {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        /* ─── RIGHT PANEL: DETAILS ─── */
+        .details-panel {
+            width: 50%;
+            height: 100vh;
+            background: var(--bg-sidebar);
+            backdrop-filter: blur(40px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(167,139,250,0.2) transparent;
+        }
+
+        .details-panel::-webkit-scrollbar { width: 4px; }
+        .details-panel::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.2); border-radius: 4px; }
+
+        .details-header {
+            padding: 1.75rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            background: linear-gradient(180deg, rgba(10, 7, 22, 0.6) 0%, transparent 100%);
+        }
+
+        .score-ring {
+            min-width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 4px;
+        }
+
+        .score-ring.high { background: conic-gradient(var(--success) 0%, var(--success) var(--score-percent, 0%), rgba(255,255,255,0.08) var(--score-percent, 0%)); }
+        .score-ring.med  { background: conic-gradient(var(--amber) 0%, var(--amber) var(--score-percent, 0%), rgba(255,255,255,0.08) var(--score-percent, 0%)); }
+        .score-ring.low  { background: conic-gradient(var(--danger) 0%, var(--danger) var(--score-percent, 0%), rgba(255,255,255,0.08) var(--score-percent, 0%)); }
+
+        .score-ring::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            background: var(--bg-sidebar);
+        }
+
+        .score-num {
+            position: relative;
+            z-index: 1;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .score-num.high { color: var(--success); }
+        .score-num.med  { color: var(--amber); }
+        .score-num.low  { color: var(--danger); }
+
+        .title-group { flex: 1; }
+
+        .candidate-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.01em;
+        }
+
+        .candidate-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .details-body {
+            padding: 2rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-box {
+            background: rgba(30, 27, 56, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-val {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-val.high { color: var(--success); }
+        .stat-val.med  { color: var(--amber); }
+        .stat-val.low  { color: var(--danger); }
+
+        .stat-lbl {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+        }
+
+        .score-bar {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-fill.high { background: var(--success); }
+        .score-fill.med  { background: var(--amber); }
+        .score-fill.low  { background: var(--danger); }
+
+        .recommendation-pill {
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+
+        .rec-proceed {
+            background: rgba(52, 211, 153, 0.15);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            color: var(--success);
+        }
+
+        .rec-consider {
+            background: rgba(251, 191, 36, 0.15);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            color: var(--amber);
+        }
+
+        .rec-pass {
+            background: rgba(248, 113, 113, 0.15);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: var(--danger);
+        }
+
+        .rating-box {
+            background: rgba(30, 27, 56, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .text-content {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skill-tag {
+            padding: 0.4rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .skill-tag.neutral {
+            background: rgba(167, 139, 250, 0.1);
+            border: 1px solid var(--border-accent);
+            color: var(--text-secondary);
+        }
+
+        .skill-tag.have {
+            background: rgba(52, 211, 153, 0.12);
+            border: 1px solid rgba(52, 211, 153, 0.25);
+            color: var(--success);
+        }
+
+        .skill-tag.missing {
+            background: rgba(248, 113, 113, 0.12);
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            color: var(--danger);
+        }
+
+        .highlight-item {
+            padding: 0.6rem 1rem;
+            background: rgba(167, 139, 250, 0.08);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .contact-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(30, 27, 56, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .branding {
+            padding: 1.5rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .branding-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            background: linear-gradient(120deg, #c4b5fd, var(--amber));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* ─── ERROR STATE ─── */
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .error-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .error-message {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 1024px) {
+            .profile-container { flex-direction: column; }
+            .resume-panel, .details-panel { width: 100%; height: auto; min-height: 50vh; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // ─── Load Candidate Data from URL ───
+        function loadCandidateData() {
+            const params = new URLSearchParams(window.location.search);
+            const encodedData = params.get('data');
+
+            if (!encodedData) {
+                showError('No candidate data found', 'The link you followed is invalid or incomplete.');
+                return null;
+            }
+
+            try {
+                const jsonStr = atob(encodedData);
+                return JSON.parse(jsonStr);
+            } catch (err) {
+                console.error('Error decoding candidate data:', err);
+                showError('Invalid data format', 'The candidate data could not be loaded.');
+                return null;
+            }
+        }
+
+        // ─── Show Error ───
+        function showError(title, message) {
+            document.getElementById('app').innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-title">${title}</div>
+                    <div class="error-message">${message}</div>
+                </div>
+            `;
+        }
+
+        // ─── Render Profile ───
+        function renderProfile(candidate) {
+            const scoreClass = candidate.match_score >= 75 ? 'high' : candidate.match_score >= 50 ? 'med' : 'low';
+            const skillsHave = candidate.skills_present || [];
+            const skillsMissing = candidate.skills_missing || [];
+            const allSkills = candidate.key_skills || [];
+
+            document.getElementById('app').innerHTML = `
+                <div class="profile-container">
+                    <!-- LEFT: RESUME VIEWER -->
+                    <div class="resume-panel">
+                        <div class="resume-header">
+                            <div class="resume-title">
+                                <span>📄</span>
+                                <span>Resume: ${candidate.filename || 'Document'}</span>
+                            </div>
+                        </div>
+                        <div class="resume-body">
+                            <div class="resume-placeholder">
+                                <span>📄</span>
+                                <div>Resume preview not available</div>
+                                <div style="font-size: 0.75rem; margin-top: 0.5rem;">Contact the sender for the full resume file</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: CANDIDATE DETAILS -->
+                    <div class="details-panel">
+                        <div class="details-header">
+                            <div class="score-ring ${scoreClass}" style="--score-percent: ${candidate.match_score}%">
+                                <span class="score-num ${scoreClass}">${candidate.match_score}%</span>
+                            </div>
+                            <div class="title-group">
+                                <div class="candidate-name">${candidate.name}</div>
+                                <div class="candidate-meta">📍 ${candidate.location || 'N/A'}  ·  💼 ${candidate.experience_years} years</div>
+                            </div>
+                        </div>
+
+                        <div class="details-body">
+                            <!-- Overview -->
+                            <div class="section">
+                                <div class="section-title">📊 Overview</div>
+                                <div class="stat-grid">
+                                    <div class="stat-box">
+                                        <span class="stat-val ${scoreClass}">${candidate.match_score}%</span>
+                                        <div class="stat-lbl">Match Score</div>
+                                        <div class="score-bar">
+                                            <div class="score-fill ${scoreClass}" style="width:${candidate.match_score}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-val">${candidate.experience_years}</span>
+                                        <div class="stat-lbl">Years Exp</div>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-val" style="color:var(--success);">${skillsHave.length}</span>
+                                        <div class="stat-lbl">Skills Match</div>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-val" style="color:var(--danger);">${skillsMissing.length}</span>
+                                        <div class="stat-lbl">Skills Gap</div>
+                                    </div>
+                                </div>
+                                <div class="recommendation-pill ${candidate.match_score >= 75 ? 'rec-proceed' : candidate.match_score >= 50 ? 'rec-consider' : 'rec-pass'}">
+                                    ${candidate.match_score >= 75
+                                        ? '✅ Recommended — Move Forward'
+                                        : candidate.match_score >= 50
+                                        ? '🔶 Borderline — Consider Further Review'
+                                        : '❌ Not Recommended — Pass'}
+                                </div>
+                            </div>
+
+                            ${candidate.rating_reason ? `
+                            <div class="section">
+                                <div class="section-title">🎯 Score Reasoning</div>
+                                <div class="rating-box">${candidate.rating_reason}</div>
+                            </div>` : ''}
+
+                            ${candidate.summary ? `
+                            <div class="section">
+                                <div class="section-title">👤 Profile Summary</div>
+                                <div class="text-content">${candidate.summary}</div>
+                            </div>` : ''}
+
+                            ${allSkills.length ? `
+                            <div class="section">
+                                <div class="section-title">🛠 Key Skills</div>
+                                <div class="skill-list">
+                                    ${allSkills.map(s => `<span class="skill-tag neutral">${s}</span>`).join('')}
+                                </div>
+                            </div>` : ''}
+
+                            ${(skillsHave.length || skillsMissing.length) ? `
+                            <div class="section">
+                                <div class="section-title">✅ Skills vs Job Requirements</div>
+                                ${skillsHave.length ? `
+                                <div style="margin-bottom:0.75rem;">
+                                    <div style="font-size:0.7rem;color:var(--success);font-weight:700;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em;">Present</div>
+                                    <div class="skill-list">${skillsHave.map(s => `<span class="skill-tag have">✓ ${s}</span>`).join('')}</div>
+                                </div>` : ''}
+                                ${skillsMissing.length ? `
+                                <div>
+                                    <div style="font-size:0.7rem;color:var(--danger);font-weight:700;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em;">Missing</div>
+                                    <div class="skill-list">${skillsMissing.map(s => `<span class="skill-tag missing">✗ ${s}</span>`).join('')}</div>
+                                </div>` : ''}
+                            </div>` : ''}
+
+                            ${candidate.highlights?.length ? `
+                            <div class="section">
+                                <div class="section-title">⭐ Key Highlights</div>
+                                ${candidate.highlights.map(h => `<div class="highlight-item">${h}</div>`).join('')}
+                            </div>` : ''}
+
+                            ${(candidate.email || candidate.phone) ? `
+                            <div class="section">
+                                <div class="section-title">📬 Contact Information</div>
+                                <div class="contact-grid">
+                                    ${candidate.email ? `<div class="contact-item"><span style="font-size:1rem;">📧</span>${candidate.email}</div>` : ''}
+                                    ${candidate.phone ? `<div class="contact-item"><span style="font-size:1rem;">📞</span>${candidate.phone}</div>` : ''}
+                                </div>
+                            </div>` : ''}
+
+                            <!-- Branding -->
+                            <div class="branding">
+                                <div class="branding-title">RESUME SCREENER AI</div>
+                                <div>Powered by Google Gemini</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ─── Initialize ───
+        window.addEventListener('DOMContentLoaded', () => {
+            const candidate = loadCandidateData();
+            if (candidate) {
+                renderProfile(candidate);
+            }
+        });
+    </script>
+</body>
+</html>
