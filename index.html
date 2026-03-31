@@ -1892,7 +1892,9 @@
                 <div class="script-url-input-row">
                     <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
                     <button class="btn-sm-save" onclick="saveAppsScriptUrl()">Save</button>
+                    <button class="btn-sm-save" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(0,232,160,0.1);border-color:rgba(0,232,160,0.3);color:var(--success);">Test</button>
                 </div>
+                <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
                 <small class="hint" style="margin-top:0.4rem;display:block;">Deploy your Code.gs as a Web App and paste the URL here. Saved locally.</small>
             </div>
             <!-- Interviewer list -->
@@ -2993,6 +2995,39 @@ Return exactly this JSON:
         showToast('Script URL saved!', 'success');
     }
 
+    async function testAppsScriptUrl() {
+        const url = document.getElementById('appsScriptUrlInput').value.trim();
+        const resultEl = document.getElementById('scriptTestResult');
+        const btn = document.getElementById('btnTestScript');
+        if (!url) { showToast('Paste your Apps Script URL first', 'error'); return; }
+
+        btn.textContent = '…';
+        btn.disabled = true;
+        resultEl.style.display = 'none';
+
+        try {
+            // doGet returns a JSON status — we can read it without CORS issues
+            const res  = await fetch(url, { method: 'GET', mode: 'cors' });
+            const json = await res.json();
+            if (json.status && json.status.includes('running')) {
+                resultEl.style.display = 'block';
+                resultEl.style.color   = 'var(--success)';
+                resultEl.textContent   = '✓ Connected — Apps Script is reachable';
+            } else {
+                resultEl.style.display = 'block';
+                resultEl.style.color   = 'var(--amber)';
+                resultEl.textContent   = '⚠ Responded but unexpected format: ' + JSON.stringify(json);
+            }
+        } catch(err) {
+            resultEl.style.display = 'block';
+            resultEl.style.color   = 'var(--danger)';
+            resultEl.textContent   = '✗ Cannot reach — check URL and re-deploy with "Anyone" access. Error: ' + err.message;
+        }
+
+        btn.textContent = 'Test';
+        btn.disabled = false;
+    }
+
     // Close share modal
     function closeShareModal() {
         document.getElementById('shareModalBackdrop').classList.remove('open');
@@ -3153,19 +3188,43 @@ Return exactly this JSON:
     }
 
     // Posts JSON to an Apps Script Web App.
-    // Sends as application/x-www-form-urlencoded so Apps Script reads it via e.parameter.payload.
-    // Uses no-cors (required for cross-origin Apps Script calls) — response is opaque but the POST goes through.
+    // Posts data to Apps Script via a hidden form — the ONLY method that
+    // reliably delivers a body to Apps Script from a browser without a server proxy.
+    // fetch() with no-cors silently drops the body; this does not.
     function postToAppsScript(url, data) {
-        return new Promise((resolve, reject) => {
-            const encoded = 'payload=' + encodeURIComponent(JSON.stringify(data));
-            fetch(url, {
-                method:  'POST',
-                mode:    'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body:    encoded
-            })
-            .then(() => resolve())
-            .catch(err => reject(err));
+        return new Promise((resolve) => {
+            const iframeName = '_gas_' + Date.now();
+
+            const iframe = document.createElement('iframe');
+            iframe.name  = iframeName;
+            iframe.style.cssText = 'display:none;position:fixed;top:-9999px';
+            document.body.appendChild(iframe);
+
+            const form = document.createElement('form');
+            form.method  = 'POST';
+            form.action  = url;
+            form.target  = iframeName;
+            form.enctype = 'application/x-www-form-urlencoded';
+            form.style.display = 'none';
+
+            const field = document.createElement('input');
+            field.type  = 'hidden';
+            field.name  = 'payload';
+            field.value = JSON.stringify(data);
+            form.appendChild(field);
+            document.body.appendChild(form);
+
+            const cleanup = () => {
+                try { document.body.removeChild(form); }   catch(_) {}
+                try { document.body.removeChild(iframe); } catch(_) {}
+            };
+
+            // Resolve after 8s — iframe.onload is blocked cross-origin but the POST still fires
+            const timer = setTimeout(() => { cleanup(); resolve(); }, 8000);
+
+            iframe.onload = () => { clearTimeout(timer); cleanup(); resolve(); };
+
+            form.submit();
         });
     }
 
