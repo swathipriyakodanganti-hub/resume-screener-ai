@@ -432,6 +432,35 @@
         .upload-zone p { font-size: 0.8rem; color: var(--text-secondary); }
         .upload-zone small { font-size: 0.7rem; color: var(--text-muted); }
 
+        /* ── Drive links input ── */
+        .drive-links-divider {
+            display: flex; align-items: center; gap: 0.5rem;
+            margin: 0.65rem 0; color: var(--text-muted); font-size: 0.7rem;
+        }
+        .drive-links-divider::before, .drive-links-divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--border);
+        }
+        .drive-links-input-wrap {
+            display: flex; gap: 0.4rem; align-items: flex-start;
+        }
+        .drive-links-textarea {
+            flex: 1; min-height: 58px; resize: vertical;
+            background: rgba(0,220,255,0.04); border: 1px solid var(--border);
+            border-radius: 7px; color: var(--text-primary);
+            font-size: 0.72rem; font-family: 'Outfit', sans-serif;
+            padding: 0.5rem 0.6rem; line-height: 1.5;
+        }
+        .drive-links-textarea::placeholder { color: var(--text-muted); }
+        .drive-links-textarea:focus { outline: none; border-color: var(--accent); }
+        .btn-add-links {
+            padding: 0.45rem 0.7rem; font-size: 0.72rem; font-weight: 600;
+            background: rgba(0,220,255,0.1); border: 1px solid var(--border-accent);
+            color: var(--accent); border-radius: 7px; cursor: pointer;
+            white-space: nowrap; font-family: 'Outfit', sans-serif;
+            transition: background 0.15s;
+        }
+        .btn-add-links:hover { background: rgba(0,220,255,0.18); }
+
         /* Resume Dropdown */
         .resume-dropdown-wrapper { position: relative; z-index: 200; }
 
@@ -1719,6 +1748,14 @@
                         <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
                     </div>
 
+                    <!-- Drive links input -->
+                    <div class="drive-links-divider">or paste Google Drive links</div>
+                    <div class="drive-links-input-wrap">
+                        <textarea id="driveLinksInput" class="drive-links-textarea"
+                            placeholder="Paste one Drive link per line&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/file/d/…/view"></textarea>
+                        <button class="btn-add-links" onclick="addDriveLinks()">＋ Add</button>
+                    </div>
+
                     <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;">
                         <label style="margin-bottom:0.4rem;">Loaded Resumes</label>
                         <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
@@ -1847,10 +1884,10 @@
     <div class="viewer-body" id="viewerBody">
         <div class="viewer-no-preview" id="viewerNoPreview" style="display:none;">
             <div class="no-prev-icon">📄</div>
-            <p>Preview not available for this file type.<br>
-            <span style="font-size:0.78rem;color:var(--text-muted);">Only PDF files can be previewed inline.</span></p>
+            <p id="viewerNoPreviewMsg">Preview not available.<br>
+            <span style="font-size:0.78rem;color:var(--text-muted);">No resume link attached to this candidate.</span></p>
         </div>
-        <iframe id="resumeViewerFrame" src="" style="flex:1;border:none;width:100%;height:100%;display:none;"></iframe>
+        <iframe id="resumeViewerFrame" src="" style="flex:1;border:none;width:100%;height:100%;display:none;" allow="autoplay"></iframe>
     </div>
 </div>
 
@@ -1961,6 +1998,7 @@
 <script>
     // ─── State ───
     let uploadedFiles  = [];
+    let driveFiles     = []; // [{ name, driveLink, id }]  — Drive-link mode entries
     let currentJD      = '';
     let analysisResults = [];
     let geminiApiKey   = localStorage.getItem('geminiApiKey') || '';
@@ -2158,34 +2196,94 @@
         document.getElementById('fileInput').value = '';
     }
 
+    // ─── Drive link helpers ───
+    function extractDriveId(url) {
+        // Handles: /file/d/ID/view  |  /file/d/ID  |  id=ID  |  /open?id=ID
+        const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);
+        if (m) return m[1];
+        const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+        if (m2) return m2[1];
+        return null;
+    }
+
+    function addDriveLinks() {
+        const raw   = document.getElementById('driveLinksInput').value.trim();
+        if (!raw) { showToast('Paste at least one Drive link', 'error'); return; }
+        const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
+        let added = 0, skipped = 0;
+        lines.forEach(url => {
+            const fileId = extractDriveId(url);
+            if (!fileId) { skipped++; return; }
+            const cleanUrl = `https://drive.google.com/file/d/${fileId}/view`;
+            if (driveFiles.find(d => d.fileId === fileId) || uploadedFiles.find(f => f._driveId === fileId)) {
+                skipped++; return;
+            }
+            const name = `drive_resume_${fileId.slice(0,8)}.pdf`;
+            driveFiles.push({ name, driveLink: cleanUrl, fileId });
+            fileStatuses[name] = 'pending';
+            added++;
+        });
+        document.getElementById('driveLinksInput').value = '';
+        if (added)   renderResumeDropdown(), showToast(`🔗 ${added} Drive link${added>1?'s':''} added!`, 'success');
+        if (skipped) showToast(`${skipped} invalid or duplicate link${skipped>1?'s':''} skipped`, 'error');
+    }
+
+    async function fetchDrivePdf(driveEntry) {
+        // Google Drive direct-download URL for publicly shared files
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${driveEntry.fileId}`;
+        const res = await fetch(downloadUrl);
+        if (!res.ok) throw new Error(`Drive fetch failed (${res.status}) — ensure file is shared as "Anyone with link"`);
+        const blob = await res.blob();
+        return new File([blob], driveEntry.name, { type: 'application/pdf' });
+    }
+
     function renderResumeDropdown() {
         const wrapper = document.getElementById('resumeDropdownWrapper');
         const label   = document.getElementById('resumeDropLabel');
         const listEl  = document.getElementById('resumeDropList');
 
-        if (!uploadedFiles.length) {
+        const totalCount = uploadedFiles.length + driveFiles.length;
+
+        if (!totalCount) {
             wrapper.style.display = 'none';
             closeResumeDropdown();
             return;
         }
 
         wrapper.style.display = 'block';
-        label.textContent = `${uploadedFiles.length} file${uploadedFiles.length !== 1 ? 's' : ''} loaded`;
+        label.textContent = `${totalCount} resume${totalCount !== 1 ? 's' : ''} loaded`;
 
-        listEl.innerHTML = uploadedFiles.map((f, i) => {
+        const pdfItems = uploadedFiles.map((f, i) => {
             const st = fileStatuses[f.name] || 'pending';
             return `
             <div class="resume-dropdown-item">
                 <span style="display:flex;align-items:center;flex:1;min-width:0;overflow:hidden;">
                     <span class="resume-status-dot status-${st}"></span>
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.name}">📄 ${truncate(f.name, 26)}</span>
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${f.name}">📄 ${truncate(f.name, 24)}</span>
                 </span>
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                     <span style="color:var(--text-muted);font-size:0.72rem;">${(f.size/1024).toFixed(0)} KB</span>
                     <span class="resume-remove" onclick="removeResume(${i},event)" title="Remove">✕</span>
                 </div>
             </div>`;
-        }).join('');
+        });
+
+        const driveItems = driveFiles.map((d, i) => {
+            const st = fileStatuses[d.name] || 'pending';
+            return `
+            <div class="resume-dropdown-item">
+                <span style="display:flex;align-items:center;flex:1;min-width:0;overflow:hidden;">
+                    <span class="resume-status-dot status-${st}"></span>
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${d.driveLink}">🔗 ${truncate(d.driveLink, 28)}</span>
+                </span>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <span style="color:var(--success);font-size:0.68rem;font-weight:600;">Drive</span>
+                    <span class="resume-remove" onclick="removeDriveLink(${i},event)" title="Remove">✕</span>
+                </div>
+            </div>`;
+        });
+
+        listEl.innerHTML = [...pdfItems, ...driveItems].join('');
     }
 
     function truncate(str, len) {
@@ -2197,6 +2295,14 @@
         const fname = uploadedFiles[index]?.name;
         if (fname) delete fileStatuses[fname];
         uploadedFiles.splice(index, 1);
+        renderResumeDropdown();
+    }
+
+    function removeDriveLink(index, e) {
+        e.stopPropagation();
+        const entry = driveFiles[index];
+        if (entry) delete fileStatuses[entry.name];
+        driveFiles.splice(index, 1);
         renderResumeDropdown();
     }
 
@@ -2452,7 +2558,7 @@ Return exactly this JSON:
         if (!geminiApiKey && !groqApiKey) { showToast('Configure your API key first', 'error'); return; }
         if (selectedProvider === 'groq' && !groqApiKey) { showToast('Configure your Groq API key first', 'error'); return; }
         if (selectedProvider === 'gemini' && !geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
-        if (!uploadedFiles.length) { showToast('Upload at least one resume', 'error'); return; }
+        if (!uploadedFiles.length && !driveFiles.length) { showToast('Upload a resume or paste a Drive link first', 'error'); return; }
         if (!currentJD)          { showToast('Select a job description first', 'error'); return; }
 
         const btn  = document.getElementById('analyzeBtn');
@@ -2486,14 +2592,16 @@ Return exactly this JSON:
         pw.classList.add('visible');
         pf.style.width = '0%';
 
-        const total = uploadedFiles.length;
+        const total = uploadedFiles.length + driveFiles.length;
         let done    = 0;
         let matched = 0;
 
         // Reset statuses
         uploadedFiles.forEach(f => { fileStatuses[f.name] = 'pending'; });
+        driveFiles.forEach(d => { fileStatuses[d.name] = 'pending'; });
         renderResumeDropdown();
 
+        // ── PDF / DOC file loop ──
         for (const file of uploadedFiles) {
             fileStatuses[file.name] = 'analyzing';
             renderResumeDropdown();
@@ -2539,6 +2647,53 @@ Return exactly this JSON:
                 fileStatuses[file.name] = 'error';
                 console.error(`${file.name}:`, err);
                 showToast(`"${truncate(file.name, 20)}": ${err.message}`, 'error');
+            }
+
+            done++;
+            pf.style.width = `${(done / total) * 100}%`;
+            pc.textContent = `${done}/${total}`;
+            renderResumeDropdown();
+        }
+
+        // ── Drive link loop ──
+        for (const driveEntry of driveFiles) {
+            fileStatuses[driveEntry.name] = 'analyzing';
+            renderResumeDropdown();
+            pt.textContent = `Fetching: ${truncate(driveEntry.driveLink, 22)}`;
+
+            try {
+                const pdfFile = await fetchDrivePdf(driveEntry);
+                const text    = await extractTextFromPDF(pdfFile);
+
+                if (!text || text.trim().length < 30) throw new Error('Could not extract text — ensure the file is a readable PDF');
+
+                const result = await retryWithBackoff(async () => {
+                    return await analyzeWithProvider(text, currentJD, filters);
+                });
+
+                result.filename   = driveEntry.name;
+                result.drive_link = driveEntry.driveLink; // auto-set — no manual paste needed
+
+                const okExp = (!filters.minExp || result.experience_years >= +filters.minExp) &&
+                              (!filters.maxExp  || result.experience_years <= +filters.maxExp);
+                const okLoc = !filters.location ||
+                              (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
+
+                fileStatuses[driveEntry.name] = 'done';
+
+                if (okExp && okLoc) {
+                    matched++;
+                    analysisResults.push(result);
+                    const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+                    grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
+                    badge.style.display = 'inline-flex';
+                    badge.textContent   = `${matched} matched`;
+                }
+
+            } catch (err) {
+                fileStatuses[driveEntry.name] = 'error';
+                console.error(`Drive ${driveEntry.fileId}:`, err);
+                showToast(`Drive resume: ${err.message}`, 'error');
             }
 
             done++;
@@ -3512,16 +3667,18 @@ Return exactly this JSON:
                 noPreview.style.display = 'flex';
             }
 
-        // 3. Uploaded file (main app context)
+        // 3. No resume available on share page — show helpful message
         } else {
             const filename = r && r.filename;
-            const file = filename && uploadedFiles.find(f => f.name === filename);
+            const file = filename && typeof uploadedFiles !== 'undefined' && uploadedFiles.find(f => f.name === filename);
             if (file && (file.type === 'application/pdf' || (filename || '').toLowerCase().endsWith('.pdf'))) {
                 _viewerObjectUrl = URL.createObjectURL(file);
                 frame.src = _viewerObjectUrl;
                 frame.style.display = 'block';
                 noPreview.style.display = 'none';
             } else {
+                const msgEl = document.getElementById('viewerNoPreviewMsg');
+                if (msgEl) msgEl.innerHTML = 'No resume linked for this candidate.<br><span style="font-size:0.78rem;color:var(--text-muted);">Ask the sender to attach a Google Drive link to this profile.</span>';
                 frame.style.display = 'none';
                 noPreview.style.display = 'flex';
             }
@@ -3543,8 +3700,8 @@ Return exactly this JSON:
         const rankCls   = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : '';
 
         const driveBtn = r.drive_link
-            ? `<a href="${r.drive_link}" target="_blank" class="share-cand-resume-btn" style="text-decoration:none;">📄 Open Resume ↗</a>`
-            : '';
+            ? `<button class="share-cand-resume-btn" onclick="openShareResumeViewer(${rank})">📄 View Resume</button>`
+            : `<button class="share-cand-resume-btn" style="opacity:0.4;cursor:not-allowed;" disabled title="No Drive link attached">📄 No Resume</button>`;
 
         return `
         <div class="bulk-candidate-card" style="animation-delay:${rank * 0.07}s">
