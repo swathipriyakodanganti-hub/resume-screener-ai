@@ -2744,6 +2744,8 @@ Return exactly this JSON:
         document.getElementById('selectedCount').textContent = '';
         document.getElementById('btnSendShare').disabled = true;
         document.getElementById('shareModalBackdrop').classList.add('open');
+        // Hide floating bar so it doesn't cover the modal footer
+        document.getElementById('floatingShareBar').classList.remove('visible');
 
         if (appsScriptUrl) document.getElementById('appsScriptUrlInput').value = appsScriptUrl;
         await loadInterviewers();
@@ -2760,6 +2762,10 @@ Return exactly this JSON:
     function closeShareModal() {
         document.getElementById('shareModalBackdrop').classList.remove('open');
         _selectedEmails = new Set();
+        // Restore floating bar if candidates are still selected
+        if (_selectedCards.size > 0) {
+            document.getElementById('floatingShareBar').classList.add('visible');
+        }
     }
 
     // Fetch interviewers from the "Emails" sheet tab
