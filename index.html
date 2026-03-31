@@ -3737,13 +3737,23 @@ Return exactly this JSON:
 
         // 1. Google Drive link (primary path when data came from Firebase — no pdf_b64)
         if (r && r.drive_link) {
-            // Convert /view or /edit share URLs to /preview for embedding
-            const embedUrl = r.drive_link
-                .replace(/\/view(\?.*)?$/, '/preview')
-                .replace(/\/edit(\?.*)?$/, '/preview');
-            frame.src = embedUrl;
-            frame.style.display = 'block';
-            noPreview.style.display = 'none';
+            // Extract file ID from Google Drive URL and use official viewer API
+            // Supports formats: /d/{ID}/, /file/d/{ID}/, /open?id={ID}
+            const fileIdMatch = r.drive_link.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
+            
+            if (fileIdMatch) {
+                const fileId = fileIdMatch[1] || fileIdMatch[2];
+                // Use Google Drive's official preview endpoint - works without CORS issues
+                frame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+                frame.style.display = 'block';
+                noPreview.style.display = 'none';
+            } else {
+                // Fallback: if we can't extract ID, try the original URL anyway
+                console.warn('Could not extract file ID from:', r.drive_link);
+                frame.src = r.drive_link;
+                frame.style.display = 'block';
+                noPreview.style.display = 'none';
+            }
 
         // 2. Base64 PDF (legacy — when data came from old ?view= URL)
         } else if (r && r.resume_pdf_b64) {
