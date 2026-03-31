@@ -2228,7 +2228,29 @@
     }
 
     async function fetchFolderFiles(folderId) {
-        // Path 1: Google Drive API v3 — if a Google API key is available (optional)
+        // ── Path 1: Apps Script (best — full folder access, no API key needed) ──
+        // Requires the listFolder action added to your Code.gs doGet function
+        if (appsScriptUrl) {
+            try {
+                const url = appsScriptUrl + '?action=listFolder&folderId=' + encodeURIComponent(folderId);
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.ok && Array.isArray(data.files)) {
+                        if (!data.files.length) throw new Error('No PDF files found in this folder');
+                        return data.files; // [{ id, name }]
+                    }
+                    if (data.error) throw new Error('Apps Script error: ' + data.error);
+                }
+            } catch(e) {
+                // If it's our own thrown error, re-throw it
+                if (e.message.startsWith('Apps Script') || e.message.startsWith('No PDF')) throw e;
+                // Otherwise (network/CORS) fall through to next method
+                console.warn('Apps Script folder listing failed, trying fallback:', e.message);
+            }
+        }
+
+        // ── Path 2: Google Drive API v3 (needs a Google API key) ──
         const apiKey = driveApiKey || geminiApiKey;
         if (apiKey) {
             const query  = encodeURIComponent("'" + folderId + "' in parents and trashed=false");
@@ -2241,11 +2263,13 @@
                     return f.mimeType === 'application/pdf' || (f.name || '').toLowerCase().endsWith('.pdf');
                 });
             }
-            console.warn('Drive API key failed, falling back to proxy method');
+            console.warn('Drive API key failed, trying CORS proxy fallback');
         }
 
-        // Path 2: No API key needed — fetch public folder page via CORS proxy
-        // Works for any folder shared as "Anyone with the link". No Google Cloud or credit card required.
+        // ── Path 3: CORS proxy — least reliable (partial results for large folders) ──
+        // Google Drive renders folders with JS so the static HTML only contains a subset of files.
+        // Works OK for small folders (<10 files) but misses files in large folders.
+        showToast('⚠️ No Apps Script URL set — folder results may be incomplete. Add your Apps Script URL in the Share panel for full results.', 'error');
         var folderUrl = 'https://drive.google.com/drive/folders/' + folderId;
         var proxyUrl  = 'https://corsproxy.io/?' + encodeURIComponent(folderUrl);
 
@@ -2255,29 +2279,20 @@
             if (!proxyRes.ok) throw new Error('Proxy returned ' + proxyRes.status);
             html = await proxyRes.text();
         } catch (e) {
-            throw new Error('Could not load folder — make sure it is shared as "Anyone with the link". (' + e.message + ')');
+            throw new Error('Could not load folder. For reliable full-folder access, add your Apps Script URL in the Share settings panel.');
         }
 
-        // Extract file IDs embedded in the Drive folder page HTML
         var idSet = new Set();
-        var fileMatches = html.matchAll(/\/file\/d\/([a-zA-Z0-9_-]{20,})/g);
-        for (var m of fileMatches) idSet.add(m[1]);
+        for (var m of html.matchAll(/\/file\/d\/([a-zA-Z0-9_-]{20,})/g)) idSet.add(m[1]);
+        for (var b of html.matchAll(/\["([a-zA-Z0-9_-]{28,33})"/g)) idSet.add(b[1]);
 
-        // Also catch IDs from Drive data blobs (28-33 char alphanumeric strings in JSON arrays)
-        var blobMatches = html.matchAll(/\["([a-zA-Z0-9_-]{28,33})"/g);
-        for (var b of blobMatches) idSet.add(b[1]);
-
-        // Try to recover original filenames
         var nameMap = {};
-        var nameMatches = html.matchAll(/\["([a-zA-Z0-9_-]{20,})","([^"]+\.(?:pdf|PDF))"/g);
-        for (var n of nameMatches) nameMap[n[1]] = n[2];
+        for (var n of html.matchAll(/\["([a-zA-Z0-9_-]{20,})","([^"]+\.(?:pdf|PDF))"/g)) nameMap[n[1]] = n[2];
 
-        if (!idSet.size) {
-            throw new Error('No files found in this folder — ensure the folder is shared as "Anyone with the link" (Viewer access)');
-        }
+        if (!idSet.size) throw new Error('No files found. Ensure folder is shared as "Anyone with the link" and add your Apps Script URL for reliable full-folder support.');
 
         return Array.from(idSet).map(function(id) {
-            return { id: id, name: nameMap[id] || ('resume_' + id.slice(0, 8) + '.pdf'), mimeType: 'application/pdf' };
+            return { id: id, name: nameMap[id] || ('resume_' + id.slice(0, 8) + '.pdf') };
         });
     }
 
