@@ -2772,9 +2772,18 @@ Return exactly this JSON:
             ${r.filename ? `
             <div class="overlay-section">
                 <div class="overlay-section-title">📁 Source File</div>
-                <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">
                     <span class="filename-badge">📄 ${r.filename}</span>
                     <button class="btn-view-in-overlay" onclick="openResumeViewer('${r.filename.replace(/'/g, "\\'")}')">📄 View Resume</button>
+                </div>
+                <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:0.4rem;">Google Drive Link <span style="font-weight:400;opacity:0.6;">(shared with interviewer)</span></div>
+                <div style="display:flex;gap:0.5rem;">
+                    <input type="text" id="drive-input-${idx}"
+                        placeholder="https://drive.google.com/file/d/..."
+                        value="${r.drive_link || ''}"
+                        style="flex:1;padding:0.45rem 0.75rem;background:rgba(4,8,20,0.8);border:1px solid var(--border);border-radius:7px;color:var(--text-primary);font-size:0.78rem;font-family:'Source Sans 3',sans-serif;"
+                        oninput="saveDriveLink(${idx}, this.value)">
+                    ${r.drive_link ? `<a href="${r.drive_link}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:0.45rem 0.75rem;background:rgba(0,220,255,0.1);border:1px solid var(--border-accent);color:var(--accent);border-radius:7px;font-size:0.75rem;font-family:'Outfit',sans-serif;font-weight:600;text-decoration:none;">Open ↗</a>` : ''}
                 </div>
             </div>` : ''}
         `;
@@ -2787,6 +2796,18 @@ Return exactly this JSON:
     function closeOverlay() {
         document.getElementById('overlayBackdrop').classList.remove('open');
         document.getElementById('resumeOverlay').classList.remove('open');
+    }
+
+    // ─── Save Drive link to result object ───
+    function saveDriveLink(idx, url) {
+        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+        const r = sorted[idx];
+        if (r) {
+            r.drive_link = url.trim();
+            // Sync back to analysisResults
+            const orig = analysisResults.find(x => x.name === r.name && x.filename === r.filename);
+            if (orig) orig.drive_link = r.drive_link;
+        }
     }
 
     // ─── Left Resume Viewer ───
@@ -3135,27 +3156,10 @@ Return exactly this JSON:
         const candidates = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
-        // Build share URL with PDF data embedded (for the interviewer's view page)
-        const candidatesWithResumes = await Promise.all(candidates.map(async (c) => {
-            const clone = { ...c };
-            if (c.filename) {
-                const file = uploadedFiles.find(f => f.name === c.filename);
-                if (file && (file.type === 'application/pdf' || c.filename.toLowerCase().endsWith('.pdf'))) {
-                    try {
-                        const buf = await file.arrayBuffer();
-                        const bytes = new Uint8Array(buf);
-                        let binary = '';
-                        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                        clone.resume_pdf_b64 = btoa(binary);
-                    } catch (e) { /* skip if can't encode */ }
-                }
-            }
-            return clone;
-        }));
-
-        const encodedWithPdfs = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesWithResumes });
-        const baseUrl         = window.location.origin + window.location.pathname;
-        const shareLink       = `${baseUrl}?view=${encodedWithPdfs}`;
+        // Encode candidate data — drive_link is already stored on each result object
+        const encoded   = encodeCandidateData({ _bulk: true, _position: position, candidates });
+        const baseUrl   = window.location.origin + window.location.pathname;
+        const shareLink = `${baseUrl}?view=${encoded}`;
 
         const recipients = _interviewers.filter(iv => _selectedEmails.has(iv.email));
         const avgScore   = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / candidates.length);
@@ -3424,6 +3428,10 @@ Return exactly this JSON:
         const rankLabel = rank === 0 ? '🥇 Top Match' : rank === 1 ? '🥈 #2' : rank === 2 ? '🥉 #3' : `#${rank + 1}`;
         const rankCls   = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : '';
 
+        const driveBtn = r.drive_link
+            ? `<a href="${r.drive_link}" target="_blank" class="share-cand-resume-btn" style="text-decoration:none;">📄 Open Resume ↗</a>`
+            : '';
+
         return `
         <div class="bulk-candidate-card" style="animation-delay:${rank * 0.07}s">
             <div class="bulk-card-header">
@@ -3440,8 +3448,8 @@ Return exactly this JSON:
                 <div class="bulk-card-bar-fill ${fillCls}" style="width:${r.match_score}%"></div>
             </div>
 
-            <!-- ── Stat cards row ── -->
             <div class="bulk-card-body">
+                <!-- 4 Stat cards -->
                 <div class="share-cand-stat-row">
                     <div class="share-cand-stat">
                         <span class="sc-val ${scoreCls}">${r.match_score}%</span>
@@ -3461,11 +3469,11 @@ Return exactly this JSON:
                     </div>
                 </div>
 
-                <!-- View button row -->
+                <!-- Action row -->
                 <div class="share-cand-view-row">
                     <button class="btn-share-view" id="share-view-btn-${rank}" onclick="toggleShareCandDetails(${rank})">View Details</button>
                     <div class="bulk-rec-pill ${recCls}" style="margin:0;">${recTxt}</div>
-                    <button class="share-cand-resume-btn" onclick="openShareResumeViewer(${rank})">📄 View Resume</button>
+                    ${driveBtn}
                 </div>
 
                 <!-- Expandable details dropdown -->
