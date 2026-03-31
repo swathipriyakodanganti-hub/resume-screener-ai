@@ -3122,43 +3122,51 @@ Return exactly this JSON:
         const baseUrl         = window.location.origin + window.location.pathname;
         const shareLink       = `${baseUrl}?view=${encodedWithPdfs}`;
 
-        // POST body to Apps Script — lightweight, no PDF blobs
-        const encodedLight = encodeCandidateData({ _bulk: true, _position: position, candidates });
-        const shareLinkLight = `${baseUrl}?view=${encodedLight}`;
-
         const recipients = _interviewers.filter(iv => _selectedEmails.has(iv.email));
         const avgScore   = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / candidates.length);
 
+        const payload = {
+            recipients,
+            candidateName:  candidates.map(c => c.name).join(', '),
+            candidateCount: candidates.length,
+            position,
+            shareLink,
+            matchScore:  avgScore,
+            isBulk:      true,
+            candidates:  candidates.map(c => ({ name: c.name, match_score: c.match_score }))
+        };
+
         try {
-            // Use a CORS proxy approach: send as plain text so Apps Script can read it
-            const payload = JSON.stringify({
-                recipients,
-                candidateName:  candidates.map(c => c.name).join(', '),
-                candidateCount: candidates.length,
-                position,
-                shareLink,          // full link with PDF for the email button
-                matchScore:  avgScore,
-                isBulk:      true,
-                candidates:  candidates.map(c => ({ name: c.name, match_score: c.match_score }))
-            });
-
-            const res = await fetch(appsScriptUrl, {
-                method: 'POST',
-                mode:   'no-cors',   // Apps Script requires no-cors from external origins
-                body:   payload      // send as plain text body — Apps Script reads e.postData.contents
-            });
-
-            // With no-cors we always get an opaque response — treat reaching here as success
+            // Apps Script Web Apps accept POST via a hidden form — this bypasses CORS
+            // while correctly delivering the full JSON body as e.postData.contents
+            await postToAppsScript(appsScriptUrl, payload);
             showToast(`✅ Sent to ${recipients.map(r => r.name).join(' & ')}!`, 'success');
             closeShareModal();
             clearAllSelections();
         } catch (err) {
-            showToast('Network error — check your Apps Script URL', 'error');
+            showToast('Send failed — check your Apps Script URL & re-deploy', 'error');
             console.error('sendShare error:', err);
         }
 
         btn.disabled = false;
         btn.innerHTML = '<span>📧</span> Send Email';
+    }
+
+    // Posts JSON to an Apps Script Web App.
+    // Sends as application/x-www-form-urlencoded so Apps Script reads it via e.parameter.payload.
+    // Uses no-cors (required for cross-origin Apps Script calls) — response is opaque but the POST goes through.
+    function postToAppsScript(url, data) {
+        return new Promise((resolve, reject) => {
+            const encoded = 'payload=' + encodeURIComponent(JSON.stringify(data));
+            fetch(url, {
+                method:  'POST',
+                mode:    'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body:    encoded
+            })
+            .then(() => resolve())
+            .catch(err => reject(err));
+        });
     }
 
     // ─── Candidate Share Page (renders when ?view= param exists) ───
