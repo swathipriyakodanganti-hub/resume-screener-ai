@@ -1717,7 +1717,7 @@
                     <div class="form-group" id="driveApiKeyGroup">
                         <label for="driveApiKey">🗂 Google Drive API Key <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional · folder links only)</span></label>
                         <input type="password" id="driveApiKey" placeholder="AIza…" onchange="saveDriveApiKey()">
-                        <small class="hint">Fully optional. Without it, folder links still work via a CORS proxy (no sign-up needed). Add a key only if you need faster/more reliable folder listing. <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank">Google Cloud Console</a> → enable Drive API → Credentials → API key.</small>
+                        <small class="hint">Optional fallback for folder links if Apps Script is unavailable. To use: <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank">Google Cloud Console</a> → enable Drive API → Credentials → create API key. <strong>Apps Script (below) is the recommended method.</strong></small>
                     </div>
 
                     <!-- Apps Script URL — primary method for full folder access -->
@@ -2229,7 +2229,7 @@
     }
 
     async function fetchFolderFiles(folderId) {
-        // ── Path 1: Apps Script (best — full folder access, no API key needed) ──
+        // ── Path 1: Apps Script (RECOMMENDED — full folder access, no API key needed) ──
         // Requires the listFolder action added to your Code.gs doGet function
         if (appsScriptUrl) {
             try {
@@ -2238,63 +2238,58 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data.ok && Array.isArray(data.files)) {
-                        if (!data.files.length) throw new Error('No PDF files found in this folder');
+                        if (!data.files.length) {
+                            throw new Error('No PDF files found in this folder. Ensure the folder contains PDF files.');
+                        }
+                        console.log(`✓ Apps Script loaded ${data.files.length} PDF files from folder`);
                         return data.files; // [{ id, name }]
                     }
                     if (data.error) throw new Error('Apps Script error: ' + data.error);
                 }
+                throw new Error('Apps Script returned invalid response. Check your deployment.');
             } catch(e) {
                 // If it's our own thrown error, re-throw it
-                if (e.message.startsWith('Apps Script') || e.message.startsWith('No PDF')) throw e;
-                // Otherwise (network/CORS) fall through to next method
-                console.warn('Apps Script folder listing failed, trying fallback:', e.message);
+                if (e.message.includes('PDF files') || e.message.includes('Apps Script')) {
+                    throw e;
+                }
+                // Network error - try fallback
+                console.warn('Apps Script folder listing failed, trying Google Drive API fallback:', e.message);
             }
         }
 
-        // ── Path 2: Google Drive API v3 (needs a Google API key) ──
+        // ── Path 2: Google Drive API v3 (fallback — needs a Google API key) ──
         const apiKey = driveApiKey || geminiApiKey;
         if (apiKey) {
-            const query  = encodeURIComponent("'" + folderId + "' in parents and trashed=false");
-            const fields = encodeURIComponent('files(id,name,mimeType)');
-            const url    = 'https://www.googleapis.com/drive/v3/files?q=' + query + '&fields=' + fields + '&pageSize=100&key=' + apiKey;
-            const res    = await fetch(url);
-            if (res.ok) {
-                const data = await res.json();
-                return (data.files || []).filter(function(f) {
-                    return f.mimeType === 'application/pdf' || (f.name || '').toLowerCase().endsWith('.pdf');
-                });
+            try {
+                const query  = encodeURIComponent("'" + folderId + "' in parents and trashed=false");
+                const fields = encodeURIComponent('files(id,name,mimeType)');
+                const url    = 'https://www.googleapis.com/drive/v3/files?q=' + query + '&fields=' + fields + '&pageSize=1000&key=' + apiKey;
+                const res    = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    const pdfFiles = (data.files || []).filter(function(f) {
+                        return f.mimeType === 'application/pdf' || (f.name || '').toLowerCase().endsWith('.pdf');
+                    });
+                    if (!pdfFiles.length) {
+                        throw new Error('No PDF files found in this folder using Drive API.');
+                    }
+                    console.log(`✓ Google Drive API loaded ${pdfFiles.length} PDF files from folder`);
+                    return pdfFiles;
+                }
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error('Drive API failed: ' + (errorData.error?.message || res.statusText));
+            } catch(e) {
+                console.error('Google Drive API error:', e.message);
+                throw new Error('Google Drive API failed: ' + e.message);
             }
-            console.warn('Drive API key failed, trying CORS proxy fallback');
         }
 
-        // ── Path 3: CORS proxy — least reliable (partial results for large folders) ──
-        // Google Drive renders folders with JS so the static HTML only contains a subset of files.
-        // Works OK for small folders (<10 files) but misses files in large folders.
-        showToast('⚠️ No Apps Script URL set — folder results may be incomplete. Add your Apps Script URL in the sidebar (API Config) for full results.', 'error');
-        var folderUrl = 'https://drive.google.com/drive/folders/' + folderId;
-        var proxyUrl  = 'https://corsproxy.io/?' + encodeURIComponent(folderUrl);
-
-        var html = '';
-        try {
-            var proxyRes = await fetch(proxyUrl);
-            if (!proxyRes.ok) throw new Error('Proxy returned ' + proxyRes.status);
-            html = await proxyRes.text();
-        } catch (e) {
-            throw new Error('Could not load folder. For reliable full-folder access, add your Apps Script URL in the sidebar API Config section.');
-        }
-
-        var idSet = new Set();
-        for (var m of html.matchAll(/\/file\/d\/([a-zA-Z0-9_-]{20,})/g)) idSet.add(m[1]);
-        for (var b of html.matchAll(/\["([a-zA-Z0-9_-]{28,33})"/g)) idSet.add(b[1]);
-
-        var nameMap = {};
-        for (var n of html.matchAll(/\["([a-zA-Z0-9_-]{20,})","([^"]+\.(?:pdf|PDF))"/g)) nameMap[n[1]] = n[2];
-
-        if (!idSet.size) throw new Error('No files found. Ensure folder is shared as "Anyone with the link" and add your Apps Script URL in the sidebar API Config for reliable full-folder support.');
-
-        return Array.from(idSet).map(function(id) {
-            return { id: id, name: nameMap[id] || ('resume_' + id.slice(0, 8) + '.pdf') };
-        });
+        // ── No valid method available ──
+        throw new Error(
+            'Cannot load folder: No Apps Script URL or Google Drive API key configured. ' +
+            'Please configure your Apps Script URL in the sidebar (API Config section). ' +
+            'Ensure your folder is shared as "Anyone with the link" (Viewer access).'
+        );
     }
 
     async function addDriveLinks() {
