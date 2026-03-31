@@ -1897,6 +1897,15 @@
                 <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
                 <small class="hint" style="margin-top:0.4rem;display:block;">Deploy your Code.gs as a Web App and paste the URL here. Saved locally.</small>
             </div>
+            <!-- Firebase DB URL -->
+            <div class="script-url-row" style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem;">
+                <div class="script-url-lbl">🔥 Firebase Realtime DB URL <span style="font-size:0.68rem;color:var(--success);font-weight:400;">(fixes URI too long)</span></div>
+                <div class="script-url-input-row">
+                    <input type="text" id="firebaseDbUrlInput" placeholder="https://your-project-default-rtdb.firebaseio.com">
+                    <button class="btn-sm-save" onclick="saveFirebaseDbUrl()">Save</button>
+                </div>
+                <small class="hint" style="margin-top:0.4rem;display:block;">Paste your Firebase Realtime Database URL. Set rules to allow read/write. Candidate data is stored with a short ID — URL stays tiny.</small>
+            </div>
             <!-- Interviewer list -->
             <div class="interviewers-section-title">
                 <span>Select Recipients</span>
@@ -1969,6 +1978,10 @@
         // Restore Apps Script URL
         const savedScriptUrl = localStorage.getItem('appsScriptUrl') || '';
         if (savedScriptUrl) document.getElementById('appsScriptUrlInput').value = savedScriptUrl;
+
+        // Restore Firebase DB URL
+        const savedFbUrl = localStorage.getItem('firebaseDbUrl') || '';
+        if (savedFbUrl) document.getElementById('firebaseDbUrlInput').value = savedFbUrl;
 
         // Restore provider selection
         switchProvider(selectedProvider, true);
@@ -2897,6 +2910,7 @@ Return exactly this JSON:
     let _interviewers    = [];      // [{name, email}] from Emails tab
     let _selectedEmails  = new Set();
     let appsScriptUrl    = localStorage.getItem('appsScriptUrl') || '';
+    let firebaseDbUrl    = localStorage.getItem('firebaseDbUrl') || '';
 
     // ─── Select all / deselect all ───
     function toggleSelectAll() {
@@ -3006,6 +3020,7 @@ Return exactly this JSON:
         document.getElementById('floatingShareBar').classList.remove('visible');
 
         if (appsScriptUrl) document.getElementById('appsScriptUrlInput').value = appsScriptUrl;
+        if (firebaseDbUrl) document.getElementById('firebaseDbUrlInput').value = firebaseDbUrl;
         await loadInterviewers();
     }
 
@@ -3014,6 +3029,41 @@ Return exactly this JSON:
         appsScriptUrl = document.getElementById('appsScriptUrlInput').value.trim();
         localStorage.setItem('appsScriptUrl', appsScriptUrl);
         showToast('Script URL saved!', 'success');
+    }
+
+    // ─── Firebase helpers ───
+    function saveFirebaseDbUrl() {
+        firebaseDbUrl = document.getElementById('firebaseDbUrlInput').value.trim().replace(/\/$/, '');
+        localStorage.setItem('firebaseDbUrl', firebaseDbUrl);
+        showToast('🔥 Firebase URL saved!', 'success');
+    }
+
+    function generateShortId() {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let id = '';
+        for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+        return id;
+    }
+
+    async function saveToFirebase(data) {
+        const id  = generateShortId();
+        const url = `${firebaseDbUrl}/shares/${id}.json`;
+        const res = await fetch(url, {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ ...data, _created: Date.now() })
+        });
+        if (!res.ok) throw new Error(`Firebase write failed: ${res.status}`);
+        return id;
+    }
+
+    async function loadFromFirebase(sid, dbUrl) {
+        const base = (dbUrl || firebaseDbUrl || localStorage.getItem('firebaseDbUrl') || '').replace(/\/$/, '');
+        const res  = await fetch(`${base}/shares/${sid}.json`);
+        if (!res.ok) throw new Error(`Firebase read failed: ${res.status}`);
+        const data = await res.json();
+        if (!data) throw new Error('Share not found or expired');
+        return data;
     }
 
     async function testAppsScriptUrl() {
@@ -3156,10 +3206,26 @@ Return exactly this JSON:
         const candidates = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
-        // Encode candidate data — drive_link is already stored on each result object
-        const encoded   = encodeCandidateData({ _bulk: true, _position: position, candidates });
-        const baseUrl   = window.location.origin + window.location.pathname;
-        const shareLink = `${baseUrl}?view=${encoded}`;
+        // Strip resume_pdf_b64 (huge binary) — drive_link is used for resume viewing on share page
+        const cleanCandidates = candidates.map(({ resume_pdf_b64, ...rest }) => rest);
+
+        const baseUrl = window.location.origin + window.location.pathname;
+        let shareLink;
+
+        if (firebaseDbUrl) {
+            try {
+                const sid = await saveToFirebase({ _bulk: true, _position: position, candidates: cleanCandidates });
+                shareLink = `${baseUrl}?sid=${sid}`;
+            } catch (fbErr) {
+                console.warn('Firebase save failed, falling back to URL encoding:', fbErr);
+                const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: cleanCandidates });
+                shareLink = `${baseUrl}?view=${encoded}`;
+            }
+        } else {
+            // No Firebase configured — encode without pdf blobs (still may be long for 30+ candidates)
+            const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: cleanCandidates });
+            shareLink = `${baseUrl}?view=${encoded}`;
+        }
 
         const recipients = _interviewers.filter(iv => _selectedEmails.has(iv.email));
         const avgScore   = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / candidates.length);
@@ -3232,20 +3298,55 @@ Return exactly this JSON:
         });
     }
 
-    // ─── Candidate Share Page (renders when ?view= param exists) ───
+    // ─── Candidate Share Page (renders when ?view= or ?sid= param exists) ───
     function initCandidateShareView() {
         const params   = new URLSearchParams(window.location.search);
+        const sid      = params.get('sid');
         const encoded  = params.get('view');
-        if (!encoded) return;
+        if (!sid && !encoded) return;
+
+        // Hide main app, show share page
+        const appShell = document.querySelector('.app-shell');
+        if (appShell) appShell.style.display = 'none';
+        const sharePage = document.getElementById('candidateSharePage');
+        sharePage.classList.add('active');
+
+        if (sid) {
+            // ── Firebase short-ID mode ──
+            const dbUrl = localStorage.getItem('firebaseDbUrl') || '';
+            if (!dbUrl) {
+                document.getElementById('sharePgHero').innerHTML =
+                    `<div style="padding:2rem;color:var(--danger);font-family:'Outfit',sans-serif;">
+                        🔥 Firebase DB URL not configured.<br>
+                        <small style="color:var(--text-muted);">The sender needs to save their Firebase URL in the Share modal settings.</small>
+                    </div>`;
+                return;
+            }
+            document.getElementById('sharePgHero').innerHTML =
+                `<div style="display:flex;align-items:center;gap:0.75rem;padding:1.5rem;color:var(--text-secondary);font-family:'Outfit',sans-serif;">
+                    <span style="font-size:1.4rem;">⏳</span> Loading candidates from Firebase…
+                </div>`;
+            loadFromFirebase(sid, dbUrl)
+                .then(data => {
+                    document.getElementById('sharePgHero').innerHTML = '';
+                    if (data._bulk && Array.isArray(data.candidates)) {
+                        renderBulkSharePage(data.candidates, data._position || '');
+                    } else {
+                        _renderSingleSharePage(data);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('sharePgHero').innerHTML =
+                        `<div style="padding:2rem;color:var(--danger);font-family:'Outfit',sans-serif;">
+                            ✗ Could not load share data.<br>
+                            <small style="color:var(--text-muted);">${err.message}</small>
+                        </div>`;
+                });
+            return;
+        }
 
         try {
             const data = decodeCandidateData(encoded);
-
-            // Hide the main app, show share page
-            const appShell = document.querySelector('.app-shell');
-            if (appShell) appShell.style.display = 'none';
-            const sharePage = document.getElementById('candidateSharePage');
-            sharePage.classList.add('active');
 
             // ── BULK mode: array of candidates ──
             if (data._bulk && Array.isArray(data.candidates)) {
@@ -3253,62 +3354,7 @@ Return exactly this JSON:
                 return;
             }
 
-            // ── SINGLE mode (legacy) ──
-            const r        = data;
-            const position = r._position || '';
-            const ringCls  = ringClass(r.match_score);
-            const scoreCls = scoreClass(r.match_score);
-
-            const bannerEl = document.getElementById('sharePgPositionBanner');
-            if (position && bannerEl) {
-                bannerEl.className = 'share-pg-position-banner';
-                bannerEl.innerHTML = `📋 Position: <strong style="margin-left:4px;">${position}</strong>`;
-            }
-
-            document.getElementById('sharePgHero').innerHTML = `
-                <div class="share-pg-avatar">${initials(r.name)}</div>
-                <div class="share-pg-info">
-                    <div class="share-pg-name">${r.name}</div>
-                    <div class="share-pg-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp</div>
-                    ${(r.email || r.phone) ? `<div class="share-pg-meta" style="margin-top:4px;">${r.email ? '📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>` : ''}
-                </div>
-                <div class="share-pg-score-ring ${ringCls}">
-                    <span class="share-pg-score-num ${scoreCls}">${r.match_score}%</span>
-                    <span class="share-pg-score-lbl">Match</span>
-                </div>`;
-
-            const skillsHave    = r.skills_present || [];
-            const skillsMissing = r.skills_missing  || [];
-            const allSkills     = r.key_skills      || [];
-
-            document.getElementById('sharePgBody').innerHTML = `
-                <div class="share-pg-section">
-                    <div class="share-pg-section-title">📊 Overview</div>
-                    <div class="share-stat-grid">
-                        <div class="share-stat-box"><span class="share-stat-val ${scoreCls}">${r.match_score}%</span><div class="share-stat-lbl">Match Score</div></div>
-                        <div class="share-stat-box"><span class="share-stat-val">${r.experience_years}</span><div class="share-stat-lbl">Years Exp</div></div>
-                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${skillsHave.length}</span><div class="share-stat-lbl">Skills Match</div></div>
-                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${skillsMissing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
-                    </div>
-                    <div class="share-rec-pill ${r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass'}">
-                        ${r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review' : '❌ Not Recommended — Pass'}
-                    </div>
-                </div>
-                ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
-                ${r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
-                ${allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
-                ${(skillsHave.length || skillsMissing.length) ? `
-                <div class="share-pg-section">
-                    <div class="share-pg-section-title">✅ Skills vs JD</div>
-                    <div class="share-skills-cols">
-                        <div><div class="share-skills-col-label have">✓ Present</div><div class="share-skill-tags">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div></div>
-                        <div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div></div>
-                    </div>
-                </div>` : ''}
-                ${r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
-            `;
-
-            document.title = `${r.name} — Candidate Profile`;
+            _renderSingleSharePage(data);
 
         } catch (err) {
             console.error('Share page error:', err);
@@ -3316,6 +3362,64 @@ Return exactly this JSON:
             document.getElementById('sharePgBody').innerHTML =
                 `<div style="padding:2rem;color:var(--danger);">⚠️ Could not load candidate profile. The link may be invalid or expired.</div>`;
         }
+    }
+
+    // ─── Render a single-candidate share page (extracted for reuse by Firebase path) ───
+    function _renderSingleSharePage(r) {
+        const position = r._position || '';
+        const ringCls  = ringClass(r.match_score);
+        const scoreCls = scoreClass(r.match_score);
+
+        const bannerEl = document.getElementById('sharePgPositionBanner');
+        if (position && bannerEl) {
+            bannerEl.className = 'share-pg-position-banner';
+            bannerEl.innerHTML = `📋 Position: <strong style="margin-left:4px;">${position}</strong>`;
+        }
+
+        document.getElementById('sharePgHero').innerHTML = `
+            <div class="share-pg-avatar">${initials(r.name)}</div>
+            <div class="share-pg-info">
+                <div class="share-pg-name">${r.name}</div>
+                <div class="share-pg-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp</div>
+                ${(r.email || r.phone) ? `<div class="share-pg-meta" style="margin-top:4px;">${r.email ? '📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>` : ''}
+            </div>
+            <div class="share-pg-score-ring ${ringCls}">
+                <span class="share-pg-score-num ${scoreCls}">${r.match_score}%</span>
+                <span class="share-pg-score-lbl">Match</span>
+            </div>`;
+
+        const skillsHave    = r.skills_present || [];
+        const skillsMissing = r.skills_missing  || [];
+        const allSkills     = r.key_skills      || [];
+
+        document.getElementById('sharePgBody').innerHTML = `
+            <div class="share-pg-section">
+                <div class="share-pg-section-title">📊 Overview</div>
+                <div class="share-stat-grid">
+                    <div class="share-stat-box"><span class="share-stat-val ${scoreCls}">${r.match_score}%</span><div class="share-stat-lbl">Match Score</div></div>
+                    <div class="share-stat-box"><span class="share-stat-val">${r.experience_years}</span><div class="share-stat-lbl">Years Exp</div></div>
+                    <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${skillsHave.length}</span><div class="share-stat-lbl">Skills Match</div></div>
+                    <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${skillsMissing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
+                </div>
+                <div class="share-rec-pill ${r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass'}">
+                    ${r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review' : '❌ Not Recommended — Pass'}
+                </div>
+            </div>
+            ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
+            ${r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
+            ${allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
+            ${(skillsHave.length || skillsMissing.length) ? `
+            <div class="share-pg-section">
+                <div class="share-pg-section-title">✅ Skills vs JD</div>
+                <div class="share-skills-cols">
+                    <div><div class="share-skills-col-label have">✓ Present</div><div class="share-skill-tags">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div></div>
+                    <div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div></div>
+                </div>
+            </div>` : ''}
+            ${r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
+        `;
+
+        document.title = `${r.name} — Candidate Profile`;
     }
 
     let _shareCandidates = null; // holds decoded candidates on the share page
@@ -3369,7 +3473,7 @@ Return exactly this JSON:
         if (btn) btn.innerHTML = isOpen ? '👁 View' : '▲ Hide';
     }
 
-    // ─── Open left panel resume viewer from share page using embedded base64 PDF ───
+    // ─── Open resume viewer from share page — uses drive_link (Firebase path) or base64 fallback ───
     function openShareResumeViewer(rank) {
         const panel     = document.getElementById('resumeViewerPanel');
         const backdrop  = document.getElementById('resumeViewerBackdrop');
@@ -3377,14 +3481,23 @@ Return exactly this JSON:
         const noPreview = document.getElementById('viewerNoPreview');
         const titleEl   = document.getElementById('viewerFileName');
 
-        // Get candidate data from the share page's global candidates array
         const r = _shareCandidates && _shareCandidates[rank];
         titleEl.textContent = (r && r.filename) ? r.filename : (r ? r.name + ' — Resume' : 'Resume');
 
         if (_viewerObjectUrl) { URL.revokeObjectURL(_viewerObjectUrl); _viewerObjectUrl = null; }
 
-        if (r && r.resume_pdf_b64) {
-            // Decode base64 → Blob → Object URL
+        // 1. Google Drive link (primary path when data came from Firebase — no pdf_b64)
+        if (r && r.drive_link) {
+            // Convert /view or /edit share URLs to /preview for embedding
+            const embedUrl = r.drive_link
+                .replace(/\/view(\?.*)?$/, '/preview')
+                .replace(/\/edit(\?.*)?$/, '/preview');
+            frame.src = embedUrl;
+            frame.style.display = 'block';
+            noPreview.style.display = 'none';
+
+        // 2. Base64 PDF (legacy — when data came from old ?view= URL)
+        } else if (r && r.resume_pdf_b64) {
             try {
                 const binary = atob(r.resume_pdf_b64);
                 const bytes  = new Uint8Array(binary.length);
@@ -3398,11 +3511,12 @@ Return exactly this JSON:
                 frame.style.display = 'none';
                 noPreview.style.display = 'flex';
             }
+
+        // 3. Uploaded file (main app context)
         } else {
-            // Try uploaded files as fallback (main app context)
             const filename = r && r.filename;
             const file = filename && uploadedFiles.find(f => f.name === filename);
-            if (file && (file.type === 'application/pdf' || (filename||'').toLowerCase().endsWith('.pdf'))) {
+            if (file && (file.type === 'application/pdf' || (filename || '').toLowerCase().endsWith('.pdf'))) {
                 _viewerObjectUrl = URL.createObjectURL(file);
                 frame.src = _viewerObjectUrl;
                 frame.style.display = 'block';
