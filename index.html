@@ -499,7 +499,30 @@
 
         .btn-export:hover { background: rgba(0, 220, 255, 0.16); box-shadow: 0 0 16px rgba(0,220,255,0.2); }
 
-        .results-body { padding: 1.5rem 2rem; flex: 1; }
+        .results-body { padding: 1.5rem 2rem; flex: 1; padding-bottom: 6rem; }
+
+        /* ─── Card selected state (shortlisted) ─── */
+        .result-card.shortlisted {
+            border-color: rgba(64, 200, 255, 0.5);
+            box-shadow: 0 0 0 2px rgba(64, 200, 255, 0.12), 0 4px 20px rgba(0,128,255,0.15);
+        }
+        .result-card.shortlisted .share-checkbox-label {
+            color: var(--amber);
+        }
+        .share-checkbox-wrap input[type="checkbox"]:checked ~ .share-checkbox-label {
+            color: var(--amber);
+        }
+        /* Shortlist count badge on checkbox label */
+        .shortlist-count-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 18px; height: 18px; padding: 0 5px;
+            background: var(--amber); color: #020508;
+            border-radius: 10px; font-size: 0.62rem; font-weight: 800;
+            margin-left: 4px; font-family: 'Outfit', sans-serif;
+            opacity: 0; transform: scale(0.5);
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .shortlist-count-badge.show { opacity: 1; transform: scale(1); }
         .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
 
         /* ─── RESULT CARD ─── */
@@ -1118,6 +1141,168 @@
         .btn-send-share:hover { box-shadow: 0 0 18px rgba(0,128,255,0.5); transform: translateY(-1px); }
         .btn-send-share:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 
+        /* ─── FLOATING BULK SHARE BAR ─── */
+        .floating-share-bar {
+            position: fixed;
+            bottom: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.25rem;
+            background: rgba(3, 5, 16, 0.97);
+            border: 1px solid var(--border-accent);
+            border-radius: 18px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(0,220,255,0.06), 0 0 40px rgba(0,128,255,0.1);
+            backdrop-filter: blur(28px);
+            transition: bottom 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+        }
+        .floating-share-bar.visible { bottom: 2rem; }
+
+        .floating-bar-left {
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .floating-avatar-stack {
+            display: flex; align-items: center;
+        }
+        .floating-avatar-chip {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-dark), #004080);
+            border: 2px solid rgba(3,5,16,0.97);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; font-weight: 700;
+            font-size: 0.62rem; color: #d8f5ff;
+            margin-left: -8px; flex-shrink: 0;
+            position: relative;
+        }
+        .floating-avatar-chip:first-child { margin-left: 0; }
+        .floating-avatar-chip.overflow-chip {
+            background: rgba(0,220,255,0.12);
+            border-color: rgba(0,220,255,0.3);
+            color: var(--accent);
+            font-size: 0.6rem;
+        }
+        .floating-bar-text { line-height: 1.25; }
+        .floating-bar-count {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.88rem; font-weight: 700;
+            color: var(--text-primary);
+        }
+        .floating-bar-count strong { color: var(--accent); }
+        .floating-bar-sub {
+            font-size: 0.7rem; color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .floating-bar-divider { width: 1px; height: 30px; background: var(--border); flex-shrink: 0; }
+
+        .btn-floating-share {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 0.6rem 1.3rem;
+            background: linear-gradient(135deg, var(--accent-dark) 0%, #0060c0 100%);
+            border: none; border-radius: 10px;
+            color: #d8f5ff;
+            font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s ease;
+            box-shadow: 0 4px 18px rgba(0,128,255,0.45);
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .btn-floating-share:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0,128,255,0.6); }
+
+        .btn-floating-clear {
+            width: 32px; height: 32px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted); font-size: 0.82rem;
+            cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .btn-floating-clear:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,80,96,0.08); }
+
+        /* ─── BULK SHARE PAGE ─── */
+        .bulk-share-header {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(0,128,255,0.1) 0%, rgba(0,220,255,0.04) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+        .bulk-share-title {
+            font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 4px;
+        }
+        .bulk-share-meta { font-size: 0.8rem; color: var(--text-muted); }
+        .bulk-candidate-list { padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+        .bulk-candidate-card {
+            background: rgba(4, 8, 20, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            animation: cardIn 0.45s ease-out backwards;
+        }
+        .bulk-candidate-card:hover { border-color: rgba(0,220,255,0.3); }
+
+        .bulk-card-header {
+            display: flex; align-items: center; gap: 1rem;
+            padding: 1.1rem 1.25rem; position: relative;
+        }
+        .bulk-rank-badge {
+            position: absolute; top: 0.75rem; right: 1.25rem;
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+            text-transform: uppercase; color: var(--text-muted);
+            background: rgba(0,220,255,0.06); border: 1px solid var(--border);
+            border-radius: 6px; padding: 2px 8px;
+        }
+        .bulk-rank-badge.rank-1 { color: var(--success); border-color: rgba(0,232,160,0.3); background: rgba(0,232,160,0.07); }
+        .bulk-rank-badge.rank-2 { color: var(--amber); border-color: rgba(64,200,255,0.3); background: rgba(64,200,255,0.07); }
+
+        .bulk-card-avatar {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-dark), #004080);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.95rem;
+            color: #d8f5ff; flex-shrink: 0;
+            border: 1px solid rgba(0,220,255,0.25);
+        }
+        .bulk-card-info { flex: 1; min-width: 0; }
+        .bulk-card-name {
+            font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700;
+            color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .bulk-card-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .bulk-card-score {
+            font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700;
+            flex-shrink: 0; padding-right: 2.5rem;
+        }
+        .bulk-card-bar { height: 3px; background: rgba(0,220,255,0.1); margin: 0 1.25rem; border-radius: 2px; overflow: hidden; }
+        .bulk-card-bar-fill { height: 100%; border-radius: 2px; }
+
+        .bulk-card-body { padding: 1rem 1.25rem 1.1rem; border-top: 1px solid var(--border); }
+        .bulk-card-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media(max-width: 560px) { .bulk-card-sections { grid-template-columns: 1fr; } }
+        .bulk-section-label {
+            font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em;
+            text-transform: uppercase; color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+        .bulk-skill-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+        .bulk-skill-tag { padding: 2px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 600; }
+        .bulk-skill-tag.have { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.22); color: var(--success); }
+        .bulk-skill-tag.miss { background: rgba(255,80,96,0.08); border: 1px solid rgba(255,80,96,0.2); color: var(--danger); }
+        .bulk-rec-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 12px; border-radius: 8px;
+            font-size: 0.75rem; font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            border: 1px solid; margin-top: 0.75rem;
+        }
+        .bulk-summary-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+
         /* ─── CANDIDATE SHARE PAGE ─── */
         .candidate-share-page {
             position: fixed; inset: 0;
@@ -1156,6 +1341,7 @@
             border-bottom: 1px solid var(--border);
             display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
         }
+        .share-pg-hero.bulk-hero { padding: 0; background: none; border-bottom: none; }
         .share-pg-avatar {
             width: 66px; height: 66px; border-radius: 18px;
             background: linear-gradient(135deg, var(--accent-dark), #004080);
@@ -1409,6 +1595,7 @@
                 <span class="result-badge" id="resultBadge" style="display:none;"></span>
             </div>
             <div class="header-actions">
+                <button class="btn-export" id="btnSelectAll" onclick="toggleSelectAll()" style="display:none;">☐ Select All</button>
                 <button class="btn-export" onclick="exportResults()">💾 Export CSV</button>
             </div>
         </div>
@@ -1480,7 +1667,7 @@
     <div class="share-modal" id="shareModal">
         <div class="share-modal-header">
             <div>
-                <div class="share-modal-title">📤 Share Candidate Profile</div>
+                <div class="share-modal-title" id="shareModalTitle">📤 Share Shortlist</div>
                 <div class="share-modal-subtitle" id="shareModalSubtitle">Select interviewers to notify</div>
             </div>
             <button class="share-modal-close" onclick="closeShareModal()">✕</button>
@@ -1503,7 +1690,7 @@
             <div id="interviewersList" class="interviewers-list">
                 <div class="interviewers-loading">⏳ Loading interviewers from Emails tab…</div>
             </div>
-            <div class="share-select-note">Select up to 2 recipients</div>
+            <div class="share-select-note">Select up to 2 recipients for this shortlist</div>
         </div>
         <div class="share-modal-footer">
             <button class="btn-cancel-share" onclick="closeShareModal()">Cancel</button>
@@ -1531,6 +1718,20 @@
             This profile is confidential and intended only for the recipient.
         </div>
     </div>
+</div>
+
+<!-- ─── FLOATING BULK SHARE BAR ─── -->
+<div class="floating-share-bar" id="floatingShareBar">
+    <div class="floating-bar-left">
+        <div class="floating-avatar-stack" id="floatingAvatarStack"></div>
+        <div class="floating-bar-text">
+            <div class="floating-bar-count"><strong id="floatingCount">0</strong> selected</div>
+            <div class="floating-bar-sub" id="floatingBarSub">Ready to share as a shortlist</div>
+        </div>
+    </div>
+    <div class="floating-bar-divider"></div>
+    <button class="btn-floating-share" onclick="openBulkShareModal()">📤 Share Shortlist</button>
+    <button class="btn-floating-clear" onclick="clearAllSelections()" title="Clear selection">✕</button>
 </div>
 
 <script>
@@ -2023,6 +2224,10 @@ Return exactly this JSON:
         analysisResults = [];
         grid.innerHTML  = '';
         badge.style.display = 'none';
+        // Reset selections and hide select-all on new analysis
+        clearAllSelections();
+        const saBtn = document.getElementById('btnSelectAll');
+        if (saBtn) saBtn.style.display = 'none';
 
         // Progress
         const pw = document.getElementById('progressWrap');
@@ -2148,9 +2353,9 @@ Return exactly this JSON:
             </div>
 
             <div class="card-actions">
-                <label class="share-checkbox-wrap" onclick="event.stopPropagation()" title="Select to share">
+                <label class="share-checkbox-wrap" onclick="event.stopPropagation()" title="Add to shortlist">
                     <input type="checkbox" onchange="toggleShareBtn(${i}, this.checked)">
-                    <span class="share-checkbox-label">Share</span>
+                    <span class="share-checkbox-label">Shortlist</span>
                 </label>
                 <div class="card-divider"></div>
                 <div class="card-expand-toggle" onclick="toggleCard(${i})">
@@ -2159,7 +2364,6 @@ Return exactly this JSON:
                 </div>
                 <div class="card-divider"></div>
                 <button class="btn-view-resume" onclick="openOverlay(${i})">👁 View</button>
-                <button class="btn-share" id="share-btn-${i}" onclick="openShareModal(${i})">📤 Share</button>
             </div>
 
             <div class="card-detail" id="detail-${i}">
@@ -2430,15 +2634,119 @@ Return exactly this JSON:
     // ─── SHARE FEATURE ───────────────────────────
     // ════════════════════════════════════════════
 
-    let _shareCardIdx    = null;    // which card is being shared
+    let _shareCardIdx    = null;    // legacy single-card share (unused now)
+    let _selectedCards   = new Set(); // indices of all checked cards
     let _interviewers    = [];      // [{name, email}] from Emails tab
     let _selectedEmails  = new Set();
     let appsScriptUrl    = localStorage.getItem('appsScriptUrl') || '';
 
-    // Show/hide share button when checkbox is toggled
+    // ─── Select all / deselect all ───
+    function toggleSelectAll() {
+        const btn     = document.getElementById('btnSelectAll');
+        const allIdxs = analysisResults.map((_, i) => i);
+        const allSel  = allIdxs.every(i => _selectedCards.has(i));
+
+        if (allSel) {
+            // Deselect all
+            clearAllSelections();
+        } else {
+            // Select all
+            _selectedCards.clear();
+            allIdxs.forEach(i => _selectedCards.add(i));
+            document.querySelectorAll('.share-checkbox-wrap input[type="checkbox"]').forEach((cb, i) => {
+                cb.checked = true;
+                const card = document.getElementById(`card-${i}`);
+                if (card) card.classList.add('shortlisted');
+            });
+            updateFloatingBar();
+        }
+    }
+
+    // ─── Toggle checkbox → update floating bar + card highlight ───
     function toggleShareBtn(idx, checked) {
-        const btn = document.getElementById(`share-btn-${idx}`);
-        if (btn) btn.classList.toggle('visible', checked);
+        if (checked) {
+            _selectedCards.add(idx);
+        } else {
+            _selectedCards.delete(idx);
+        }
+        // Visually highlight / un-highlight the card
+        const card = document.getElementById(`card-${idx}`);
+        if (card) card.classList.toggle('shortlisted', checked);
+
+        updateFloatingBar();
+    }
+
+    // ─── Update the floating bar with current selections ───
+    function updateFloatingBar() {
+        const bar   = document.getElementById('floatingShareBar');
+        const count = _selectedCards.size;
+        const total = analysisResults.length;
+
+        document.getElementById('floatingCount').textContent = count;
+
+        // Build avatar chips (up to 5 shown, rest collapsed)
+        const sorted   = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+        const indices  = [..._selectedCards];
+        const maxShow  = 5;
+        const shown    = indices.slice(0, maxShow);
+        const overflow = indices.length - maxShow;
+
+        const stack = document.getElementById('floatingAvatarStack');
+        stack.innerHTML = shown.map(i => {
+            const r = sorted[i];
+            return r ? `<div class="floating-avatar-chip" title="${r.name}">${initials(r.name)}</div>` : '';
+        }).join('') + (overflow > 0 ? `<div class="floating-avatar-chip overflow-chip">+${overflow}</div>` : '');
+
+        // Sub-label: show names of first 2 selected
+        const namePreview = shown.slice(0, 2).map(i => sorted[i]?.name?.split(' ')[0]).filter(Boolean).join(', ');
+        const sub = document.getElementById('floatingBarSub');
+        sub.textContent = count > 0
+            ? `${namePreview}${count > 2 ? ` +${count - 2} more` : ''}`
+            : 'Ready to share as a shortlist';
+
+        bar.classList.toggle('visible', count > 0);
+
+        // Update Select All button
+        const saBtn = document.getElementById('btnSelectAll');
+        if (saBtn && total > 0) {
+            const allSel = total > 0 && count === total;
+            saBtn.textContent = allSel ? '✓ Deselect All' : '☐ Select All';
+            saBtn.style.display = 'inline-flex';
+            saBtn.style.color   = allSel ? 'var(--amber)' : '';
+            saBtn.style.borderColor = allSel ? 'rgba(64,200,255,0.4)' : '';
+        }
+    }
+
+    // ─── Clear all checkbox selections ───
+    function clearAllSelections() {
+        _selectedCards.clear();
+        document.querySelectorAll('.share-checkbox-wrap input[type="checkbox"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.result-card.shortlisted').forEach(c => c.classList.remove('shortlisted'));
+        updateFloatingBar();
+    }
+
+    // ─── Open share modal for all selected cards (bulk) ───
+    async function openBulkShareModal() {
+        if (_selectedCards.size === 0) { showToast('Select at least one candidate first', 'error'); return; }
+
+        const sorted    = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+        const count     = _selectedCards.size;
+        const selected  = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
+        const nameList  = selected.map(c => c.name);
+        const position  = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
+
+        // Update modal header to reflect bulk
+        document.getElementById('shareModalTitle').textContent = `📤 Share ${count} Candidate${count > 1 ? 's' : ''}`;
+        document.getElementById('shareModalSubtitle').textContent =
+            nameList.slice(0, 3).join(', ') + (nameList.length > 3 ? ` +${nameList.length - 3} more` : '') +
+            `  ·  ${position}`;
+
+        document.getElementById('selectedCount').textContent = '';
+        document.getElementById('btnSendShare').disabled = true;
+        document.getElementById('shareModalBackdrop').classList.add('open');
+
+        if (appsScriptUrl) document.getElementById('appsScriptUrlInput').value = appsScriptUrl;
+        await loadInterviewers();
     }
 
     // Save Apps Script URL
@@ -2448,33 +2756,9 @@ Return exactly this JSON:
         showToast('Script URL saved!', 'success');
     }
 
-    // Open the share modal for a given card index
-    async function openShareModal(idx) {
-        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const candidate = sorted[idx];
-        if (!candidate) return;
-
-        _shareCardIdx   = idx;
-        _selectedEmails = new Set();
-
-        // Show modal
-        document.getElementById('shareModalSubtitle').textContent =
-            `Sharing: ${candidate.name} · ${document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Position'}`;
-        document.getElementById('selectedCount').textContent = '';
-        document.getElementById('btnSendShare').disabled = true;
-        document.getElementById('shareModalBackdrop').classList.add('open');
-
-        // Restore saved script URL
-        if (appsScriptUrl) document.getElementById('appsScriptUrlInput').value = appsScriptUrl;
-
-        // Load interviewers
-        await loadInterviewers();
-    }
-
     // Close share modal
     function closeShareModal() {
         document.getElementById('shareModalBackdrop').classList.remove('open');
-        _shareCardIdx = null;
         _selectedEmails = new Set();
     }
 
@@ -2565,42 +2849,44 @@ Return exactly this JSON:
     async function sendShare() {
         if (!appsScriptUrl) { showToast('Add Apps Script URL first', 'error'); return; }
         if (_selectedEmails.size === 0) { showToast('Select at least one recipient', 'error'); return; }
+        if (_selectedCards.size === 0)  { showToast('No candidates selected', 'error'); return; }
 
         const btn = document.getElementById('btnSendShare');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Sending…';
 
-        const sorted    = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const candidate = sorted[_shareCardIdx];
-        const position  = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
+        const sorted     = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+        const candidates = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
+        const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
-        // Build shareable URL (encode candidate data in the URL itself — no extra DB needed)
-        const encoded    = encodeCandidateData({ ...candidate, _position: position });
-        const baseUrl    = window.location.origin + window.location.pathname;
-        const shareLink  = `${baseUrl}?view=${encoded}`;
+        // Encode ALL selected candidates into a single shareable URL
+        const encoded   = encodeCandidateData({ _bulk: true, _position: position, candidates });
+        const baseUrl   = window.location.origin + window.location.pathname;
+        const shareLink = `${baseUrl}?view=${encoded}`;
 
-        // Collect selected interviewer details
         const recipients = _interviewers.filter(iv => _selectedEmails.has(iv.email));
+        const avgScore   = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / candidates.length);
 
         try {
-            const res = await fetch(appsScriptUrl, {
+            await fetch(appsScriptUrl, {
                 method: 'POST',
-                mode:   'no-cors', // Apps Script deployed as "anyone" doesn't need CORS
+                mode:   'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     recipients,
-                    candidateName: candidate.name,
+                    candidateName:  candidates.map(c => c.name).join(', '),
+                    candidateCount: candidates.length,
                     position,
                     shareLink,
-                    matchScore: candidate.match_score
+                    matchScore:  avgScore,
+                    isBulk:      true,
+                    candidates:  candidates.map(c => ({ name: c.name, match_score: c.match_score }))
                 })
             });
 
-            showToast(`✅ Email sent to ${recipients.map(r => r.name).join(' & ')}!`, 'success');
+            showToast(`✅ Shortlist sent to ${recipients.map(r => r.name).join(' & ')}!`, 'success');
             closeShareModal();
-            // Uncheck the card's checkbox
-            const cards = document.querySelectorAll('.share-checkbox-wrap input[type="checkbox"]');
-            if (cards[_shareCardIdx]) { cards[_shareCardIdx].checked = false; toggleShareBtn(_shareCardIdx, false); }
+            clearAllSelections();
         } catch (err) {
             showToast('Email send failed: ' + err.message, 'error');
         }
@@ -2616,8 +2902,7 @@ Return exactly this JSON:
         if (!encoded) return;
 
         try {
-            const r        = decodeCandidateData(encoded);
-            const position = r._position || '';
+            const data = decodeCandidateData(encoded);
 
             // Hide the main app, show share page
             const appShell = document.querySelector('.app-shell');
@@ -2625,18 +2910,24 @@ Return exactly this JSON:
             const sharePage = document.getElementById('candidateSharePage');
             sharePage.classList.add('active');
 
-            // Build hero section — position banner in its own container above the hero
+            // ── BULK mode: array of candidates ──
+            if (data._bulk && Array.isArray(data.candidates)) {
+                renderBulkSharePage(data.candidates, data._position || '');
+                return;
+            }
+
+            // ── SINGLE mode (legacy) ──
+            const r        = data;
+            const position = r._position || '';
             const ringCls  = ringClass(r.match_score);
             const scoreCls = scoreClass(r.match_score);
 
-            // Position banner (sits between branding and the hero row)
             const bannerEl = document.getElementById('sharePgPositionBanner');
             if (position && bannerEl) {
                 bannerEl.className = 'share-pg-position-banner';
                 bannerEl.innerHTML = `📋 Position: <strong style="margin-left:4px;">${position}</strong>`;
             }
 
-            // Hero row (avatar · name · score — clean flex row, no nested banner)
             document.getElementById('sharePgHero').innerHTML = `
                 <div class="share-pg-avatar">${initials(r.name)}</div>
                 <div class="share-pg-info">
@@ -2649,7 +2940,6 @@ Return exactly this JSON:
                     <span class="share-pg-score-lbl">Match</span>
                 </div>`;
 
-            // Build body
             const skillsHave    = r.skills_present || [];
             const skillsMissing = r.skills_missing  || [];
             const allSkills     = r.key_skills      || [];
@@ -2658,71 +2948,29 @@ Return exactly this JSON:
                 <div class="share-pg-section">
                     <div class="share-pg-section-title">📊 Overview</div>
                     <div class="share-stat-grid">
-                        <div class="share-stat-box">
-                            <span class="share-stat-val ${scoreCls}">${r.match_score}%</span>
-                            <div class="share-stat-lbl">Match Score</div>
-                        </div>
-                        <div class="share-stat-box">
-                            <span class="share-stat-val">${r.experience_years}</span>
-                            <div class="share-stat-lbl">Years Exp</div>
-                        </div>
-                        <div class="share-stat-box">
-                            <span class="share-stat-val" style="color:var(--success);">${skillsHave.length}</span>
-                            <div class="share-stat-lbl">Skills Match</div>
-                        </div>
-                        <div class="share-stat-box">
-                            <span class="share-stat-val" style="color:var(--danger);">${skillsMissing.length}</span>
-                            <div class="share-stat-lbl">Skills Gap</div>
-                        </div>
+                        <div class="share-stat-box"><span class="share-stat-val ${scoreCls}">${r.match_score}%</span><div class="share-stat-lbl">Match Score</div></div>
+                        <div class="share-stat-box"><span class="share-stat-val">${r.experience_years}</span><div class="share-stat-lbl">Years Exp</div></div>
+                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${skillsHave.length}</span><div class="share-stat-lbl">Skills Match</div></div>
+                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${skillsMissing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
                     </div>
                     <div class="share-rec-pill ${r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass'}">
                         ${r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review' : '❌ Not Recommended — Pass'}
                     </div>
                 </div>
-
-                ${r.rating_reason ? `
-                <div class="share-pg-section">
-                    <div class="share-pg-section-title">🎯 Score Reasoning</div>
-                    <div class="rating-box">${r.rating_reason}</div>
-                </div>` : ''}
-
-                ${r.summary ? `
-                <div class="share-pg-section">
-                    <div class="share-pg-section-title">👤 Profile Summary</div>
-                    <div class="overlay-text">${r.summary}</div>
-                </div>` : ''}
-
-                ${allSkills.length ? `
-                <div class="share-pg-section">
-                    <div class="share-pg-section-title">🛠 Key Skills</div>
-                    <div class="share-skill-tags">
-                        ${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}
-                    </div>
-                </div>` : ''}
-
+                ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
+                ${r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
+                ${allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
                 ${(skillsHave.length || skillsMissing.length) ? `
                 <div class="share-pg-section">
                     <div class="share-pg-section-title">✅ Skills vs JD</div>
                     <div class="share-skills-cols">
-                        <div>
-                            <div class="share-skills-col-label have">✓ Present</div>
-                            <div class="share-skill-tags">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div>
-                        </div>
-                        <div>
-                            <div class="share-skills-col-label missing">✗ Missing</div>
-                            <div class="share-skill-tags">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div>
-                        </div>
+                        <div><div class="share-skills-col-label have">✓ Present</div><div class="share-skill-tags">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div></div>
+                        <div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div></div>
                     </div>
                 </div>` : ''}
-
-                ${r.highlights?.length ? `
-                <div class="share-pg-section">
-                    <div class="share-pg-section-title">⭐ Key Highlights</div>
-                    ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
-                </div>` : ''}
+                ${r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
             `;
 
-            // Update page title
             document.title = `${r.name} — Candidate Profile`;
 
         } catch (err) {
@@ -2731,6 +2979,103 @@ Return exactly this JSON:
             document.getElementById('sharePgBody').innerHTML =
                 `<div style="padding:2rem;color:var(--danger);">⚠️ Could not load candidate profile. The link may be invalid or expired.</div>`;
         }
+    }
+
+    // ─── Render a bulk shortlist share page ───
+    function renderBulkSharePage(candidates, position) {
+        // Sort by match score descending (same as main results view)
+        candidates.sort((a, b) => b.match_score - a.match_score);
+
+        const count    = candidates.length;
+        const avgScore = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count);
+        const topScore = candidates[0]?.match_score || 0;
+
+        // Position banner
+        const bannerEl = document.getElementById('sharePgPositionBanner');
+        if (bannerEl) {
+            bannerEl.className = 'share-pg-position-banner';
+            bannerEl.innerHTML = position ? `📋 Position: <strong style="margin-left:4px;">${position}</strong>` : '';
+        }
+
+        // Replace hero with a compact summary header
+        const heroEl = document.getElementById('sharePgHero');
+        heroEl.classList.add('bulk-hero');
+        heroEl.innerHTML = `
+            <div class="bulk-share-header">
+                <div class="bulk-share-title">🏆 Candidate Shortlist · ${count} Profile${count > 1 ? 's' : ''}</div>
+                <div class="bulk-share-meta">
+                    Ranked by AI Match Score &nbsp;·&nbsp; Avg: <strong style="color:var(--accent);">${avgScore}%</strong>
+                    &nbsp;·&nbsp; Top: <strong style="color:var(--success);">${topScore}%</strong>
+                </div>
+            </div>`;
+
+        // Build one card per candidate
+        document.getElementById('sharePgBody').innerHTML = `
+            <div class="bulk-candidate-list">
+                ${candidates.map((r, i) => buildBulkCandidateCard(r, i)).join('')}
+            </div>`;
+
+        document.title = `${count} Candidates — Shortlist · ${position}`;
+    }
+
+    // ─── Build a single candidate card for the bulk share page ───
+    function buildBulkCandidateCard(r, rank) {
+        const scoreCls = scoreClass(r.match_score);
+        const fillCls  = fillClass(r.match_score);
+        const have     = r.skills_present || [];
+        const missing  = r.skills_missing  || [];
+        const recCls   = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
+        const recTxt   = r.match_score >= 75 ? '✅ Recommended' : r.match_score >= 50 ? '🔶 Consider' : '❌ Pass';
+        const rankLabel = rank === 0 ? '🥇 Top Match' : rank === 1 ? '🥈 #2' : rank === 2 ? '🥉 #3' : `#${rank + 1}`;
+        const rankCls   = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : '';
+
+        return `
+        <div class="bulk-candidate-card" style="animation-delay:${rank * 0.07}s">
+            <div class="bulk-card-header">
+                <div class="bulk-card-avatar">${initials(r.name)}</div>
+                <div class="bulk-card-info">
+                    <div class="bulk-card-name">${r.name}</div>
+                    <div class="bulk-card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
+                </div>
+                <div class="bulk-card-score ${scoreCls}">${r.match_score}%</div>
+                <div class="bulk-rank-badge ${rankCls}">${rankLabel}</div>
+            </div>
+
+            <div class="bulk-card-bar">
+                <div class="bulk-card-bar-fill ${fillCls}" style="width:${r.match_score}%"></div>
+            </div>
+
+            <div class="bulk-card-body">
+                ${r.summary ? `<div class="bulk-summary-text" style="margin-bottom:0.875rem;">${r.summary}</div>` : ''}
+
+                <div class="bulk-card-sections">
+                    ${have.length ? `
+                    <div>
+                        <div class="bulk-section-label">✓ Skills Present</div>
+                        <div class="bulk-skill-tags">${have.map(s => `<span class="bulk-skill-tag have">✓ ${s}</span>`).join('')}</div>
+                    </div>` : ''}
+                    ${missing.length ? `
+                    <div>
+                        <div class="bulk-section-label">✗ Skills Missing</div>
+                        <div class="bulk-skill-tags">${missing.map(s => `<span class="bulk-skill-tag miss">✗ ${s}</span>`).join('')}</div>
+                    </div>` : ''}
+                </div>
+
+                ${r.rating_reason ? `
+                <div style="margin-top:0.875rem;">
+                    <div class="bulk-section-label">🎯 Score Reasoning</div>
+                    <div class="rating-box" style="margin-top:0.4rem;">${r.rating_reason}</div>
+                </div>` : ''}
+
+                ${r.highlights?.length ? `
+                <div style="margin-top:0.875rem;">
+                    <div class="bulk-section-label">⭐ Key Highlights</div>
+                    ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                </div>` : ''}
+
+                <div class="bulk-rec-pill ${recCls}" style="margin-top:0.875rem;">${recTxt}</div>
+            </div>
+        </div>`;
     }
 </script>
 </body>
