@@ -3100,8 +3100,26 @@ Return exactly this JSON:
         const candidates = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
+        // Encode resume PDFs as base64 into each candidate object
+        const candidatesWithResumes = await Promise.all(candidates.map(async (c) => {
+            const clone = { ...c };
+            if (c.filename) {
+                const file = uploadedFiles.find(f => f.name === c.filename);
+                if (file && (file.type === 'application/pdf' || c.filename.toLowerCase().endsWith('.pdf'))) {
+                    try {
+                        const buf = await file.arrayBuffer();
+                        const bytes = new Uint8Array(buf);
+                        let binary = '';
+                        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                        clone.resume_pdf_b64 = btoa(binary);
+                    } catch (e) { /* skip if can't encode */ }
+                }
+            }
+            return clone;
+        }));
+
         // Encode ALL selected candidates into a single shareable URL
-        const encoded   = encodeCandidateData({ _bulk: true, _position: position, candidates });
+        const encoded   = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesWithResumes });
         const baseUrl   = window.location.origin + window.location.pathname;
         const shareLink = `${baseUrl}?view=${encoded}`;
 
@@ -3222,10 +3240,13 @@ Return exactly this JSON:
         }
     }
 
+    let _shareCandidates = null; // holds decoded candidates on the share page
+
     // ─── Render a bulk shortlist share page ───
     function renderBulkSharePage(candidates, position) {
         // Sort by match score descending (same as main results view)
         candidates.sort((a, b) => b.match_score - a.match_score);
+        _shareCandidates = candidates; // store for resume viewer access
 
         const count    = candidates.length;
         const avgScore = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count);
@@ -3270,29 +3291,48 @@ Return exactly this JSON:
         if (btn) btn.innerHTML = isOpen ? '👁 View' : '▲ Hide';
     }
 
-    // ─── Open left panel resume viewer from share page ───
-    function openShareResumeViewer(filename, idx) {
-        // On share page the interviewer has no uploaded file, but we show the panel anyway.
-        // If there IS an uploaded file (main app context), use it; otherwise show no-preview.
-        const panel    = document.getElementById('resumeViewerPanel');
-        const backdrop = document.getElementById('resumeViewerBackdrop');
-        const frame    = document.getElementById('resumeViewerFrame');
-        const noPreview= document.getElementById('viewerNoPreview');
-        const titleEl  = document.getElementById('viewerFileName');
+    // ─── Open left panel resume viewer from share page using embedded base64 PDF ───
+    function openShareResumeViewer(rank) {
+        const panel     = document.getElementById('resumeViewerPanel');
+        const backdrop  = document.getElementById('resumeViewerBackdrop');
+        const frame     = document.getElementById('resumeViewerFrame');
+        const noPreview = document.getElementById('viewerNoPreview');
+        const titleEl   = document.getElementById('viewerFileName');
 
-        titleEl.textContent = filename || 'Resume';
+        // Get candidate data from the share page's global candidates array
+        const r = _shareCandidates && _shareCandidates[rank];
+        titleEl.textContent = (r && r.filename) ? r.filename : (r ? r.name + ' — Resume' : 'Resume');
 
         if (_viewerObjectUrl) { URL.revokeObjectURL(_viewerObjectUrl); _viewerObjectUrl = null; }
 
-        const file = uploadedFiles.find(f => f.name === filename);
-        if (file && (file.type === 'application/pdf' || (filename||'').toLowerCase().endsWith('.pdf'))) {
-            _viewerObjectUrl = URL.createObjectURL(file);
-            frame.src = _viewerObjectUrl;
-            frame.style.display = 'block';
-            noPreview.style.display = 'none';
+        if (r && r.resume_pdf_b64) {
+            // Decode base64 → Blob → Object URL
+            try {
+                const binary = atob(r.resume_pdf_b64);
+                const bytes  = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                _viewerObjectUrl = URL.createObjectURL(blob);
+                frame.src = _viewerObjectUrl;
+                frame.style.display = 'block';
+                noPreview.style.display = 'none';
+            } catch(e) {
+                frame.style.display = 'none';
+                noPreview.style.display = 'flex';
+            }
         } else {
-            frame.style.display = 'none';
-            noPreview.style.display = 'flex';
+            // Try uploaded files as fallback (main app context)
+            const filename = r && r.filename;
+            const file = filename && uploadedFiles.find(f => f.name === filename);
+            if (file && (file.type === 'application/pdf' || (filename||'').toLowerCase().endsWith('.pdf'))) {
+                _viewerObjectUrl = URL.createObjectURL(file);
+                frame.src = _viewerObjectUrl;
+                frame.style.display = 'block';
+                noPreview.style.display = 'none';
+            } else {
+                frame.style.display = 'none';
+                noPreview.style.display = 'flex';
+            }
         }
 
         panel.classList.add('open');
@@ -3349,9 +3389,9 @@ Return exactly this JSON:
 
                 <!-- View button row -->
                 <div class="share-cand-view-row">
-                    <button class="btn-share-view" id="share-view-btn-${rank}" onclick="toggleShareCandDetails(${rank})">👁 View</button>
+                    <button class="btn-share-view" id="share-view-btn-${rank}" onclick="toggleShareCandDetails(${rank})">View Details</button>
                     <div class="bulk-rec-pill ${recCls}" style="margin:0;">${recTxt}</div>
-                    ${r.filename ? `<button class="share-cand-resume-btn" onclick="openShareResumeViewer('${(r.filename||'').replace(/'/g,"\\'")}', ${rank})">📄 Resume</button>` : ''}
+                    <button class="share-cand-resume-btn" onclick="openShareResumeViewer(${rank})">📄 View Resume</button>
                 </div>
 
                 <!-- Expandable details dropdown -->
