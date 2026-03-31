@@ -1720,6 +1720,18 @@
                         <small class="hint">Fully optional. Without it, folder links still work via a CORS proxy (no sign-up needed). Add a key only if you need faster/more reliable folder listing. <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank">Google Cloud Console</a> → enable Drive API → Credentials → API key.</small>
                     </div>
 
+                    <!-- Apps Script URL — primary method for full folder access -->
+                    <div class="form-group">
+                        <label for="appsScriptUrlInput">⚙️ Apps Script Web App URL <span style="font-weight:400;color:var(--success);font-size:0.68rem;">★ Required for folder links</span></label>
+                        <div style="display:flex;gap:0.4rem;align-items:center;">
+                            <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveAppsScriptUrl()" style="flex:1;">
+                            <button class="btn-add-links" onclick="saveAppsScriptUrl()" style="white-space:nowrap;">Save</button>
+                            <button class="btn-add-links" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(0,232,160,0.1);border-color:rgba(0,232,160,0.3);color:var(--success);white-space:nowrap;">Test</button>
+                        </div>
+                        <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
+                        <small class="hint">Deploy your <strong>Code.gs</strong> as a Web App and paste the URL here. Enables full folder listing — all profiles load reliably.</small>
+                    </div>
+
                     <div class="form-group">
                         <label for="sheetsId">Google Sheets ID</label>
                         <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
@@ -1930,17 +1942,6 @@
             <button class="share-modal-close" onclick="closeShareModal()">✕</button>
         </div>
         <div class="share-modal-body">
-            <!-- Apps Script URL -->
-            <div class="script-url-row">
-                <div class="script-url-lbl">⚙️ Apps Script Web App URL</div>
-                <div class="script-url-input-row">
-                    <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
-                    <button class="btn-sm-save" onclick="saveAppsScriptUrl()">Save</button>
-                    <button class="btn-sm-save" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(0,232,160,0.1);border-color:rgba(0,232,160,0.3);color:var(--success);">Test</button>
-                </div>
-                <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
-                <small class="hint" style="margin-top:0.4rem;display:block;">Deploy your Code.gs as a Web App and paste the URL here. Saved locally.</small>
-            </div>
             <!-- Firebase DB URL -->
             <div class="script-url-row" style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem;">
                 <div class="script-url-lbl">🔥 Firebase Realtime DB URL <span style="font-size:0.68rem;color:var(--success);font-weight:400;">(fixes URI too long)</span></div>
@@ -2269,7 +2270,7 @@
         // ── Path 3: CORS proxy — least reliable (partial results for large folders) ──
         // Google Drive renders folders with JS so the static HTML only contains a subset of files.
         // Works OK for small folders (<10 files) but misses files in large folders.
-        showToast('⚠️ No Apps Script URL set — folder results may be incomplete. Add your Apps Script URL in the Share panel for full results.', 'error');
+        showToast('⚠️ No Apps Script URL set — folder results may be incomplete. Add your Apps Script URL in the sidebar (API Config) for full results.', 'error');
         var folderUrl = 'https://drive.google.com/drive/folders/' + folderId;
         var proxyUrl  = 'https://corsproxy.io/?' + encodeURIComponent(folderUrl);
 
@@ -2279,7 +2280,7 @@
             if (!proxyRes.ok) throw new Error('Proxy returned ' + proxyRes.status);
             html = await proxyRes.text();
         } catch (e) {
-            throw new Error('Could not load folder. For reliable full-folder access, add your Apps Script URL in the Share settings panel.');
+            throw new Error('Could not load folder. For reliable full-folder access, add your Apps Script URL in the sidebar API Config section.');
         }
 
         var idSet = new Set();
@@ -2289,7 +2290,7 @@
         var nameMap = {};
         for (var n of html.matchAll(/\["([a-zA-Z0-9_-]{20,})","([^"]+\.(?:pdf|PDF))"/g)) nameMap[n[1]] = n[2];
 
-        if (!idSet.size) throw new Error('No files found. Ensure folder is shared as "Anyone with the link" and add your Apps Script URL for reliable full-folder support.');
+        if (!idSet.size) throw new Error('No files found. Ensure folder is shared as "Anyone with the link" and add your Apps Script URL in the sidebar API Config for reliable full-folder support.');
 
         return Array.from(idSet).map(function(id) {
             return { id: id, name: nameMap[id] || ('resume_' + id.slice(0, 8) + '.pdf') };
@@ -3301,7 +3302,6 @@ Return exactly this JSON:
         // Hide floating bar so it doesn't cover the modal footer
         document.getElementById('floatingShareBar').classList.remove('visible');
 
-        if (appsScriptUrl) document.getElementById('appsScriptUrlInput').value = appsScriptUrl;
         if (firebaseDbUrl) document.getElementById('firebaseDbUrlInput').value = firebaseDbUrl;
         await loadInterviewers();
     }
