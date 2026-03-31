@@ -1713,6 +1713,13 @@
                         </div>
                     </div>
 
+                    <!-- Google Drive API Key (optional — only needed for folder links when using Groq) -->
+                    <div class="form-group" id="driveApiKeyGroup">
+                        <label for="driveApiKey">🗂 Google Drive API Key <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional · folder links only)</span></label>
+                        <input type="password" id="driveApiKey" placeholder="AIza…" onchange="saveDriveApiKey()">
+                        <small class="hint">Fully optional. Without it, folder links still work via a CORS proxy (no sign-up needed). Add a key only if you need faster/more reliable folder listing. <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank">Google Cloud Console</a> → enable Drive API → Credentials → API key.</small>
+                    </div>
+
                     <div class="form-group">
                         <label for="sheetsId">Google Sheets ID</label>
                         <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
@@ -1749,10 +1756,10 @@
                     </div>
 
                     <!-- Drive links input -->
-                    <div class="drive-links-divider">or paste Google Drive links</div>
+                    <div class="drive-links-divider">or paste Google Drive file / folder links</div>
                     <div class="drive-links-input-wrap">
                         <textarea id="driveLinksInput" class="drive-links-textarea"
-                            placeholder="Paste one Drive link per line&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/file/d/…/view"></textarea>
+                            placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
                         <button class="btn-add-links" onclick="addDriveLinks()">＋ Add</button>
                     </div>
 
@@ -2003,6 +2010,7 @@
     let analysisResults = [];
     let geminiApiKey   = localStorage.getItem('geminiApiKey') || '';
     let groqApiKey     = localStorage.getItem('groqApiKey') || '';
+    let driveApiKey    = localStorage.getItem('driveApiKey') || '';
     let selectedProvider = localStorage.getItem('selectedProvider') || 'groq';
     let sheetsId       = localStorage.getItem('sheetsId') || '';
     let resumeDropOpen = false;
@@ -2026,6 +2034,7 @@
 
         if (geminiApiKey) document.getElementById('geminiKey').value = geminiApiKey;
         if (groqApiKey)   document.getElementById('groqKey').value   = groqApiKey;
+        if (driveApiKey)  document.getElementById('driveApiKey').value = driveApiKey;
         updateConnStatus(!!(selectedProvider === 'groq' ? groqApiKey : geminiApiKey));
 
         if (sheetsId) {
@@ -2135,6 +2144,12 @@
         showToast('Gemini API key saved!', 'success');
     }
 
+    function saveDriveApiKey() {
+        driveApiKey = document.getElementById('driveApiKey').value.trim();
+        localStorage.setItem('driveApiKey', driveApiKey);
+        showToast('Google Drive API key saved!', 'success');
+    }
+
     function saveSheetsId() {
         sheetsId = document.getElementById('sheetsId').value.trim();
         localStorage.setItem('sheetsId', sheetsId);
@@ -2206,26 +2221,123 @@
         return null;
     }
 
-    function addDriveLinks() {
-        const raw   = document.getElementById('driveLinksInput').value.trim();
+    function extractFolderId(url) {
+        // Handles: /folders/ID  |  /drive/folders/ID
+        const m = url.match(/\/folders\/([a-zA-Z0-9_-]{10,})/);
+        return m ? m[1] : null;
+    }
+
+    async function fetchFolderFiles(folderId) {
+        // Path 1: Google Drive API v3 — if a Google API key is available (optional)
+        const apiKey = driveApiKey || geminiApiKey;
+        if (apiKey) {
+            const query  = encodeURIComponent("'" + folderId + "' in parents and trashed=false");
+            const fields = encodeURIComponent('files(id,name,mimeType)');
+            const url    = 'https://www.googleapis.com/drive/v3/files?q=' + query + '&fields=' + fields + '&pageSize=100&key=' + apiKey;
+            const res    = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                return (data.files || []).filter(function(f) {
+                    return f.mimeType === 'application/pdf' || (f.name || '').toLowerCase().endsWith('.pdf');
+                });
+            }
+            console.warn('Drive API key failed, falling back to proxy method');
+        }
+
+        // Path 2: No API key needed — fetch public folder page via CORS proxy
+        // Works for any folder shared as "Anyone with the link". No Google Cloud or credit card required.
+        var folderUrl = 'https://drive.google.com/drive/folders/' + folderId;
+        var proxyUrl  = 'https://corsproxy.io/?' + encodeURIComponent(folderUrl);
+
+        var html = '';
+        try {
+            var proxyRes = await fetch(proxyUrl);
+            if (!proxyRes.ok) throw new Error('Proxy returned ' + proxyRes.status);
+            html = await proxyRes.text();
+        } catch (e) {
+            throw new Error('Could not load folder — make sure it is shared as "Anyone with the link". (' + e.message + ')');
+        }
+
+        // Extract file IDs embedded in the Drive folder page HTML
+        var idSet = new Set();
+        var fileMatches = html.matchAll(/\/file\/d\/([a-zA-Z0-9_-]{20,})/g);
+        for (var m of fileMatches) idSet.add(m[1]);
+
+        // Also catch IDs from Drive data blobs (28-33 char alphanumeric strings in JSON arrays)
+        var blobMatches = html.matchAll(/\["([a-zA-Z0-9_-]{28,33})"/g);
+        for (var b of blobMatches) idSet.add(b[1]);
+
+        // Try to recover original filenames
+        var nameMap = {};
+        var nameMatches = html.matchAll(/\["([a-zA-Z0-9_-]{20,})","([^"]+\.(?:pdf|PDF))"/g);
+        for (var n of nameMatches) nameMap[n[1]] = n[2];
+
+        if (!idSet.size) {
+            throw new Error('No files found in this folder — ensure the folder is shared as "Anyone with the link" (Viewer access)');
+        }
+
+        return Array.from(idSet).map(function(id) {
+            return { id: id, name: nameMap[id] || ('resume_' + id.slice(0, 8) + '.pdf'), mimeType: 'application/pdf' };
+        });
+    }
+
+    async function addDriveLinks() {
+        const raw = document.getElementById('driveLinksInput').value.trim();
         if (!raw) { showToast('Paste at least one Drive link', 'error'); return; }
         const lines = raw.split(/\n/).map(l => l.trim()).filter(Boolean);
+
+        const btn = document.querySelector('.btn-add-links');
+        btn.disabled = true;
+        btn.textContent = '⏳';
+
         let added = 0, skipped = 0;
-        lines.forEach(url => {
+
+        for (const url of lines) {
+            // ── Folder link ──
+            const folderId = extractFolderId(url);
+            if (folderId) {
+                try {
+                    showToast('📂 Loading folder contents…', 'success');
+                    const files = await fetchFolderFiles(folderId);
+                    if (!files.length) {
+                        showToast('No PDF files found in that folder. Ensure files are PDFs and folder is shared publicly.', 'error');
+                        skipped++;
+                        continue;
+                    }
+                    for (const file of files) {
+                        if (driveFiles.find(d => d.fileId === file.id)) { skipped++; continue; }
+                        const cleanUrl = `https://drive.google.com/file/d/${file.id}/view`;
+                        const name     = file.name || `resume_${file.id.slice(0, 8)}.pdf`;
+                        driveFiles.push({ name, driveLink: cleanUrl, fileId: file.id });
+                        fileStatuses[name] = 'pending';
+                        added++;
+                    }
+                } catch (err) {
+                    showToast(`📂 Folder error: ${err.message}`, 'error');
+                    skipped++;
+                }
+                continue;
+            }
+
+            // ── Individual file link ──
             const fileId = extractDriveId(url);
-            if (!fileId) { skipped++; return; }
+            if (!fileId) { skipped++; continue; }
             const cleanUrl = `https://drive.google.com/file/d/${fileId}/view`;
             if (driveFiles.find(d => d.fileId === fileId) || uploadedFiles.find(f => f._driveId === fileId)) {
-                skipped++; return;
+                skipped++; continue;
             }
-            const name = `drive_resume_${fileId.slice(0,8)}.pdf`;
+            const name = `drive_resume_${fileId.slice(0, 8)}.pdf`;
             driveFiles.push({ name, driveLink: cleanUrl, fileId });
             fileStatuses[name] = 'pending';
             added++;
-        });
+        }
+
+        btn.disabled = false;
+        btn.textContent = '＋ Add';
         document.getElementById('driveLinksInput').value = '';
-        if (added)   renderResumeDropdown(), showToast(`🔗 ${added} Drive link${added>1?'s':''} added!`, 'success');
-        if (skipped) showToast(`${skipped} invalid or duplicate link${skipped>1?'s':''} skipped`, 'error');
+
+        if (added)   renderResumeDropdown(), showToast(`🔗 ${added} resume${added > 1 ? 's' : ''} added!`, 'success');
+        if (skipped) showToast(`${skipped} invalid or duplicate link${skipped > 1 ? 's' : ''} skipped`, 'error');
     }
 
     async function fetchDrivePdf(driveEntry) {
