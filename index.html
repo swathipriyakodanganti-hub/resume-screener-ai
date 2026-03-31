@@ -1713,14 +1713,7 @@
                         </div>
                     </div>
 
-                    <!-- Google Drive API Key (optional — only needed for folder links when using Groq) -->
-                    <div class="form-group" id="driveApiKeyGroup">
-                        <label for="driveApiKey">🗂 Google Drive API Key <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional · folder links only)</span></label>
-                        <input type="password" id="driveApiKey" placeholder="AIza…" onchange="saveDriveApiKey()">
-                        <small class="hint">Optional fallback for folder links if Apps Script is unavailable. To use: <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank">Google Cloud Console</a> → enable Drive API → Credentials → create API key. <strong>Apps Script (below) is the recommended method.</strong></small>
-                    </div>
-
-                    <!-- Apps Script URL — primary method for full folder access -->
+                    <!-- Apps Script URL — required for full folder access -->
                     <div class="form-group">
                         <label for="appsScriptUrlInput">⚙️ Apps Script Web App URL <span style="font-weight:400;color:var(--success);font-size:0.68rem;">★ Required for folder links</span></label>
                         <div style="display:flex;gap:0.4rem;align-items:center;">
@@ -2229,67 +2222,46 @@
     }
 
     async function fetchFolderFiles(folderId) {
-        // ── Path 1: Apps Script (RECOMMENDED — full folder access, no API key needed) ──
+        // ── Apps Script (REQUIRED — full folder access) ──
         // Requires the listFolder action added to your Code.gs doGet function
-        if (appsScriptUrl) {
-            try {
-                const url = appsScriptUrl + '?action=listFolder&folderId=' + encodeURIComponent(folderId);
-                const res = await fetch(url);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.ok && Array.isArray(data.files)) {
-                        if (!data.files.length) {
-                            throw new Error('No PDF files found in this folder. Ensure the folder contains PDF files.');
-                        }
-                        console.log(`✓ Apps Script loaded ${data.files.length} PDF files from folder`);
-                        return data.files; // [{ id, name }]
-                    }
-                    if (data.error) throw new Error('Apps Script error: ' + data.error);
-                }
-                throw new Error('Apps Script returned invalid response. Check your deployment.');
-            } catch(e) {
-                // If it's our own thrown error, re-throw it
-                if (e.message.includes('PDF files') || e.message.includes('Apps Script')) {
-                    throw e;
-                }
-                // Network error - try fallback
-                console.warn('Apps Script folder listing failed, trying Google Drive API fallback:', e.message);
-            }
+        if (!appsScriptUrl) {
+            throw new Error(
+                'Apps Script URL not configured. Please deploy your Code.gs file and add the Web App URL in the sidebar (API Config section). ' +
+                'Ensure your folder is shared as "Anyone with the link" (Viewer access).'
+            );
         }
 
-        // ── Path 2: Google Drive API v3 (fallback — needs a Google API key) ──
-        const apiKey = driveApiKey || geminiApiKey;
-        if (apiKey) {
-            try {
-                const query  = encodeURIComponent("'" + folderId + "' in parents and trashed=false");
-                const fields = encodeURIComponent('files(id,name,mimeType)');
-                const url    = 'https://www.googleapis.com/drive/v3/files?q=' + query + '&fields=' + fields + '&pageSize=1000&key=' + apiKey;
-                const res    = await fetch(url);
-                if (res.ok) {
-                    const data = await res.json();
-                    const pdfFiles = (data.files || []).filter(function(f) {
-                        return f.mimeType === 'application/pdf' || (f.name || '').toLowerCase().endsWith('.pdf');
-                    });
-                    if (!pdfFiles.length) {
-                        throw new Error('No PDF files found in this folder using Drive API.');
-                    }
-                    console.log(`✓ Google Drive API loaded ${pdfFiles.length} PDF files from folder`);
-                    return pdfFiles;
-                }
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error('Drive API failed: ' + (errorData.error?.message || res.statusText));
-            } catch(e) {
-                console.error('Google Drive API error:', e.message);
-                throw new Error('Google Drive API failed: ' + e.message);
+        try {
+            const url = appsScriptUrl + '?action=listFolder&folderId=' + encodeURIComponent(folderId);
+            const res = await fetch(url);
+            
+            if (!res.ok) {
+                throw new Error('Apps Script returned status ' + res.status + '. Check your deployment settings.');
             }
+            
+            const data = await res.json();
+            
+            if (data.ok && Array.isArray(data.files)) {
+                if (!data.files.length) {
+                    throw new Error('No PDF files found in this folder. Ensure the folder contains PDF files.');
+                }
+                console.log(`✓ Apps Script loaded ${data.files.length} PDF files from folder`);
+                return data.files; // [{ id, name }]
+            }
+            
+            if (data.error) {
+                throw new Error('Apps Script error: ' + data.error);
+            }
+            
+            throw new Error('Apps Script returned invalid response. Check your Code.gs deployment.');
+            
+        } catch(e) {
+            console.error('Apps Script folder listing failed:', e.message);
+            throw new Error(
+                'Failed to load folder: ' + e.message + '. ' +
+                'Ensure your Apps Script is deployed correctly and the folder is shared publicly.'
+            );
         }
-
-        // ── No valid method available ──
-        throw new Error(
-            'Cannot load folder: No Apps Script URL or Google Drive API key configured. ' +
-            'Please configure your Apps Script URL in the sidebar (API Config section). ' +
-            'Ensure your folder is shared as "Anyone with the link" (Viewer access).'
-        );
     }
 
     async function addDriveLinks() {
