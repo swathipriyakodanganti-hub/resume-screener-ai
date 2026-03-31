@@ -3100,7 +3100,7 @@ Return exactly this JSON:
         const candidates = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
-        // Encode resume PDFs as base64 into each candidate object
+        // Build share URL with PDF data embedded (for the interviewer's view page)
         const candidatesWithResumes = await Promise.all(candidates.map(async (c) => {
             const clone = { ...c };
             if (c.filename) {
@@ -3118,36 +3118,43 @@ Return exactly this JSON:
             return clone;
         }));
 
-        // Encode ALL selected candidates into a single shareable URL
-        const encoded   = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesWithResumes });
-        const baseUrl   = window.location.origin + window.location.pathname;
-        const shareLink = `${baseUrl}?view=${encoded}`;
+        const encodedWithPdfs = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesWithResumes });
+        const baseUrl         = window.location.origin + window.location.pathname;
+        const shareLink       = `${baseUrl}?view=${encodedWithPdfs}`;
+
+        // POST body to Apps Script — lightweight, no PDF blobs
+        const encodedLight = encodeCandidateData({ _bulk: true, _position: position, candidates });
+        const shareLinkLight = `${baseUrl}?view=${encodedLight}`;
 
         const recipients = _interviewers.filter(iv => _selectedEmails.has(iv.email));
         const avgScore   = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / candidates.length);
 
         try {
-            await fetch(appsScriptUrl, {
-                method: 'POST',
-                mode:   'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    recipients,
-                    candidateName:  candidates.map(c => c.name).join(', '),
-                    candidateCount: candidates.length,
-                    position,
-                    shareLink,
-                    matchScore:  avgScore,
-                    isBulk:      true,
-                    candidates:  candidates.map(c => ({ name: c.name, match_score: c.match_score }))
-                })
+            // Use a CORS proxy approach: send as plain text so Apps Script can read it
+            const payload = JSON.stringify({
+                recipients,
+                candidateName:  candidates.map(c => c.name).join(', '),
+                candidateCount: candidates.length,
+                position,
+                shareLink,          // full link with PDF for the email button
+                matchScore:  avgScore,
+                isBulk:      true,
+                candidates:  candidates.map(c => ({ name: c.name, match_score: c.match_score }))
             });
 
-            showToast(`✅ Shortlist sent to ${recipients.map(r => r.name).join(' & ')}!`, 'success');
+            const res = await fetch(appsScriptUrl, {
+                method: 'POST',
+                mode:   'no-cors',   // Apps Script requires no-cors from external origins
+                body:   payload      // send as plain text body — Apps Script reads e.postData.contents
+            });
+
+            // With no-cors we always get an opaque response — treat reaching here as success
+            showToast(`✅ Sent to ${recipients.map(r => r.name).join(' & ')}!`, 'success');
             closeShareModal();
             clearAllSelections();
         } catch (err) {
-            showToast('Email send failed: ' + err.message, 'error');
+            showToast('Network error — check your Apps Script URL', 'error');
+            console.error('sendShare error:', err);
         }
 
         btn.disabled = false;
