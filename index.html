@@ -82,19 +82,30 @@
             position: fixed;
             left: 0; right: 0;
             top: 0;
-            height: 2px;
-            background: rgba(0, 220, 255, 0.18);
-            box-shadow: 0 0 8px rgba(0, 220, 255, 0.35), 0 0 2px rgba(0, 220, 255, 0.6);
+            height: 1px;
+            background: rgba(0, 220, 255, 0.95);
+            box-shadow: 0 0 2px #00dcff, 0 0 6px #00dcff, 0 0 1px #fff;
             animation: scanline 6s linear infinite;
             pointer-events: none;
             z-index: 9998;
         }
 
         @keyframes scanline {
-            0%   { top: 0%;   opacity: 0; }
-            3%   { opacity: 0.8; }
-            97%  { opacity: 0.4; }
-            100% { top: 100%; opacity: 0; }
+    0%         { top: 0%;   opacity: 0; }
+    2%         { opacity: 1; }
+    /* glitch flickers */
+    10%        { opacity: 1; transform: scaleX(1); }
+    10.5%      { opacity: 0; transform: scaleX(0.4) translateX(30%); }
+    11%        { opacity: 1; transform: scaleX(1); }
+    45%        { opacity: 0.8; }
+    45.2%      { opacity: 0; }
+    45.4%      { opacity: 0.9; }
+    70%        { opacity: 0.7; transform: scaleX(1); }
+    70.3%      { opacity: 0;   transform: scaleX(0.6) translateX(-20%); }
+    70.6%      { opacity: 1;   transform: scaleX(1); }
+    98%        { opacity: 0.6; }
+    100%       { top: 100%; opacity: 0; }
+}
         }
 
         /* ─── SIDEBAR ─── */
@@ -1238,31 +1249,29 @@
         .bulk-share-meta { font-size: 0.8rem; color: var(--text-muted); }
         .bulk-candidate-list { padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
 
-        /* Card shell */
         .bulk-candidate-card {
             background: rgba(4, 8, 20, 0.7);
             border: 1px solid var(--border);
             border-radius: 14px; overflow: hidden;
-            transition: border-color 0.25s, box-shadow 0.25s;
+            transition: border-color 0.2s, box-shadow 0.2s;
             animation: cardIn 0.45s ease-out backwards;
         }
-        .bulk-candidate-card:hover { border-color: rgba(0,220,255,0.28); }
-        .bulk-candidate-card.details-open { border-color: rgba(0,220,255,0.45); }
+        .bulk-candidate-card:hover { border-color: rgba(0,220,255,0.3); }
 
-        /* Identity row */
         .bulk-card-header {
             display: flex; align-items: center; gap: 1rem;
-            padding: 1.1rem 1.25rem 0.75rem; position: relative;
+            padding: 1.1rem 1.25rem; position: relative;
         }
         .bulk-rank-badge {
-            position: absolute; top: 0.875rem; right: 1.25rem;
+            position: absolute; top: 0.75rem; right: 1.25rem;
             font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
             text-transform: uppercase; color: var(--text-muted);
             background: rgba(0,220,255,0.06); border: 1px solid var(--border);
             border-radius: 6px; padding: 2px 8px;
         }
         .bulk-rank-badge.rank-1 { color: var(--success); border-color: rgba(0,232,160,0.3); background: rgba(0,232,160,0.07); }
-        .bulk-rank-badge.rank-2 { color: var(--amber);   border-color: rgba(64,200,255,0.3); background: rgba(64,200,255,0.07); }
+        .bulk-rank-badge.rank-2 { color: var(--amber); border-color: rgba(64,200,255,0.3); background: rgba(64,200,255,0.07); }
+
         .bulk-card-avatar {
             width: 44px; height: 44px; border-radius: 12px;
             background: linear-gradient(135deg, var(--accent-dark), #004080);
@@ -1281,67 +1290,12 @@
             font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700;
             flex-shrink: 0; padding-right: 2.5rem;
         }
-
-        /* Score bar */
-        .bulk-card-bar { height: 3px; background: rgba(0,220,255,0.1); margin: 0 1.25rem 0.875rem; border-radius: 2px; overflow: hidden; }
+        .bulk-card-bar { height: 3px; background: rgba(0,220,255,0.1); margin: 0 1.25rem; border-radius: 2px; overflow: hidden; }
         .bulk-card-bar-fill { height: 100%; border-radius: 2px; }
 
-        /* ── Stat cards row (always visible) ── */
-        .bulk-stat-row {
-            display: grid; grid-template-columns: repeat(4,1fr); gap: 0.6rem;
-            padding: 0 1.25rem 0.875rem;
-        }
-        @media(max-width:560px) { .bulk-stat-row { grid-template-columns: 1fr 1fr; } }
-        .bulk-stat-card {
-            padding: 0.6rem 0.4rem;
-            background: rgba(4, 8, 20, 0.8);
-            border: 1px solid var(--border); border-radius: 10px;
-            text-align: center;
-        }
-        .bulk-stat-val {
-            font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700;
-            color: var(--accent); display: block; line-height: 1.2;
-        }
-        .bulk-stat-lbl { font-size: 0.6rem; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.03em; }
-
-        /* Rec pill */
-        .bulk-rec-row { padding: 0 1.25rem 0.875rem; }
-        .bulk-rec-pill {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 5px 14px; border-radius: 8px;
-            font-size: 0.76rem; font-weight: 700;
-            font-family: 'Outfit', sans-serif; border: 1px solid;
-        }
-
-        /* ── View Details toggle bar ── */
-        .bulk-view-toggle {
-            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-            padding: 0.6rem 1.25rem;
-            border-top: 1px solid var(--border);
-            cursor: pointer; user-select: none;
-            font-size: 0.76rem; font-weight: 600;
-            font-family: 'Outfit', sans-serif;
-            color: var(--text-muted);
-            transition: all 0.2s ease;
-            background: rgba(0,220,255,0.02);
-        }
-        .bulk-view-toggle:hover { color: var(--accent); background: rgba(0,220,255,0.06); }
-        .bulk-view-toggle.open  { color: var(--accent); background: rgba(0,220,255,0.05); }
-        .bulk-toggle-chevron { transition: transform 0.3s ease; font-size: 0.6rem; }
-        .bulk-view-toggle.open .bulk-toggle-chevron { transform: rotate(180deg); }
-
-        /* ── Collapsible details panel ── */
-        .bulk-details-panel {
-            max-height: 0; overflow: hidden;
-            transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1);
-            border-top: 0px solid transparent;
-        }
-        .bulk-details-panel.open {
-            max-height: 800px;
-            border-top: 1px solid var(--border);
-        }
-        .bulk-details-inner { padding: 1.1rem 1.25rem 1.25rem; }
-
+        .bulk-card-body { padding: 1rem 1.25rem 1.1rem; border-top: 1px solid var(--border); }
+        .bulk-card-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media(max-width: 560px) { .bulk-card-sections { grid-template-columns: 1fr; } }
         .bulk-section-label {
             font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em;
             text-transform: uppercase; color: var(--accent);
@@ -1351,124 +1305,14 @@
         .bulk-skill-tag { padding: 2px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 600; }
         .bulk-skill-tag.have { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.22); color: var(--success); }
         .bulk-skill-tag.miss { background: rgba(255,80,96,0.08); border: 1px solid rgba(255,80,96,0.2); color: var(--danger); }
-        .bulk-skills-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-        @media(max-width:500px) { .bulk-skills-cols { grid-template-columns: 1fr; } }
-        .bulk-summary-text { font-size: 0.81rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1rem; }
-        .bulk-highlight-item { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: var(--text-secondary); }
-        .bulk-highlight-item::before { content: '▸'; color: var(--accent); flex-shrink: 0; }
-
-        /* View Resume button inside details */
-        .btn-view-resume-sp {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 0.55rem 1.1rem;
-            border: 1px solid var(--border-accent);
-            background: rgba(0,220,255,0.08);
-            color: var(--accent); border-radius: 9px;
-            font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 700;
-            cursor: pointer; transition: all 0.2s ease;
-            margin-top: 1rem;
+        .bulk-rec-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 12px; border-radius: 8px;
+            font-size: 0.75rem; font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            border: 1px solid; margin-top: 0.75rem;
         }
-        .btn-view-resume-sp:hover { background: rgba(0,220,255,0.18); box-shadow: 0 0 14px rgba(0,220,255,0.2); transform: translateY(-1px); }
-
-        /* ─── SHARE-PAGE RESUME LEFT SIDEBAR ─── */
-        .sp-resume-backdrop {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.45);
-            backdrop-filter: blur(4px);
-            z-index: 1200; opacity: 0; pointer-events: none;
-            transition: opacity 0.35s ease;
-        }
-        .sp-resume-backdrop.open { opacity: 1; pointer-events: all; }
-
-        .sp-resume-sidebar {
-            position: fixed; top: 0; left: 0; bottom: 0;
-            width: 44vw; max-width: 680px; min-width: 300px;
-            background: rgba(3,5,14,0.99);
-            backdrop-filter: blur(28px);
-            border-right: 1px solid var(--border-accent);
-            z-index: 1300;
-            display: flex; flex-direction: column;
-            transform: translateX(-100%);
-            transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
-            box-shadow: 20px 0 60px rgba(0,0,0,0.7);
-        }
-        .sp-resume-sidebar.open { transform: translateX(0); }
-
-        .sp-sidebar-header {
-            padding: 1.1rem 1.25rem;
-            border-bottom: 1px solid var(--border);
-            background: rgba(4,8,20,0.9);
-            display: flex; align-items: center; gap: 0.875rem;
-            flex-shrink: 0;
-        }
-        .sp-sidebar-avatar {
-            width: 40px; height: 40px; border-radius: 11px;
-            background: linear-gradient(135deg, var(--accent-dark), #004080);
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.88rem;
-            color: #d8f5ff; flex-shrink: 0;
-            border: 1px solid rgba(0,220,255,0.3);
-        }
-        .sp-sidebar-name-block { flex: 1; min-width: 0; }
-        .sp-sidebar-name {
-            font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700;
-            color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .sp-sidebar-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
-        .sp-sidebar-score {
-            font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700;
-            flex-shrink: 0;
-        }
-        .sp-sidebar-close {
-            width: 28px; height: 28px; border-radius: 7px;
-            border: 1px solid var(--border); background: transparent;
-            color: var(--text-muted); font-size: 0.85rem;
-            cursor: pointer; transition: all 0.2s ease;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-        }
-        .sp-sidebar-close:hover { border-color: var(--danger); color: var(--danger); background: rgba(248,113,113,0.08); }
-
-        .sp-sidebar-body {
-            flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem;
-            scrollbar-width: thin; scrollbar-color: rgba(0,220,255,0.15) transparent;
-        }
-        .sp-sidebar-body::-webkit-scrollbar { width: 3px; }
-        .sp-sidebar-body::-webkit-scrollbar-thumb { background: rgba(0,220,255,0.15); border-radius: 4px; }
-
-        .sp-section { margin-bottom: 1.5rem; }
-        .sp-section-title {
-            font-family: 'Outfit', sans-serif; font-size: 0.62rem; font-weight: 700;
-            letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
-            margin-bottom: 0.6rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border);
-        }
-        .sp-contact-grid { display: flex; flex-direction: column; gap: 0.4rem; }
-        .sp-contact-item {
-            display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem;
-            color: var(--text-secondary); padding: 0.45rem 0.75rem;
-            background: rgba(4,8,20,0.6); border-radius: 7px; border: 1px solid var(--border);
-        }
-        .sp-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-        .sp-stat-box {
-            padding: 0.6rem 0.5rem; background: rgba(4,8,20,0.8);
-            border: 1px solid var(--border); border-radius: 9px; text-align: center;
-        }
-        .sp-stat-val { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: var(--accent); display: block; }
-        .sp-stat-lbl { font-size: 0.62rem; color: var(--text-muted); margin-top: 1px; }
-        .sp-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.65; }
-        .sp-rating-box { padding: 0.75rem; background: rgba(4,8,20,0.8); border-radius: 9px; border-left: 3px solid var(--accent); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65; }
-        .sp-skill-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-        .sp-skill-tag { padding: 3px 9px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
-        .sp-skill-tag.have    { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); color: var(--success); }
-        .sp-skill-tag.missing { background: rgba(255,80,96,0.08); border: 1px solid rgba(255,80,96,0.2);  color: var(--danger); }
-        .sp-skill-tag.neutral { background: rgba(0,220,255,0.1);  border: 1px solid rgba(0,220,255,0.2);  color: #90d8f0; }
-        .sp-highlight { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.8rem; color: var(--text-secondary); }
-        .sp-highlight::before { content: '▸'; color: var(--accent); flex-shrink: 0; }
-        .sp-rec-pill {
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            padding: 0.55rem 1rem; border-radius: 9px;
-            font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 700;
-            border: 1px solid;
-        }
+        .bulk-summary-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
 
         /* ─── CANDIDATE SHARE PAGE ─── */
         .candidate-share-page {
@@ -1870,14 +1714,6 @@
 
 <!-- ─── CANDIDATE SHARE PAGE (shown when ?view= param in URL) ─── -->
 <div class="candidate-share-page" id="candidateSharePage">
-
-    <!-- Left-sliding resume sidebar (share page only) -->
-    <div class="sp-resume-backdrop" id="spResumeBackdrop" onclick="closeResumeSidebar()"></div>
-    <div class="sp-resume-sidebar" id="spResumeSidebar">
-        <div class="sp-sidebar-header" id="spSidebarHeader"></div>
-        <div class="sp-sidebar-body" id="spSidebarBody"></div>
-    </div>
-
     <div class="share-pg-wrap">
         <div class="share-pg-branding">
             <div class="share-pg-logo">Resume Screener AI</div>
@@ -2811,7 +2647,6 @@ Return exactly this JSON:
 
     let _shareCardIdx    = null;    // legacy single-card share (unused now)
     let _selectedCards   = new Set(); // indices of all checked cards
-    let _sharePageCandidates = [];    // candidates on the share page (for sidebar)
     let _interviewers    = [];      // [{name, email}] from Emails tab
     let _selectedEmails  = new Set();
     let appsScriptUrl    = localStorage.getItem('appsScriptUrl') || '';
@@ -3167,7 +3002,6 @@ Return exactly this JSON:
     function renderBulkSharePage(candidates, position) {
         // Sort by match score descending (same as main results view)
         candidates.sort((a, b) => b.match_score - a.match_score);
-        _sharePageCandidates = candidates; // store for sidebar access
 
         const count    = candidates.length;
         const avgScore = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count);
@@ -3203,22 +3037,17 @@ Return exactly this JSON:
 
     // ─── Build a single candidate card for the bulk share page ───
     function buildBulkCandidateCard(r, rank) {
-        const scoreCls  = scoreClass(r.match_score);
-        const fillCls   = fillClass(r.match_score);
-        const have      = r.skills_present || [];
-        const missing   = r.skills_missing  || [];
-        const allSkills = r.key_skills      || [];
-        const recCls    = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
-        const recTxt    = r.match_score >= 75 ? '✅ Recommended — Move Forward'
-                        : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review'
-                        : '❌ Not Recommended — Pass';
+        const scoreCls = scoreClass(r.match_score);
+        const fillCls  = fillClass(r.match_score);
+        const have     = r.skills_present || [];
+        const missing  = r.skills_missing  || [];
+        const recCls   = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
+        const recTxt   = r.match_score >= 75 ? '✅ Recommended' : r.match_score >= 50 ? '🔶 Consider' : '❌ Pass';
         const rankLabel = rank === 0 ? '🥇 Top Match' : rank === 1 ? '🥈 #2' : rank === 2 ? '🥉 #3' : `#${rank + 1}`;
         const rankCls   = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : '';
 
         return `
-        <div class="bulk-candidate-card" id="spCard-${rank}" style="animation-delay:${rank * 0.07}s">
-
-            <!-- Identity row -->
+        <div class="bulk-candidate-card" style="animation-delay:${rank * 0.07}s">
             <div class="bulk-card-header">
                 <div class="bulk-card-avatar">${initials(r.name)}</div>
                 <div class="bulk-card-info">
@@ -3229,222 +3058,41 @@ Return exactly this JSON:
                 <div class="bulk-rank-badge ${rankCls}">${rankLabel}</div>
             </div>
 
-            <!-- Score bar -->
             <div class="bulk-card-bar">
                 <div class="bulk-card-bar-fill ${fillCls}" style="width:${r.match_score}%"></div>
             </div>
 
-            <!-- ── Stat cards (always visible) ── -->
-            <div class="bulk-stat-row">
-                <div class="bulk-stat-card">
-                    <span class="bulk-stat-val ${scoreCls}">${r.match_score}%</span>
-                    <div class="bulk-stat-lbl">Match Score</div>
-                </div>
-                <div class="bulk-stat-card">
-                    <span class="bulk-stat-val">${r.experience_years}</span>
-                    <div class="bulk-stat-lbl">Years Exp</div>
-                </div>
-                <div class="bulk-stat-card">
-                    <span class="bulk-stat-val" style="color:var(--success);">${have.length}</span>
-                    <div class="bulk-stat-lbl">Skills Match</div>
-                </div>
-                <div class="bulk-stat-card">
-                    <span class="bulk-stat-val" style="color:var(--danger);">${missing.length}</span>
-                    <div class="bulk-stat-lbl">Skills Gap</div>
-                </div>
-            </div>
+            <div class="bulk-card-body">
+                ${r.summary ? `<div class="bulk-summary-text" style="margin-bottom:0.875rem;">${r.summary}</div>` : ''}
 
-            <!-- Recommendation pill -->
-            <div class="bulk-rec-row">
-                <span class="bulk-rec-pill ${recCls}">${recTxt}</span>
-            </div>
-
-            <!-- ── View Details toggle ── -->
-            <div class="bulk-view-toggle" id="spToggle-${rank}" onclick="toggleCandidateDetails(${rank})">
-                <span>View Details</span>
-                <span class="bulk-toggle-chevron">▼</span>
-            </div>
-
-            <!-- ── Collapsible details panel ── -->
-            <div class="bulk-details-panel" id="spDetails-${rank}">
-                <div class="bulk-details-inner">
-
-                    ${r.summary ? `
-                    <div style="margin-bottom:1rem;">
-                        <div class="bulk-section-label">👤 Profile Summary</div>
-                        <div class="bulk-summary-text">${r.summary}</div>
+                <div class="bulk-card-sections">
+                    ${have.length ? `
+                    <div>
+                        <div class="bulk-section-label">✓ Skills Present</div>
+                        <div class="bulk-skill-tags">${have.map(s => `<span class="bulk-skill-tag have">✓ ${s}</span>`).join('')}</div>
                     </div>` : ''}
-
-                    ${(have.length || missing.length) ? `
-                    <div class="bulk-skills-cols">
-                        ${have.length ? `
-                        <div>
-                            <div class="bulk-section-label">✓ Skills Present</div>
-                            <div class="bulk-skill-tags">${have.map(s => `<span class="bulk-skill-tag have">✓ ${s}</span>`).join('')}</div>
-                        </div>` : ''}
-                        ${missing.length ? `
-                        <div>
-                            <div class="bulk-section-label">✗ Skills Missing</div>
-                            <div class="bulk-skill-tags">${missing.map(s => `<span class="bulk-skill-tag miss">✗ ${s}</span>`).join('')}</div>
-                        </div>` : ''}
+                    ${missing.length ? `
+                    <div>
+                        <div class="bulk-section-label">✗ Skills Missing</div>
+                        <div class="bulk-skill-tags">${missing.map(s => `<span class="bulk-skill-tag miss">✗ ${s}</span>`).join('')}</div>
                     </div>` : ''}
-
-                    ${r.rating_reason ? `
-                    <div style="margin-bottom:1rem;">
-                        <div class="bulk-section-label">🎯 Score Reasoning</div>
-                        <div class="rating-box" style="margin-top:0.4rem;">${r.rating_reason}</div>
-                    </div>` : ''}
-
-                    ${r.highlights?.length ? `
-                    <div style="margin-bottom:0.5rem;">
-                        <div class="bulk-section-label">⭐ Key Highlights</div>
-                        ${r.highlights.map(h => `<div class="bulk-highlight-item">${h}</div>`).join('')}
-                    </div>` : ''}
-
-                    <!-- View Resume button -->
-                    <button class="btn-view-resume-sp" onclick="openResumeSidebar(${rank})">
-                        📄 View Full Profile
-                    </button>
-
                 </div>
-            </div>
 
+                ${r.rating_reason ? `
+                <div style="margin-top:0.875rem;">
+                    <div class="bulk-section-label">🎯 Score Reasoning</div>
+                    <div class="rating-box" style="margin-top:0.4rem;">${r.rating_reason}</div>
+                </div>` : ''}
+
+                ${r.highlights?.length ? `
+                <div style="margin-top:0.875rem;">
+                    <div class="bulk-section-label">⭐ Key Highlights</div>
+                    ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                </div>` : ''}
+
+                <div class="bulk-rec-pill ${recCls}" style="margin-top:0.875rem;">${recTxt}</div>
+            </div>
         </div>`;
-    }
-
-    // ─── Toggle the details dropdown for a card ───
-    function toggleCandidateDetails(rank) {
-        const panel   = document.getElementById(`spDetails-${rank}`);
-        const toggle  = document.getElementById(`spToggle-${rank}`);
-        const card    = document.getElementById(`spCard-${rank}`);
-        const isOpen  = panel.classList.contains('open');
-
-        // Close all others
-        document.querySelectorAll('.bulk-details-panel.open').forEach(p => p.classList.remove('open'));
-        document.querySelectorAll('.bulk-view-toggle.open').forEach(t => t.classList.remove('open'));
-        document.querySelectorAll('.bulk-candidate-card.details-open').forEach(c => c.classList.remove('details-open'));
-
-        if (!isOpen) {
-            panel.classList.add('open');
-            toggle.classList.add('open');
-            card.classList.add('details-open');
-            setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
-        }
-    }
-
-    // ─── Open the left-side resume/profile sidebar ───
-    function openResumeSidebar(rank) {
-        const r = _sharePageCandidates[rank];
-        if (!r) return;
-
-        const scoreCls = scoreClass(r.match_score);
-        const have     = r.skills_present || [];
-        const missing  = r.skills_missing  || [];
-        const allSkills = r.key_skills     || [];
-        const recCls   = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
-        const recTxt   = r.match_score >= 75 ? '✅ Recommended' : r.match_score >= 50 ? '🔶 Consider' : '❌ Pass';
-
-        // Build sidebar header
-        document.getElementById('spSidebarHeader').innerHTML = `
-            <div class="sp-sidebar-avatar">${initials(r.name)}</div>
-            <div class="sp-sidebar-name-block">
-                <div class="sp-sidebar-name">${r.name}</div>
-                <div class="sp-sidebar-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp</div>
-            </div>
-            <div class="sp-sidebar-score ${scoreCls}">${r.match_score}%</div>
-            <button class="sp-sidebar-close" onclick="closeResumeSidebar()">✕</button>`;
-
-        // Build sidebar body
-        document.getElementById('spSidebarBody').innerHTML = `
-
-            <div class="sp-section">
-                <div class="sp-section-title">📊 Match Overview</div>
-                <div class="sp-stat-grid">
-                    <div class="sp-stat-box">
-                        <span class="sp-stat-val ${scoreCls}">${r.match_score}%</span>
-                        <div class="sp-stat-lbl">Match Score</div>
-                    </div>
-                    <div class="sp-stat-box">
-                        <span class="sp-stat-val">${r.experience_years}</span>
-                        <div class="sp-stat-lbl">Years Exp</div>
-                    </div>
-                    <div class="sp-stat-box">
-                        <span class="sp-stat-val" style="color:var(--success);">${have.length}</span>
-                        <div class="sp-stat-lbl">Skills Match</div>
-                    </div>
-                    <div class="sp-stat-box">
-                        <span class="sp-stat-val" style="color:var(--danger);">${missing.length}</span>
-                        <div class="sp-stat-lbl">Skills Gap</div>
-                    </div>
-                </div>
-                <div class="sp-rec-pill ${recCls}" style="margin-top:0.75rem;">${recTxt}</div>
-            </div>
-
-            ${(r.email || r.phone) ? `
-            <div class="sp-section">
-                <div class="sp-section-title">📬 Contact</div>
-                <div class="sp-contact-grid">
-                    ${r.email ? `<div class="sp-contact-item">📧 ${r.email}</div>` : ''}
-                    ${r.phone ? `<div class="sp-contact-item">📞 ${r.phone}</div>` : ''}
-                </div>
-            </div>` : ''}
-
-            ${r.summary ? `
-            <div class="sp-section">
-                <div class="sp-section-title">👤 Profile Summary</div>
-                <div class="sp-text">${r.summary}</div>
-            </div>` : ''}
-
-            ${r.rating_reason ? `
-            <div class="sp-section">
-                <div class="sp-section-title">🎯 Score Reasoning</div>
-                <div class="sp-rating-box">${r.rating_reason}</div>
-            </div>` : ''}
-
-            ${allSkills.length ? `
-            <div class="sp-section">
-                <div class="sp-section-title">🛠 Key Skills</div>
-                <div class="sp-skill-list">${allSkills.map(s => `<span class="sp-skill-tag neutral">${s}</span>`).join('')}</div>
-            </div>` : ''}
-
-            ${(have.length || missing.length) ? `
-            <div class="sp-section">
-                <div class="sp-section-title">✅ Skills vs JD</div>
-                ${have.length ? `
-                <div style="margin-bottom:0.75rem;">
-                    <div style="font-size:0.65rem;color:var(--success);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Present</div>
-                    <div class="sp-skill-list">${have.map(s => `<span class="sp-skill-tag have">✓ ${s}</span>`).join('')}</div>
-                </div>` : ''}
-                ${missing.length ? `
-                <div>
-                    <div style="font-size:0.65rem;color:var(--danger);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Missing</div>
-                    <div class="sp-skill-list">${missing.map(s => `<span class="sp-skill-tag missing">✗ ${s}</span>`).join('')}</div>
-                </div>` : ''}
-            </div>` : ''}
-
-            ${r.highlights?.length ? `
-            <div class="sp-section">
-                <div class="sp-section-title">⭐ Key Highlights</div>
-                ${r.highlights.map(h => `<div class="sp-highlight">${h}</div>`).join('')}
-            </div>` : ''}
-
-        `;
-
-        document.getElementById('spSidebarBody').scrollTop = 0;
-        document.getElementById('spResumeSidebar').classList.add('open');
-        document.getElementById('spResumeBackdrop').classList.add('open');
-    }
-
-    // ─── Close the resume sidebar ───
-    function closeResumeSidebar() {
-        document.getElementById('spResumeSidebar').classList.remove('open');
-        document.getElementById('spResumeBackdrop').classList.remove('open');
-    }
-
-    // Close sidebar on Escape key
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeResumeSidebar();
-    });
     }
 </script>
 </body>
