@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         :root {
             --primary: #020508;
@@ -2223,45 +2224,61 @@
 
     async function fetchFolderFiles(folderId) {
         // ── Apps Script (REQUIRED — full folder access) ──
-        // Requires the listFolder action added to your Code.gs doGet function
         if (!appsScriptUrl) {
             throw new Error(
-                'Apps Script URL not configured. Please deploy your Code.gs file and add the Web App URL in the sidebar (API Config section). ' +
-                'Ensure your folder is shared as "Anyone with the link" (Viewer access).'
+                'Apps Script URL not configured. Open the sidebar → API Config → paste your Web App URL and click Save.'
             );
         }
 
+        const url = appsScriptUrl + '?action=listFolder&folderId=' + encodeURIComponent(folderId);
+
+        let res;
         try {
-            const url = appsScriptUrl + '?action=listFolder&folderId=' + encodeURIComponent(folderId);
-            const res = await fetch(url);
-            
-            if (!res.ok) {
-                throw new Error('Apps Script returned status ' + res.status + '. Check your deployment settings.');
+            // Apps Script redirects to script.googleusercontent.com — must follow redirects.
+            // 30s timeout handles slow cold-starts.
+            const controller = new AbortController();
+            const timeoutId  = setTimeout(() => controller.abort(), 30000);
+            res = await fetch(url, { method: 'GET', redirect: 'follow', signal: controller.signal });
+            clearTimeout(timeoutId);
+        } catch (networkErr) {
+            // Distinguish timeout vs real CORS / network failure
+            if (networkErr.name === 'AbortError') {
+                throw new Error('Apps Script timed out (30s). Re-deploy your script and try again.');
             }
-            
-            const data = await res.json();
-            
-            if (data.ok && Array.isArray(data.files)) {
-                if (!data.files.length) {
-                    throw new Error('No PDF files found in this folder. Ensure the folder contains PDF files.');
-                }
-                console.log(`✓ Apps Script loaded ${data.files.length} PDF files from folder`);
-                return data.files; // [{ id, name }]
-            }
-            
-            if (data.error) {
-                throw new Error('Apps Script error: ' + data.error);
-            }
-            
-            throw new Error('Apps Script returned invalid response. Check your Code.gs deployment.');
-            
-        } catch(e) {
-            console.error('Apps Script folder listing failed:', e.message);
             throw new Error(
-                'Failed to load folder: ' + e.message + '. ' +
-                'Ensure your Apps Script is deployed correctly and the folder is shared publicly.'
+                'Network / CORS error reaching Apps Script. ' +
+                'Make sure your deployment is set to  Execute as: Me  AND  Who has access: Anyone  (not "Anyone with Google account"). ' +
+                'After changing settings you MUST create a NEW deployment — editing the existing one is not enough.'
             );
         }
+
+        if (!res.ok) {
+            throw new Error(`Apps Script returned HTTP ${res.status}. Check your deployment URL is the /exec URL, not the /dev URL.`);
+        }
+
+        let data;
+        try {
+            data = await res.json();
+        } catch {
+            throw new Error('Apps Script returned non-JSON. Ensure doGet() calls jsonResponse() and you are not hitting a login redirect.');
+        }
+
+        if (data.ok && Array.isArray(data.files)) {
+            if (!data.files.length) {
+                const skippedInfo = data.skippedDetails?.length
+                    ? ` Files found but skipped: ${data.skippedDetails.map(s => s.name + ' (' + s.reason + ')').join('; ')}`
+                    : '';
+                throw new Error('No PDF files found in this folder.' + skippedInfo + ' Make sure the folder contains actual PDF files (not Google Docs).');
+            }
+            console.log(`✓ Apps Script loaded ${data.files.length} PDF files from folder "${data.folderName}"`);
+            return data.files;
+        }
+
+        if (data.error) {
+            throw new Error('Apps Script error: ' + data.error);
+        }
+
+        throw new Error('Apps Script returned an unexpected response shape. Ensure your Code.gs is up-to-date and re-deployed.');
     }
 
     async function addDriveLinks() {
@@ -2324,10 +2341,15 @@
     }
 
     async function fetchDrivePdf(driveEntry) {
-        // Google Drive direct-download URL for publicly shared files
+        // Google Drive direct-download URL — requires file to be shared "Anyone with link"
         const downloadUrl = `https://drive.google.com/uc?export=download&id=${driveEntry.fileId}`;
-        const res = await fetch(downloadUrl);
-        if (!res.ok) throw new Error(`Drive fetch failed (${res.status}) — ensure file is shared as "Anyone with link"`);
+        let res;
+        try {
+            res = await fetch(downloadUrl);
+        } catch {
+            throw new Error(`Network/CORS error fetching Drive file — ensure the file is shared as "Anyone with the link" (Viewer)`);
+        }
+        if (!res.ok) throw new Error(`Drive fetch failed (HTTP ${res.status}) — ensure file is shared as "Anyone with the link"`);
         const blob = await res.blob();
         return new File([blob], driveEntry.name, { type: 'application/pdf' });
     }
@@ -2477,6 +2499,18 @@
             return text.trim();
         } catch (err) {
             console.warn('PDF extraction error:', err);
+            return '';
+        }
+    }
+
+    // ─── DOCX Text Extraction (via mammoth.js) ───
+    async function extractTextFromDOCX(file) {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            return (result.value || '').trim();
+        } catch (err) {
+            console.warn('DOCX extraction error:', err);
             return '';
         }
     }
@@ -2704,13 +2738,18 @@ Return exactly this JSON:
 
             try {
                 let text = '';
-                if (file.type === 'application/pdf') {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (file.type === 'application/pdf' || ext === 'pdf') {
                     text = await extractTextFromPDF(file);
+                } else if (ext === 'docx' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    text = await extractTextFromDOCX(file);
+                } else if (ext === 'doc') {
+                    throw new Error('Legacy .doc format is not supported — please save as .docx or .pdf and re-upload');
                 } else {
                     text = await file.text().catch(() => '');
                 }
 
-                if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable');
+                if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable — ensure it contains selectable text (not a scanned image)');
 
                 // Use retry with backoff for API call
                 const result = await retryWithBackoff(async () => {
