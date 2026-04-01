@@ -3398,9 +3398,15 @@ Return exactly this JSON:
         const data = await res.json();
         if (!data) throw new Error('Share not found or expired');
 
+        // Firebase stores arrays as objects with numeric keys — normalize to array
+        let candidates = data.candidates;
+        if (candidates && !Array.isArray(candidates)) {
+            candidates = Object.keys(candidates).sort((a,b) => +a - +b).map(k => candidates[k]);
+        }
+
         // Resolve any pdf_ref back to actual base64
-        if (Array.isArray(data.candidates)) {
-            data.candidates = await Promise.all(data.candidates.map(async (c) => {
+        if (Array.isArray(candidates)) {
+            candidates = await Promise.all(candidates.map(async (c) => {
                 if (c.pdf_ref) {
                     try {
                         const pdfRes = await fetch(`${base}/pdfs/${c.pdf_ref}.json`);
@@ -3416,7 +3422,8 @@ Return exactly this JSON:
                 return c;
             }));
         }
-        return data;
+
+        return { ...data, candidates };
     }
 
     async function testAppsScriptUrl() {
