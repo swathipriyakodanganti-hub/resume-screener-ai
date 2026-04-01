@@ -2766,24 +2766,20 @@ Return exactly this JSON:
                     try { result.resume_pdf_b64 = await fileToBase64(file); } catch(e) { console.warn('Could not encode PDF:', e); }
                 }
 
-                const okExp = (!filters.minExp || result.experience_years >= +filters.minExp) &&
-                              (!filters.maxExp  || result.experience_years <= +filters.maxExp);
-                const okLoc = !filters.location ||
-                              (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
-
                 fileStatuses[file.name] = 'done';
 
-                if (okExp && okLoc) {
-                    matched++;
-                    analysisResults.push(result);
+                // Always add all candidates regardless of filters
+                analysisResults.push(result);
+                const okExpLocal = (!filters.minExp || result.experience_years >= +filters.minExp) &&
+                                   (!filters.maxExp  || result.experience_years <= +filters.maxExp);
+                const okLocLocal = !filters.location ||
+                                   (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
+                if (okExpLocal && okLocLocal) matched++;
 
-                    // Sort & re-render immediately
-                    const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-                    grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
-
-                    badge.style.display = 'inline-flex';
-                    badge.textContent   = `${matched} matched`;
-                }
+                const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+                grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
+                badge.style.display = 'inline-flex';
+                badge.textContent   = `${matched} matched`;
 
             } catch (err) {
                 fileStatuses[file.name] = 'error';
@@ -2815,23 +2811,22 @@ Return exactly this JSON:
 
                 result.filename        = driveEntry.name;
                 result.drive_link      = driveEntry.driveLink;
-                result.resume_pdf_b64  = pdfBase64; // store so interviewers can view resume on share page
-
-                const okExp = (!filters.minExp || result.experience_years >= +filters.minExp) &&
-                              (!filters.maxExp  || result.experience_years <= +filters.maxExp);
-                const okLoc = !filters.location ||
-                              (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
+                result.resume_pdf_b64  = pdfBase64;
 
                 fileStatuses[driveEntry.name] = 'done';
 
-                if (okExp && okLoc) {
-                    matched++;
-                    analysisResults.push(result);
-                    const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-                    grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
-                    badge.style.display = 'inline-flex';
-                    badge.textContent   = `${matched} matched`;
-                }
+                // Always add all candidates regardless of filters
+                analysisResults.push(result);
+                const okExpDrive = (!filters.minExp || result.experience_years >= +filters.minExp) &&
+                                   (!filters.maxExp  || result.experience_years <= +filters.maxExp);
+                const okLocDrive = !filters.location ||
+                                   (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
+                if (okExpDrive && okLocDrive) matched++;
+
+                const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+                grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
+                badge.style.display = 'inline-flex';
+                badge.textContent   = `${matched} matched`;
 
             } catch (err) {
                 fileStatuses[driveEntry.name] = 'error';
@@ -3301,7 +3296,12 @@ Return exactly this JSON:
 
         const sorted    = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
         const count     = _selectedCards.size;
-        const selected  = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
+        // Use filename as stable key — indices can shift after re-sort
+        const selectedFilenames = [..._selectedCards].map(i => {
+            const r = sorted[i] || analysisResults[i];
+            return r ? (r.filename || r.name) : null;
+        }).filter(Boolean);
+        const selected  = analysisResults.filter(r => selectedFilenames.includes(r.filename || r.name));
         const nameList  = selected.map(c => c.name);
         const position  = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
@@ -3546,7 +3546,12 @@ Return exactly this JSON:
         btn.innerHTML = '<span class="spinner"></span> Sending…';
 
         const sorted     = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const candidates = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
+        // Use filename as stable key — indices can shift after re-sort
+        const selFilenames = [..._selectedCards].map(i => {
+            const r = sorted[i] || analysisResults[i];
+            return r ? (r.filename || r.name) : null;
+        }).filter(Boolean);
+        const candidates = analysisResults.filter(r => selFilenames.includes(r.filename || r.name));
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
         // For URL mode: always strip the PDF binary (too large for a URL)
