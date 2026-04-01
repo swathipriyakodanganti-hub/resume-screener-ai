@@ -1013,7 +1013,7 @@
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.5);
             backdrop-filter: blur(4px);
-            z-index: 1050;
+            z-index: 9600; /* above .candidate-share-page (9500) */
             opacity: 0; pointer-events: none;
             transition: opacity 0.35s ease;
         }
@@ -1024,7 +1024,7 @@
             width: 48vw; max-width: 720px; min-width: 320px;
             background: #020508;
             border-right: 1px solid var(--border-accent);
-            z-index: 1100;
+            z-index: 9700; /* above .candidate-share-page (9500) */
             display: flex; flex-direction: column;
             transform: translateX(-100%);
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2769,11 +2769,14 @@ Return exactly this JSON:
                     return await analyzeWithProvider(text, currentJD, filters);
                 });
 
-                result.filename = file.name;
+                result.filename  = file.name;
+                result.file_type = ext; // store type for viewer
 
-                // Store PDF as base64 so interviewers can view the actual resume on the share page
-                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                    try { result.resume_pdf_b64 = await fileToBase64(file); } catch(e) { console.warn('Could not encode PDF:', e); }
+                // Store file as base64 for ALL types — PDF and DOCX
+                try {
+                    result.resume_pdf_b64 = await fileToBase64(file);
+                } catch(e) {
+                    console.warn('Could not encode file:', e);
                 }
 
                 fileStatuses[file.name] = 'done';
@@ -3130,38 +3133,74 @@ Return exactly this JSON:
     let _viewerObjectUrl = null;
 
     function openResumeViewer(filename) {
-        const file = uploadedFiles.find(f => f.name === filename);
-        const panel = document.getElementById('resumeViewerPanel');
-        const backdrop = document.getElementById('resumeViewerBackdrop');
-        const frame = document.getElementById('resumeViewerFrame');
+        const file      = uploadedFiles.find(f => f.name === filename);
+        const panel     = document.getElementById('resumeViewerPanel');
+        const backdrop  = document.getElementById('resumeViewerBackdrop');
+        const frame     = document.getElementById('resumeViewerFrame');
         const noPreview = document.getElementById('viewerNoPreview');
-        const titleEl = document.getElementById('viewerFileName');
+        const titleEl   = document.getElementById('viewerFileName');
 
         titleEl.textContent = filename;
-
-        // Revoke previous URL if any
         if (_viewerObjectUrl) { URL.revokeObjectURL(_viewerObjectUrl); _viewerObjectUrl = null; }
 
-        if (!file) {
-            frame.style.display = 'none';
-            noPreview.style.display = 'flex';
-        } else if (file.type === 'application/pdf' || filename.toLowerCase().endsWith('.pdf')) {
-            _viewerObjectUrl = URL.createObjectURL(file);
-            frame.src = _viewerObjectUrl;
-            frame.style.display = 'block';
-            noPreview.style.display = 'none';
+        const ext = filename.split('.').pop().toLowerCase();
+        const isDocx = ext === 'docx';
+        const isPdf  = ext === 'pdf';
+
+        const showFrame = async (sourceFile) => {
+            if (isPdf) {
+                _viewerObjectUrl = URL.createObjectURL(sourceFile);
+                frame.src = _viewerObjectUrl;
+                frame.style.display = 'block';
+                noPreview.style.display = 'none';
+            } else if (isDocx) {
+                try {
+                    const arrayBuffer = await sourceFile.arrayBuffer();
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                    const html = `<html><body style="font-family:Arial,sans-serif;padding:2rem;line-height:1.6;color:#222;">${result.value}</body></html>`;
+                    const htmlBlob = new Blob([html], { type: 'text/html' });
+                    _viewerObjectUrl = URL.createObjectURL(htmlBlob);
+                    frame.src = _viewerObjectUrl;
+                    frame.style.display = 'block';
+                    noPreview.style.display = 'none';
+                } catch(e) {
+                    frame.style.display = 'none';
+                    noPreview.style.display = 'flex';
+                }
+            } else {
+                frame.style.display = 'none';
+                noPreview.style.display = 'flex';
+            }
+        };
+
+        if (file) {
+            showFrame(file);
         } else {
-            frame.style.display = 'none';
-            noPreview.style.display = 'flex';
+            // Fallback: use resume_pdf_b64 from analysisResults
+            const r = analysisResults.find(res => res.filename === filename);
+            if (r && r.resume_pdf_b64) {
+                const byteChars = atob(r.resume_pdf_b64);
+                const byteArr   = new Uint8Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+                const mimeType  = isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf';
+                const blob      = new Blob([byteArr], { type: mimeType });
+                showFrame(blob);
+            } else if (r && r.drive_link) {
+                const fileIdMatch = r.drive_link.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
+                if (fileIdMatch) {
+                    frame.src = `https://drive.google.com/file/d/${fileIdMatch[1] || fileIdMatch[2]}/preview`;
+                    frame.style.display = 'block';
+                    noPreview.style.display = 'none';
+                }
+            } else {
+                frame.style.display = 'none';
+                noPreview.style.display = 'flex';
+            }
         }
 
         panel.classList.add('open');
-        // Only show viewer backdrop when the details overlay is NOT open —
-        // this lets both panels be visible simultaneously for reference.
         const detailsOverlayOpen = document.getElementById('resumeOverlay').classList.contains('open');
-        if (!detailsOverlayOpen) {
-            backdrop.classList.add('open');
-        }
+        if (!detailsOverlayOpen) backdrop.classList.add('open');
     }
 
     function closeResumeViewer() {
@@ -3733,6 +3772,7 @@ Return exactly this JSON:
 
     // ─── Render a single-candidate share page (extracted for reuse by Firebase path) ───
     function _renderSingleSharePage(r) {
+        _singleShareCandidate = r; // store so "View Resume" button can access it
         const position = r._position || '';
         const ringCls  = ringClass(r.match_score);
         const scoreCls = scoreClass(r.match_score);
@@ -3749,6 +3789,10 @@ Return exactly this JSON:
                 <div class="share-pg-name">${r.name}</div>
                 <div class="share-pg-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp</div>
                 ${(r.email || r.phone) ? `<div class="share-pg-meta" style="margin-top:4px;">${r.email ? '📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>` : ''}
+                ${(r.drive_link || r.resume_pdf_b64) ? `
+                <div style="margin-top:0.75rem;">
+                    <button class="share-cand-resume-btn" onclick="openSingleShareResumeViewer()">📄 View Resume</button>
+                </div>` : ''}
             </div>
             <div class="share-pg-score-ring ${ringCls}">
                 <span class="share-pg-score-num ${scoreCls}">${r.match_score}%</span>
@@ -3787,6 +3831,16 @@ Return exactly this JSON:
         `;
 
         document.title = `${r.name} — Candidate Profile`;
+    }
+
+    // ─── View Resume button handler for single-candidate share page ───
+    let _singleShareCandidate = null; // holds the single candidate data for resume viewer
+
+    async function openSingleShareResumeViewer() {
+        if (!_singleShareCandidate) return;
+        // Reuse openShareResumeViewer by temporarily wrapping the candidate in _shareCandidates
+        _shareCandidates = [_singleShareCandidate];
+        await openShareResumeViewer(0);
     }
 
     let _shareCandidates = null; // holds decoded candidates on the share page
@@ -3841,7 +3895,7 @@ Return exactly this JSON:
     }
 
     // ─── Open resume viewer from share page — uses drive_link (Firebase path) or base64 fallback ───
-    function openShareResumeViewer(rank) {
+    async function openShareResumeViewer(rank) {
         const panel     = document.getElementById('resumeViewerPanel');
         const backdrop  = document.getElementById('resumeViewerBackdrop');
         const frame     = document.getElementById('resumeViewerFrame');
@@ -3896,22 +3950,37 @@ Return exactly this JSON:
                 showDriveFallback(null, r.drive_link);
             }
 
-        // 2. Base64 PDF (legacy — when data came from old ?view= URL)
+        // 2. Base64 file (PDF or DOCX)
         } else if (r && r.resume_pdf_b64) {
+            const isDocx = r.file_type === 'docx' || (r.filename && r.filename.toLowerCase().endsWith('.docx'));
             try {
-                const binary = atob(r.resume_pdf_b64);
-                const bytes  = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                const blob = new Blob([bytes], { type: 'application/pdf' });
-                _viewerObjectUrl = URL.createObjectURL(blob);
+                const byteChars = atob(r.resume_pdf_b64);
+                const byteArr   = new Uint8Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+
+                if (isDocx) {
+                    // Render DOCX as HTML using mammoth
+                    const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                    const html = `<html><body style="font-family:Arial,sans-serif;padding:2rem;line-height:1.6;color:#222;">${result.value}</body></html>`;
+                    const htmlBlob = new Blob([html], { type: 'text/html' });
+                    _viewerObjectUrl = URL.createObjectURL(htmlBlob);
+                } else {
+                    // PDF
+                    const blob = new Blob([byteArr], { type: 'application/pdf' });
+                    _viewerObjectUrl = URL.createObjectURL(blob);
+                }
+
                 frame.src = _viewerObjectUrl;
                 frame.style.display = 'block';
                 noPreview.style.display = 'none';
             } catch(e) {
+                console.error('Viewer error:', e);
                 frame.style.display = 'none';
                 noPreview.style.display = 'flex';
                 const msgEl = document.getElementById('viewerNoPreviewMsg');
-                if (msgEl) msgEl.innerHTML = '⚠️ Failed to decode resume data';
+                if (msgEl) msgEl.innerHTML = '⚠️ Failed to load resume. Try opening the Drive link directly.';
             }
 
         // 3. No resume available on share page — show helpful message
