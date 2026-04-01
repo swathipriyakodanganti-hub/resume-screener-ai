@@ -2341,43 +2341,17 @@
     }
 
     async function fetchDrivePdf(driveEntry) {
-        // Route through Apps Script to avoid browser CORS restrictions
-        if (!appsScriptUrl) {
-            throw new Error('Apps Script URL not configured. Open API Config in the sidebar and paste your Web App URL.');
-        }
-
-        const url = appsScriptUrl + '?action=getFile&fileId=' + encodeURIComponent(driveEntry.fileId);
+        // Google Drive direct-download URL — requires file to be shared "Anyone with link"
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${driveEntry.fileId}`;
         let res;
         try {
-            const controller = new AbortController();
-            const timeoutId  = setTimeout(() => controller.abort(), 60000);
-            res = await fetch(url, { method: 'GET', redirect: 'follow', signal: controller.signal });
-            clearTimeout(timeoutId);
-        } catch (err) {
-            if (err.name === 'AbortError') throw new Error('Apps Script timed out fetching file. Try again.');
-            throw new Error('Network error reaching Apps Script. Check your deployment URL.');
-        }
-
-        if (!res.ok) throw new Error(`Apps Script returned HTTP ${res.status} while fetching file.`);
-
-        let data;
-        try {
-            data = await res.json();
+            res = await fetch(downloadUrl);
         } catch {
-            throw new Error('Apps Script returned non-JSON when fetching file. Re-deploy and try again.');
+            throw new Error(`Network/CORS error fetching Drive file — ensure the file is shared as "Anyone with the link" (Viewer)`);
         }
-
-        if (!data.ok || !data.data) throw new Error('Apps Script getFile failed: ' + (data.error || 'Unknown error'));
-
-        // Decode base64 -> File object
-        const byteChars = atob(data.data);
-        const byteArr   = new Uint8Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
-        const blob = new Blob([byteArr], { type: data.mimeType || 'application/pdf' });
-        const file = new File([blob], data.name || driveEntry.name, { type: 'application/pdf' });
-
-        // Return both file and base64 — analyzeResumes needs { file, base64 }
-        return { file, base64: data.data };
+        if (!res.ok) throw new Error(`Drive fetch failed (HTTP ${res.status}) — ensure file is shared as "Anyone with the link"`);
+        const blob = await res.blob();
+        return new File([blob], driveEntry.name, { type: 'application/pdf' });
     }
 
     function renderResumeDropdown() {
@@ -3537,7 +3511,8 @@ Return exactly this JSON:
         if (firebaseDbUrl) {
             try {
                 const sid = await saveToFirebase({ _bulk: true, _position: position, candidates: candidatesForFirebase });
-                shareLink = `${baseUrl}?sid=${sid}`;
+                // Embed Firebase URL in share link so interviewers don't need it saved in their browser
+                shareLink = `${baseUrl}?sid=${sid}&db=${encodeURIComponent(firebaseDbUrl)}`;
             } catch (fbErr) {
                 console.warn('Firebase save failed, falling back to URL encoding:', fbErr);
                 const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesForUrl });
@@ -3635,7 +3610,8 @@ Return exactly this JSON:
 
         if (sid) {
             // ── Firebase short-ID mode ──
-            const dbUrl = localStorage.getItem('firebaseDbUrl') || '';
+            // Read db URL from the share link itself first, then fall back to localStorage
+            const dbUrl = params.get('db') ? decodeURIComponent(params.get('db')) : (localStorage.getItem('firebaseDbUrl') || '');
             if (!dbUrl) {
                 document.getElementById('sharePgHero').innerHTML =
                     `<div style="padding:2rem;color:var(--danger);font-family:'Outfit',sans-serif;">
