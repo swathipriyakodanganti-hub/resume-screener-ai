@@ -3344,11 +3344,38 @@ Return exactly this JSON:
 
     async function saveToFirebase(data) {
         const id  = generateShortId();
+
+        // Save each candidate's PDF separately to avoid Firebase 10MB node limit
+        let candidatesToStore = data.candidates;
+        if (Array.isArray(data.candidates)) {
+            candidatesToStore = await Promise.all(data.candidates.map(async (c) => {
+                if (c.resume_pdf_b64) {
+                    const pdfId  = generateShortId();
+                    const pdfUrl = `${firebaseDbUrl}/pdfs/${pdfId}.json`;
+                    try {
+                        const pdfRes = await fetch(pdfUrl, {
+                            method:  'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body:    JSON.stringify({ data: c.resume_pdf_b64, _created: Date.now() })
+                        });
+                        if (pdfRes.ok) {
+                            // Store reference ID instead of raw base64 in the main share node
+                            const { resume_pdf_b64, ...rest } = c;
+                            return { ...rest, pdf_ref: pdfId };
+                        }
+                    } catch(e) {
+                        console.warn('PDF separate save failed, embedding inline:', e);
+                    }
+                }
+                return c;
+            }));
+        }
+
         const url = `${firebaseDbUrl}/shares/${id}.json`;
         const res = await fetch(url, {
             method:  'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ ...data, _created: Date.now() })
+            body:    JSON.stringify({ ...data, candidates: candidatesToStore, _created: Date.now() })
         });
         if (!res.ok) throw new Error(`Firebase write failed: ${res.status}`);
         return id;
@@ -3360,6 +3387,25 @@ Return exactly this JSON:
         if (!res.ok) throw new Error(`Firebase read failed: ${res.status}`);
         const data = await res.json();
         if (!data) throw new Error('Share not found or expired');
+
+        // Resolve any pdf_ref back to actual base64
+        if (Array.isArray(data.candidates)) {
+            data.candidates = await Promise.all(data.candidates.map(async (c) => {
+                if (c.pdf_ref) {
+                    try {
+                        const pdfRes = await fetch(`${base}/pdfs/${c.pdf_ref}.json`);
+                        if (pdfRes.ok) {
+                            const pdfData = await pdfRes.json();
+                            const { pdf_ref, ...rest } = c;
+                            return { ...rest, resume_pdf_b64: pdfData.data };
+                        }
+                    } catch(e) {
+                        console.warn('Could not load PDF ref:', e);
+                    }
+                }
+                return c;
+            }));
+        }
         return data;
     }
 
