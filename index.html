@@ -79,36 +79,7 @@
         .app-shell { display: flex; height: 100vh; position: relative; z-index: 1; }
 
         /* ─── VOID CIRCUIT SCANLINE ─── */
-        .app-shell::after {
-            content: '';
-            position: fixed;
-            left: 0; right: 0;
-            top: 0;
-            height: 1px;
-            background: rgba(0, 220, 255, 0.95);
-            box-shadow: 0 0 2px #00dcff, 0 0 6px #00dcff, 0 0 1px #fff;
-            animation: scanline 6s linear infinite;
-            pointer-events: none;
-            z-index: 9998;
-        }
-
-        @keyframes scanline {
-    0%         { top: 0%;   opacity: 0; }
-    2%         { opacity: 1; }
-    /* glitch flickers */
-    10%        { opacity: 1; transform: scaleX(1); }
-    10.5%      { opacity: 0; transform: scaleX(0.4) translateX(30%); }
-    11%        { opacity: 1; transform: scaleX(1); }
-    45%        { opacity: 0.8; }
-    45.2%      { opacity: 0; }
-    45.4%      { opacity: 0.9; }
-    70%        { opacity: 0.7; transform: scaleX(1); }
-    70.3%      { opacity: 0;   transform: scaleX(0.6) translateX(-20%); }
-    70.6%      { opacity: 1;   transform: scaleX(1); }
-    98%        { opacity: 0.6; }
-    100%       { top: 100%; opacity: 0; }
-}
-        }
+        /* scanline removed */
 
         /* ─── SIDEBAR ─── */
         /* ── ICON RAIL (collapsed) ── */
@@ -598,7 +569,7 @@
 
         .main-header {
             padding: 1.1rem 2rem 1rem;
-            border-bottom: 1px solid var(--border);
+            border-bottom: none;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -607,6 +578,24 @@
             background: rgba(4, 7, 16, 0.88);
             backdrop-filter: blur(20px);
             z-index: 50;
+        }
+        .main-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, var(--accent) 20%, #fff 50%, var(--accent) 80%, transparent 100%);
+            box-shadow: 0 0 8px 1px var(--accent), 0 0 2px 0px #fff;
+            animation: glitchLine 3.5s infinite;
+        }
+        @keyframes glitchLine {
+            0%   { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
+            10%  { opacity: 0.8; transform: scaleX(0.98) translateX(-2px); clip-path: inset(0 15% 0 5%); }
+            12%  { opacity: 1;   transform: scaleX(1)    translateX(1px);  clip-path: inset(0 0 0 0); }
+            40%  { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
+            41%  { opacity: 0.5; transform: scaleX(0.95) translateX(4px);  clip-path: inset(0 30% 0 10%); }
+            43%  { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
+            100% { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
         }
 
         .results-title {
@@ -2341,17 +2330,31 @@
     }
 
     async function fetchDrivePdf(driveEntry) {
-        // Google Drive direct-download URL — requires file to be shared "Anyone with link"
-        const downloadUrl = `https://drive.google.com/uc?export=download&id=${driveEntry.fileId}`;
+        if (!appsScriptUrl) {
+            throw new Error('Apps Script URL not configured. Open API Config in the sidebar and paste your Web App URL.');
+        }
+        const url = appsScriptUrl + '?action=getFile&fileId=' + encodeURIComponent(driveEntry.fileId);
         let res;
         try {
-            res = await fetch(downloadUrl);
-        } catch {
-            throw new Error(`Network/CORS error fetching Drive file — ensure the file is shared as "Anyone with the link" (Viewer)`);
+            const controller = new AbortController();
+            const timeoutId  = setTimeout(() => controller.abort(), 60000);
+            res = await fetch(url, { method: 'GET', redirect: 'follow', signal: controller.signal });
+            clearTimeout(timeoutId);
+        } catch (err) {
+            if (err.name === 'AbortError') throw new Error('Apps Script timed out fetching file. Try again.');
+            throw new Error('Network error reaching Apps Script. Check your deployment URL.');
         }
-        if (!res.ok) throw new Error(`Drive fetch failed (HTTP ${res.status}) — ensure file is shared as "Anyone with the link"`);
-        const blob = await res.blob();
-        return new File([blob], driveEntry.name, { type: 'application/pdf' });
+        if (!res.ok) throw new Error(`Apps Script returned HTTP ${res.status} while fetching file.`);
+        let data;
+        try { data = await res.json(); }
+        catch { throw new Error('Apps Script returned non-JSON when fetching file. Re-deploy and try again.'); }
+        if (!data.ok || !data.data) throw new Error('Apps Script getFile failed: ' + (data.error || 'Unknown error'));
+        const byteChars = atob(data.data);
+        const byteArr   = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([byteArr], { type: data.mimeType || 'application/pdf' });
+        const file = new File([blob], data.name || driveEntry.name, { type: 'application/pdf' });
+        return { file, base64: data.data };
     }
 
     function renderResumeDropdown() {
@@ -3511,7 +3514,6 @@ Return exactly this JSON:
         if (firebaseDbUrl) {
             try {
                 const sid = await saveToFirebase({ _bulk: true, _position: position, candidates: candidatesForFirebase });
-                // Embed Firebase URL in share link so interviewers don't need it saved in their browser
                 shareLink = `${baseUrl}?sid=${sid}&db=${encodeURIComponent(firebaseDbUrl)}`;
             } catch (fbErr) {
                 console.warn('Firebase save failed, falling back to URL encoding:', fbErr);
@@ -3610,7 +3612,6 @@ Return exactly this JSON:
 
         if (sid) {
             // ── Firebase short-ID mode ──
-            // Read db URL from the share link itself first, then fall back to localStorage
             const dbUrl = params.get('db') ? decodeURIComponent(params.get('db')) : (localStorage.getItem('firebaseDbUrl') || '');
             if (!dbUrl) {
                 document.getElementById('sharePgHero').innerHTML =
@@ -3905,9 +3906,9 @@ Return exactly this JSON:
         const rankLabel = rank === 0 ? '🥇 Top Match' : rank === 1 ? '🥈 #2' : rank === 2 ? '🥉 #3' : `#${rank + 1}`;
         const rankCls   = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : '';
 
-        const driveBtn = r.drive_link
+        const driveBtn = (r.drive_link || r.resume_pdf_b64)
             ? `<button class="share-cand-resume-btn" onclick="openShareResumeViewer(${rank})">📄 View Resume</button>`
-            : `<button class="share-cand-resume-btn" style="opacity:0.4;cursor:not-allowed;" disabled title="No Drive link attached">📄 No Resume</button>`;
+            : `<button class="share-cand-resume-btn" style="opacity:0.4;cursor:not-allowed;" disabled title="No resume available">📄 No Resume</button>`;
 
         return `
         <div class="bulk-candidate-card" style="animation-delay:${rank * 0.07}s">
