@@ -2755,8 +2755,13 @@ Return exactly this JSON:
                 const result = await retryWithBackoff(async () => {
                     return await analyzeWithProvider(text, currentJD, filters);
                 });
-                
+
                 result.filename = file.name;
+
+                // Store PDF as base64 so interviewers can view the actual resume on the share page
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    try { result.resume_pdf_b64 = await fileToBase64(file); } catch(e) { console.warn('Could not encode PDF:', e); }
+                }
 
                 const okExp = (!filters.minExp || result.experience_years >= +filters.minExp) &&
                               (!filters.maxExp  || result.experience_years <= +filters.maxExp);
@@ -2796,8 +2801,8 @@ Return exactly this JSON:
             pt.textContent = `Fetching: ${truncate(driveEntry.driveLink, 22)}`;
 
             try {
-                const pdfFile = await fetchDrivePdf(driveEntry);
-                const text    = await extractTextFromPDF(pdfFile);
+                const { file: pdfFile, base64: pdfBase64 } = await fetchDrivePdf(driveEntry);
+                const text = await extractTextFromPDF(pdfFile);
 
                 if (!text || text.trim().length < 30) throw new Error('Could not extract text — ensure the file is a readable PDF');
 
@@ -2805,8 +2810,9 @@ Return exactly this JSON:
                     return await analyzeWithProvider(text, currentJD, filters);
                 });
 
-                result.filename   = driveEntry.name;
-                result.drive_link = driveEntry.driveLink; // auto-set — no manual paste needed
+                result.filename        = driveEntry.name;
+                result.drive_link      = driveEntry.driveLink;
+                result.resume_pdf_b64  = pdfBase64; // store so interviewers can view resume on share page
 
                 const okExp = (!filters.minExp || result.experience_years >= +filters.minExp) &&
                               (!filters.maxExp  || result.experience_years <= +filters.maxExp);
@@ -3494,24 +3500,26 @@ Return exactly this JSON:
         const candidates = [..._selectedCards].map(i => sorted[i]).filter(Boolean);
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
-        // Strip resume_pdf_b64 (huge binary) — drive_link is used for resume viewing on share page
-        const cleanCandidates = candidates.map(({ resume_pdf_b64, ...rest }) => rest);
+        // For URL mode: always strip the PDF binary (too large for a URL)
+        // For Firebase mode: keep the PDF so interviewers can view the actual resume
+        const candidatesForUrl      = candidates.map(({ resume_pdf_b64, ...rest }) => rest);
+        const candidatesForFirebase = candidates; // includes resume_pdf_b64
 
         const baseUrl = window.location.origin + window.location.pathname;
         let shareLink;
 
         if (firebaseDbUrl) {
             try {
-                const sid = await saveToFirebase({ _bulk: true, _position: position, candidates: cleanCandidates });
+                const sid = await saveToFirebase({ _bulk: true, _position: position, candidates: candidatesForFirebase });
                 shareLink = `${baseUrl}?sid=${sid}`;
             } catch (fbErr) {
                 console.warn('Firebase save failed, falling back to URL encoding:', fbErr);
-                const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: cleanCandidates });
+                const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesForUrl });
                 shareLink = `${baseUrl}?view=${encoded}`;
             }
         } else {
-            // No Firebase configured — encode without pdf blobs (still may be long for 30+ candidates)
-            const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: cleanCandidates });
+            // No Firebase — strip PDFs to keep URL manageable
+            const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesForUrl });
             shareLink = `${baseUrl}?view=${encoded}`;
         }
 
