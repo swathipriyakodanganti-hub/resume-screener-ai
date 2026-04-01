@@ -3743,16 +3743,39 @@ Return exactly this JSON:
             
             if (fileIdMatch) {
                 const fileId = fileIdMatch[1] || fileIdMatch[2];
-                // Use Google Drive's official preview endpoint - works without CORS issues
-                frame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+                const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                
+                // Clear any previous error handlers
+                frame.onerror = null;
+                frame.onload = null;
+                
+                // Set up timeout to detect if iframe fails to load
+                let loadTimeout = setTimeout(() => {
+                    console.warn('Drive preview timed out, showing fallback');
+                    showDriveFallback(fileId);
+                }, 8000);
+                
+                // Success handler
+                frame.onload = () => {
+                    clearTimeout(loadTimeout);
+                    console.log('✓ Drive preview loaded successfully');
+                };
+                
+                // Error handler (may not always trigger due to iframe security)
+                frame.onerror = () => {
+                    clearTimeout(loadTimeout);
+                    console.warn('Drive preview failed to load');
+                    showDriveFallback(fileId);
+                };
+                
+                frame.src = embedUrl;
                 frame.style.display = 'block';
                 noPreview.style.display = 'none';
+                
             } else {
-                // Fallback: if we can't extract ID, try the original URL anyway
-                console.warn('Could not extract file ID from:', r.drive_link);
-                frame.src = r.drive_link;
-                frame.style.display = 'block';
-                noPreview.style.display = 'none';
+                // Fallback: if we can't extract ID, show error
+                console.error('Could not extract file ID from:', r.drive_link);
+                showDriveFallback(null, r.drive_link);
             }
 
         // 2. Base64 PDF (legacy — when data came from old ?view= URL)
@@ -3769,6 +3792,8 @@ Return exactly this JSON:
             } catch(e) {
                 frame.style.display = 'none';
                 noPreview.style.display = 'flex';
+                const msgEl = document.getElementById('viewerNoPreviewMsg');
+                if (msgEl) msgEl.innerHTML = '⚠️ Failed to decode resume data';
             }
 
         // 3. No resume available on share page — show helpful message
@@ -3790,6 +3815,34 @@ Return exactly this JSON:
 
         panel.classList.add('open');
         backdrop.classList.add('open');
+    }
+
+    // ─── Helper: Show fallback when Drive embedding fails ───
+    function showDriveFallback(fileId, directUrl = null) {
+        const frame = document.getElementById('resumeViewerFrame');
+        const noPreview = document.getElementById('viewerNoPreview');
+        const msgEl = document.getElementById('viewerNoPreviewMsg');
+        
+        const viewUrl = fileId 
+            ? `https://drive.google.com/file/d/${fileId}/view`
+            : directUrl;
+        
+        if (msgEl) {
+            msgEl.innerHTML = `
+                <div style="text-align:center;max-width:24rem;">
+                    <div style="font-size:2rem;margin-bottom:0.75rem;">📄</div>
+                    <div style="margin-bottom:1rem;color:var(--text-secondary);">Preview unavailable due to Drive permissions</div>
+                    ${viewUrl ? `<a href="${viewUrl}" target="_blank"
+                       style="display:inline-block;padding:0.75rem 1.5rem;background:var(--accent);color:var(--primary);border-radius:8px;text-decoration:none;font-weight:600;transition:all 0.2s;">
+                        📂 Open in Google Drive
+                    </a>
+                    <div style="margin-top:0.75rem;font-size:0.78rem;color:var(--text-muted);">Opens in a new tab</div>` : ''}
+                </div>
+            `;
+        }
+        
+        frame.style.display = 'none';
+        noPreview.style.display = 'flex';
     }
 
     // ─── Build a single candidate card for the bulk share page ───
