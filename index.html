@@ -1505,23 +1505,28 @@
         .share-cand-resume-btn:hover { background: rgba(0,128,255,0.2); }
 
 
+        /* ─── SHARE PAGE — Two-Panel Layout ─── */
         .candidate-share-page {
             position: fixed; inset: 0;
             background: var(--bg-main);
-            z-index: 9500; overflow-y: auto;
-            display: none;
+            z-index: 9500;
+            display: none; flex-direction: column;
         }
-        .candidate-share-page.active { display: block; }
-        .share-pg-wrap {
-            max-width: 800px; margin: 0 auto;
-            padding: 2.5rem 1.5rem 5rem;
+        .candidate-share-page.active { display: flex; }
+
+        /* Top branding bar */
+        .share-top-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.7rem 1.5rem;
+            background: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0; z-index: 10;
         }
-        .share-pg-branding { margin-bottom: 2rem; }
+        .share-top-bar-left { display: flex; align-items: center; gap: 0.75rem; }
         .share-pg-logo {
-            font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700;
+            font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700;
             background: linear-gradient(120deg, #90d8f0, var(--amber));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-            margin-bottom: 4px;
         }
         .share-pg-tag {
             display: inline-flex; align-items: center; gap: 5px;
@@ -1529,27 +1534,197 @@
             background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.22);
             color: var(--amber);
         }
-        .share-pg-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-accent);
-            border-radius: 20px; overflow: hidden;
-            box-shadow: 0 12px 50px rgba(0,0,0,0.55);
+        .share-position-pill {
+            padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+            background: rgba(0,220,255,0.08); border: 1px solid var(--border-accent);
+            color: var(--accent);
         }
-        .share-pg-hero {
-            padding: 2rem;
-            background: linear-gradient(135deg, rgba(0,128,255,0.1) 0%, rgba(251,191,36,0.04) 100%);
+
+        /* Two-panel shell */
+        .share-two-panel {
+            display: flex; flex: 1; overflow: hidden;
+        }
+
+        /* ── LEFT SIDEBAR: candidate list ── */
+        .share-candidates-sidebar {
+            width: 300px; min-width: 260px; max-width: 340px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .share-sidebar-header {
+            padding: 0.875rem 1rem 0.7rem;
             border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+            flex-shrink: 0;
         }
-        .share-pg-hero.bulk-hero { padding: 0; background: none; border-bottom: none; }
+        .share-sidebar-title {
+            font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+        .share-sidebar-meta { font-size: 0.7rem; color: var(--text-muted); }
+        .share-candidate-list {
+            flex: 1; overflow-y: auto; padding: 0.6rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,220,255,0.12) transparent;
+        }
+        .share-candidate-list::-webkit-scrollbar { width: 3px; }
+        .share-candidate-list::-webkit-scrollbar-thumb { background: rgba(0,220,255,0.12); border-radius: 4px; }
+
+        /* Sidebar candidate item */
+        .share-cand-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.75rem 0.875rem;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 0.35rem;
+            position: relative;
+        }
+        .share-cand-item:hover {
+            background: rgba(0,220,255,0.06);
+            border-color: rgba(0,220,255,0.18);
+        }
+        .share-cand-item.active {
+            background: rgba(0,220,255,0.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(0,220,255,0.1);
+        }
+        .share-cand-item-avatar {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-dark), #004080);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.8rem;
+            color: #d8f5ff; flex-shrink: 0;
+            border: 1px solid rgba(0,220,255,0.22);
+        }
+        .share-cand-item-info { flex: 1; min-width: 0; }
+        .share-cand-item-name {
+            font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 600;
+            color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .share-cand-item-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+        .share-cand-item-score {
+            font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700;
+            flex-shrink: 0;
+        }
+        .share-cand-item-rank {
+            position: absolute; top: 0.35rem; right: 0.5rem;
+            font-size: 0.58rem; font-weight: 700;
+            color: var(--text-muted);
+        }
+        .share-cand-item-bar {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+            background: rgba(0,220,255,0.06); border-radius: 0 0 10px 10px; overflow: hidden;
+        }
+        .share-cand-item-bar-fill { height: 100%; border-radius: 0 0 10px 10px; }
+
+        /* ── RIGHT PANEL: candidate detail ── */
+        .share-detail-panel {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .share-detail-content {
+            flex: 1; overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,220,255,0.12) transparent;
+        }
+        .share-detail-content::-webkit-scrollbar { width: 4px; }
+        .share-detail-content::-webkit-scrollbar-thumb { background: rgba(0,220,255,0.12); border-radius: 4px; }
+
+        /* Detail hero (top section of right panel) */
+        .share-detail-hero {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(0,128,255,0.08) 0%, rgba(0,220,255,0.03) 100%);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+        }
+        .share-detail-avatar {
+            width: 58px; height: 58px; border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent-dark), #004080);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.3rem;
+            color: #d8f5ff; flex-shrink: 0;
+            border: 1px solid rgba(0,220,255,0.3);
+        }
+        .share-detail-info { flex: 1; min-width: 160px; }
+        .share-detail-name {
+            font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 700;
+            color: var(--text-primary); margin-bottom: 3px;
+        }
+        .share-detail-meta { font-size: 0.8rem; color: var(--text-muted); }
+        .share-detail-actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; }
+        .share-detail-score-ring {
+            flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%;
+            border: 2.5px solid var(--border);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .share-detail-score-ring.ring-high { border-color: var(--success); box-shadow: 0 0 14px var(--success-glow); }
+        .share-detail-score-ring.ring-mid  { border-color: var(--amber); }
+        .share-detail-score-ring.ring-low  { border-color: var(--danger); }
+        .share-detail-score-num {
+            font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; line-height: 1;
+        }
+        .share-detail-score-lbl { font-size: 0.56rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+        /* Detail body sections */
+        .share-detail-body { padding: 1.5rem 2rem 3rem; }
+
+        /* Empty right panel state */
+        .share-detail-empty {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: var(--text-muted); text-align: center; padding: 3rem;
+        }
+        .share-detail-empty-icon { font-size: 3rem; opacity: 0.2; margin-bottom: 1rem; }
+        .share-detail-empty h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; color: var(--text-secondary); margin-bottom: 0.4rem; }
+        .share-detail-empty p { font-size: 0.8rem; }
+
+        /* Shared detail section styles */
+        .share-pg-section { margin-bottom: 1.5rem; }
+        .share-pg-section-title {
+            font-family: 'Outfit', sans-serif; font-size: 0.64rem; font-weight: 700;
+            letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
+            margin-bottom: 0.875rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+        }
+        .share-stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.75rem; }
+        @media(max-width:500px) { .share-stat-grid { grid-template-columns: 1fr 1fr; } }
+        .share-stat-box {
+            padding: 0.875rem 0.5rem;
+            background: rgba(14,11,31,0.7); border: 1px solid var(--border);
+            border-radius: 12px; text-align: center;
+        }
+        .share-stat-val {
+            font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700;
+            color: var(--accent); display: block; margin-bottom: 3px;
+        }
+        .share-stat-lbl { font-size: 0.64rem; color: var(--text-muted); }
+        .share-stat-val.score-high { color: var(--success) !important; }
+        .share-stat-val.score-mid  { color: var(--amber)   !important; }
+        .share-stat-val.score-low  { color: var(--danger)  !important; }
+        .share-rec-pill {
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 0.65rem 1rem; border-radius: 10px;
+            font-family: 'Outfit', sans-serif; font-size: 0.84rem; font-weight: 700;
+            border: 1px solid; margin-top: 0.75rem;
+        }
+        .share-skills-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .share-skills-col-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .share-skill-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+        .share-pg-footer {
+            padding: 1.25rem 2rem; text-align: center;
+            font-size: 0.72rem; color: var(--text-muted); opacity: 0.5; line-height: 1.7;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Single candidate share page (non-bulk) — kept for backward compat */
         .share-pg-avatar {
             width: 66px; height: 66px; border-radius: 18px;
             background: linear-gradient(135deg, var(--accent-dark), #004080);
             display: flex; align-items: center; justify-content: center;
             font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.5rem;
-            color: #d8f5ff; flex-shrink: 0;
-            border: 1px solid rgba(0,220,255,0.3);
+            color: #d8f5ff; flex-shrink: 0; border: 1px solid rgba(0,220,255,0.3);
         }
         .share-pg-info { flex: 1; min-width: 180px; }
         .share-pg-name {
@@ -1569,41 +1744,13 @@
         .share-pg-score-num.score-high { color: var(--success); }
         .share-pg-score-num.score-mid  { color: var(--amber); }
         .share-pg-score-num.score-low  { color: var(--danger); }
-        .share-stat-val.score-high { color: var(--success) !important; }
-        .share-stat-val.score-mid  { color: var(--amber)   !important; }
-        .share-stat-val.score-low  { color: var(--danger)  !important; }
         .share-pg-score-lbl { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
         .share-pg-body { padding: 1.75rem 2rem; }
-        .share-pg-section { margin-bottom: 1.75rem; }
-        .share-pg-section-title {
-            font-family: 'Outfit', sans-serif; font-size: 0.64rem; font-weight: 700;
-            letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
-            margin-bottom: 0.875rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
-        }
-        .share-stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.75rem; }
-        @media(max-width:500px) { .share-stat-grid { grid-template-columns: 1fr 1fr; } }
-        .share-stat-box {
-            padding: 0.875rem 0.5rem;
-            background: rgba(14,11,31,0.7); border: 1px solid var(--border);
-            border-radius: 12px; text-align: center;
-        }
-        .share-stat-val {
-            font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700;
-            color: var(--accent); display: block; margin-bottom: 3px;
-        }
-        .share-stat-lbl { font-size: 0.64rem; color: var(--text-muted); }
-        .share-rec-pill {
-            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-            padding: 0.65rem 1rem; border-radius: 10px;
-            font-family: 'Outfit', sans-serif; font-size: 0.84rem; font-weight: 700;
-            border: 1px solid; margin-top: 0.75rem;
-        }
-        .share-skills-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .share-skills-col-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
-        .share-skill-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-        .share-pg-footer {
-            margin-top: 2.5rem; text-align: center;
-            font-size: 0.73rem; color: var(--text-muted); opacity: 0.55; line-height: 1.7;
+        .share-pg-hero {
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(0,128,255,0.1) 0%, rgba(251,191,36,0.04) 100%);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
         }
         .share-pg-position-banner {
             padding: 0.7rem 1.5rem;
@@ -1953,22 +2100,53 @@
     </div>
 </div>
 
-<!-- ─── CANDIDATE SHARE PAGE (shown when ?view= param in URL) ─── -->
+<!-- ─── CANDIDATE SHARE PAGE (shown when ?view= or ?sid= param in URL) ─── -->
 <div class="candidate-share-page" id="candidateSharePage">
-    <div class="share-pg-wrap">
-        <div class="share-pg-branding">
+
+    <!-- Top bar -->
+    <div class="share-top-bar">
+        <div class="share-top-bar-left">
             <div class="share-pg-logo">Resume Screener AI</div>
             <span class="share-pg-tag">🔒 Confidential · Talent Acquisition</span>
+            <span class="share-position-pill" id="sharePgPositionBanner" style="display:none;"></span>
         </div>
-        <div class="share-pg-card">
-            <div id="sharePgPositionBanner"></div>
-            <div class="share-pg-hero" id="sharePgHero"></div>
-            <div class="share-pg-body" id="sharePgBody"></div>
+        <div style="font-size:0.68rem;color:var(--text-muted);">Powered by AI · For recipient use only</div>
+    </div>
+
+    <!-- Two-panel layout -->
+    <div class="share-two-panel">
+
+        <!-- LEFT: Candidate list sidebar (bulk mode) / Single hero (single mode) -->
+        <div class="share-candidates-sidebar" id="shareSidebar">
+            <div class="share-sidebar-header">
+                <div class="share-sidebar-title" id="shareSidebarTitle">Candidates</div>
+                <div class="share-sidebar-meta" id="shareSidebarMeta"></div>
+            </div>
+            <div class="share-candidate-list" id="shareCandidateList">
+                <!-- filled by JS -->
+            </div>
+            <div class="share-pg-footer" style="margin-top:0;padding:0.875rem 1rem;text-align:center;">
+                Sent by <strong>Talent Acquisition</strong><br>
+                <span style="font-size:0.66rem;">This is confidential.</span>
+            </div>
         </div>
-        <div class="share-pg-footer">
-            Sent by <strong>Talent Acquisition Team</strong> · Powered by Resume Screener AI<br>
-            This profile is confidential and intended only for the recipient.
+
+        <!-- RIGHT: Candidate details panel -->
+        <div class="share-detail-panel" id="shareDetailPanel">
+            <div class="share-detail-content" id="shareDetailContent">
+                <!-- Hero section -->
+                <div id="sharePgHero"></div>
+                <!-- Body/details -->
+                <div id="sharePgBody"></div>
+                <!-- fallback empty state, hidden once a candidate is selected -->
+                <div class="share-detail-empty" id="shareDetailEmpty">
+                    <div class="share-detail-empty-icon">👈</div>
+                    <h3>Select a candidate</h3>
+                    <p>Click any candidate from the left panel to view their profile</p>
+                </div>
+            </div>
         </div>
+
     </div>
 </div>
 
@@ -3772,126 +3950,171 @@ Return exactly this JSON:
 
     // ─── Render a single-candidate share page (extracted for reuse by Firebase path) ───
     function _renderSingleSharePage(r) {
-        _singleShareCandidate = r; // store so "View Resume" button can access it
+        _singleShareCandidate = r;
         const position = r._position || '';
-        const ringCls  = ringClass(r.match_score);
-        const scoreCls = scoreClass(r.match_score);
 
+        // Position pill
         const bannerEl = document.getElementById('sharePgPositionBanner');
         if (position && bannerEl) {
-            bannerEl.className = 'share-pg-position-banner';
-            bannerEl.innerHTML = `📋 Position: <strong style="margin-left:4px;">${position}</strong>`;
+            bannerEl.textContent = `📋 ${position}`;
+            bannerEl.style.display = 'inline-flex';
         }
 
-        document.getElementById('sharePgHero').innerHTML = `
-            <div class="share-pg-avatar">${initials(r.name)}</div>
-            <div class="share-pg-info">
-                <div class="share-pg-name">${r.name}</div>
-                <div class="share-pg-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp</div>
-                ${(r.email || r.phone) ? `<div class="share-pg-meta" style="margin-top:4px;">${r.email ? '📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>` : ''}
-                ${(r.drive_link || r.resume_pdf_b64) ? `
-                <div style="margin-top:0.75rem;">
-                    <button class="share-cand-resume-btn" onclick="openSingleShareResumeViewer()">📄 View Resume</button>
-                </div>` : ''}
-            </div>
-            <div class="share-pg-score-ring ${ringCls}">
-                <span class="share-pg-score-num ${scoreCls}">${r.match_score}%</span>
-                <span class="share-pg-score-lbl">Match</span>
-            </div>`;
+        // Sidebar: show single candidate as selected item
+        _shareCandidates = [r];
+        document.getElementById('shareSidebarTitle').textContent = 'Candidate Profile';
+        document.getElementById('shareSidebarMeta').innerHTML = '';
+        document.getElementById('shareCandidateList').innerHTML = buildShareSidebarItem(r, 0);
 
-        const skillsHave    = r.skills_present || [];
-        const skillsMissing = r.skills_missing  || [];
-        const allSkills     = r.key_skills      || [];
-
-        document.getElementById('sharePgBody').innerHTML = `
-            <div class="share-pg-section">
-                <div class="share-pg-section-title">📊 Overview</div>
-                <div class="share-stat-grid">
-                    <div class="share-stat-box"><span class="share-stat-val ${scoreCls}">${r.match_score}%</span><div class="share-stat-lbl">Match Score</div></div>
-                    <div class="share-stat-box"><span class="share-stat-val">${r.experience_years}</span><div class="share-stat-lbl">Years Exp</div></div>
-                    <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${skillsHave.length}</span><div class="share-stat-lbl">Skills Match</div></div>
-                    <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${skillsMissing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
-                </div>
-                <div class="share-rec-pill ${r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass'}">
-                    ${r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review' : '❌ Not Recommended — Pass'}
-                </div>
-            </div>
-            ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
-            ${r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
-            ${allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
-            ${(skillsHave.length || skillsMissing.length) ? `
-            <div class="share-pg-section">
-                <div class="share-pg-section-title">✅ Skills vs JD</div>
-                <div class="share-skills-cols">
-                    <div><div class="share-skills-col-label have">✓ Present</div><div class="share-skill-tags">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div></div>
-                    <div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div></div>
-                </div>
-            </div>` : ''}
-            ${r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
-        `;
+        // Auto-select it (renders details)
+        selectShareCandidate(0);
 
         document.title = `${r.name} — Candidate Profile`;
     }
 
     // ─── View Resume button handler for single-candidate share page ───
-    let _singleShareCandidate = null; // holds the single candidate data for resume viewer
+    let _singleShareCandidate = null; // kept for backward compatibility
 
     async function openSingleShareResumeViewer() {
-        if (!_singleShareCandidate) return;
-        // Reuse openShareResumeViewer by temporarily wrapping the candidate in _shareCandidates
-        _shareCandidates = [_singleShareCandidate];
+        // Single candidate is always index 0 in _shareCandidates on the share page
         await openShareResumeViewer(0);
     }
 
     let _shareCandidates = null; // holds decoded candidates on the share page
+    let _shareActiveIdx  = -1;  // currently selected candidate index in share page
 
     // ─── Render a bulk shortlist share page ───
     function renderBulkSharePage(candidates, position) {
-        // Sort by match score descending (same as main results view)
         candidates.sort((a, b) => b.match_score - a.match_score);
-        _shareCandidates = candidates; // store for resume viewer access
+        _shareCandidates = candidates;
 
         const count    = candidates.length;
         const avgScore = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count);
         const topScore = candidates[0]?.match_score || 0;
 
-        // Position banner
+        // Position pill in top bar
         const bannerEl = document.getElementById('sharePgPositionBanner');
-        if (bannerEl) {
-            bannerEl.className = 'share-pg-position-banner';
-            bannerEl.innerHTML = position ? `📋 Position: <strong style="margin-left:4px;">${position}</strong>` : '';
+        if (bannerEl && position) {
+            bannerEl.textContent = `📋 ${position}`;
+            bannerEl.style.display = 'inline-flex';
         }
 
-        // Replace hero with a compact summary header
-        const heroEl = document.getElementById('sharePgHero');
-        heroEl.classList.add('bulk-hero');
-        heroEl.innerHTML = `
-            <div class="bulk-share-header">
-                <div class="bulk-share-title">🏆 Candidate Shortlist · ${count} Profile${count > 1 ? 's' : ''}</div>
-                <div class="bulk-share-meta">
-                    Ranked by AI Match Score &nbsp;·&nbsp; Avg: <strong style="color:var(--accent);">${avgScore}%</strong>
-                    &nbsp;·&nbsp; Top: <strong style="color:var(--success);">${topScore}%</strong>
+        // Sidebar header
+        document.getElementById('shareSidebarTitle').textContent = `${count} Candidate${count > 1 ? 's' : ''}`;
+        document.getElementById('shareSidebarMeta').innerHTML =
+            `Avg: <strong style="color:var(--accent);">${avgScore}%</strong> &nbsp;·&nbsp; Top: <strong style="color:var(--success);">${topScore}%</strong>`;
+
+        // Build sidebar list
+        document.getElementById('shareCandidateList').innerHTML =
+            candidates.map((r, i) => buildShareSidebarItem(r, i)).join('');
+
+        // Clear detail panel
+        document.getElementById('sharePgHero').innerHTML = '';
+        document.getElementById('sharePgBody').innerHTML = '';
+        document.getElementById('shareDetailEmpty').style.display = 'flex';
+
+        document.title = `${count} Candidates — Shortlist · ${position}`;
+
+        // Auto-select first candidate
+        if (count > 0) selectShareCandidate(0);
+    }
+
+    // ─── Build a sidebar list item for a candidate ───
+    function buildShareSidebarItem(r, idx) {
+        const scoreCls = scoreClass(r.match_score);
+        const fillCls  = fillClass(r.match_score);
+        const rankLabel = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx+1}`;
+        return `
+        <div class="share-cand-item" id="share-item-${idx}" onclick="selectShareCandidate(${idx})" style="animation:cardIn 0.35s ease-out ${idx*0.05}s backwards;">
+            <div class="share-cand-item-rank">${rankLabel}</div>
+            <div class="share-cand-item-avatar">${initials(r.name)}</div>
+            <div class="share-cand-item-info">
+                <div class="share-cand-item-name">${r.name}</div>
+                <div class="share-cand-item-meta">💼 ${r.experience_years} yrs &nbsp;·&nbsp; 📍 ${r.location || '—'}</div>
+            </div>
+            <div class="share-cand-item-score ${scoreCls}">${r.match_score}%</div>
+            <div class="share-cand-item-bar"><div class="share-cand-item-bar-fill ${fillCls}" style="width:${r.match_score}%"></div></div>
+        </div>`;
+    }
+
+    // ─── Select a candidate and render their details in the right panel ───
+    function selectShareCandidate(idx) {
+        // Deactivate previous
+        if (_shareActiveIdx >= 0) {
+            const prev = document.getElementById(`share-item-${_shareActiveIdx}`);
+            if (prev) prev.classList.remove('active');
+        }
+        _shareActiveIdx = idx;
+        const item = document.getElementById(`share-item-${idx}`);
+        if (item) item.classList.add('active');
+
+        const r = _shareCandidates[idx];
+        if (!r) return;
+
+        document.getElementById('shareDetailEmpty').style.display = 'none';
+
+        const scoreCls = scoreClass(r.match_score);
+        const ringCls  = ringClass(r.match_score);
+        const have    = r.skills_present || [];
+        const missing = r.skills_missing  || [];
+        const allSkills = r.key_skills   || [];
+        const recCls   = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
+        const recTxt   = r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review' : '❌ Not Recommended — Pass';
+
+        const resumeBtn = (r.drive_link || r.resume_pdf_b64)
+            ? `<button class="share-cand-resume-btn" onclick="openShareResumeViewer(${idx})">📄 View Resume</button>`
+            : '';
+
+        document.getElementById('sharePgHero').innerHTML = `
+            <div class="share-detail-hero">
+                <div class="share-detail-avatar">${initials(r.name)}</div>
+                <div class="share-detail-info">
+                    <div class="share-detail-name">${r.name}</div>
+                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
+                    <div class="share-detail-actions">
+                        <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.72rem;padding:3px 10px;">${recTxt}</div>
+                        ${resumeBtn}
+                    </div>
+                </div>
+                <div class="share-detail-score-ring ${ringCls}">
+                    <span class="share-detail-score-num ${scoreCls}">${r.match_score}%</span>
+                    <span class="share-detail-score-lbl">Match</span>
                 </div>
             </div>`;
 
-        // Build one card per candidate
         document.getElementById('sharePgBody').innerHTML = `
-            <div class="bulk-candidate-list">
-                ${candidates.map((r, i) => buildBulkCandidateCard(r, i)).join('')}
+            <div class="share-detail-body">
+                <div class="share-pg-section">
+                    <div class="share-pg-section-title">📊 Overview</div>
+                    <div class="share-stat-grid">
+                        <div class="share-stat-box"><span class="share-stat-val ${scoreCls}">${r.match_score}%</span><div class="share-stat-lbl">Match Score</div></div>
+                        <div class="share-stat-box"><span class="share-stat-val">${r.experience_years}</span><div class="share-stat-lbl">Years Exp</div></div>
+                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${have.length}</span><div class="share-stat-lbl">Skills Match</div></div>
+                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${missing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
+                    </div>
+                </div>
+                ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
+                ${r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
+                ${r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
+                ${allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
+                ${(have.length || missing.length) ? `
+                <div class="share-pg-section">
+                    <div class="share-pg-section-title">✅ Skills vs JD</div>
+                    <div class="share-skills-cols">
+                        ${have.length ? `<div><div class="share-skills-col-label have">✓ Present</div><div class="share-skill-tags">${have.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div></div>` : '<div></div>'}
+                        ${missing.length ? `<div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${missing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div></div>` : '<div></div>'}
+                    </div>
+                </div>` : ''}
             </div>`;
 
-        document.title = `${count} Candidates — Shortlist · ${position}`;
+        // Scroll detail panel to top
+        const content = document.getElementById('shareDetailContent');
+        if (content) content.scrollTop = 0;
     }
 
-    // ─── Toggle the details dropdown on the share page ───
+    // ─── Toggle the details dropdown on the share page (kept for compatibility) ───
     function toggleShareCandDetails(idx) {
-        const dropdown = document.getElementById(`share-details-${idx}`);
-        const btn = document.getElementById(`share-view-btn-${idx}`);
-        if (!dropdown) return;
-        const isOpen = dropdown.classList.contains('open');
-        dropdown.classList.toggle('open', !isOpen);
-        if (btn) btn.classList.toggle('active', !isOpen);
-        if (btn) btn.innerHTML = isOpen ? '👁 View' : '▲ Hide';
+        selectShareCandidate(idx);
     }
 
     // ─── Open resume viewer from share page — uses drive_link (Firebase path) or base64 fallback ───
