@@ -1791,6 +1791,92 @@
         .share-skills-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .share-skills-col-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
         .share-skill-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+        /* ── Mobile back button (hidden on desktop) ── */
+        .share-mobile-back {
+            display: none;
+            align-items: center; gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            background: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem; font-weight: 600; color: var(--accent);
+            cursor: pointer; flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .share-mobile-back svg { width: 16px; height: 16px; stroke: var(--accent); stroke-width: 2; fill: none; flex-shrink: 0; }
+
+        /* ── Share page mobile layout ── */
+        @media (max-width: 768px) {
+            /* Top bar: tighter on mobile */
+            .share-top-bar {
+                padding: 0.5rem 0.875rem;
+                flex-wrap: wrap; gap: 0.3rem;
+            }
+            .share-top-bar > div:last-child { display: none; }
+            .share-pg-tag { font-size: 0.62rem; padding: 2px 8px; }
+            .share-position-pill { font-size: 0.65rem; }
+
+            /* Three-panel → stacked single-panel */
+            .share-three-panel { flex-direction: column; overflow: visible; }
+
+            /* Candidate sidebar: full width, fixed height list */
+            .share-candidates-sidebar {
+                width: 100%; min-width: unset; max-width: unset;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                max-height: 100vh;
+                transition: max-height 0.35s ease, opacity 0.25s ease;
+            }
+            /* Hide sidebar when detail is open */
+            .candidate-share-page.show-detail .share-candidates-sidebar {
+                max-height: 0;
+                opacity: 0;
+                overflow: hidden;
+                pointer-events: none;
+                border-bottom: none;
+            }
+
+            /* Detail panel: full width */
+            .share-detail-panel {
+                width: 100%; min-width: unset; max-width: unset;
+                border-right: none;
+                display: none;
+                flex-direction: column;
+                height: calc(100vh - 48px);
+            }
+            .candidate-share-page.show-detail .share-detail-panel { display: flex; }
+
+            /* Resume sidebar: hidden on mobile */
+            .share-resume-sidebar { display: none !important; }
+
+            /* Show back button */
+            .share-mobile-back { display: flex; }
+
+            /* Hero: stack avatar/info/score nicely */
+            .share-detail-hero {
+                padding: 0.875rem 1rem;
+                gap: 0.75rem;
+            }
+            .share-detail-info { min-width: unset; }
+            .share-detail-name { font-size: 0.95rem; }
+            .share-detail-meta { font-size: 0.68rem; line-height: 1.5; }
+
+            /* Body: tighter padding */
+            .share-detail-body { padding: 0.875rem 1rem 3rem; }
+
+            /* Skills cols: stack vertically */
+            .share-skills-cols { grid-template-columns: 1fr; gap: 0.75rem; }
+
+            /* Candidate list items: tighter */
+            .share-cand-item { padding: 0.65rem 0.75rem; }
+            .share-cand-item-name { font-size: 0.82rem; }
+
+            /* Empty state arrow makes no sense on mobile */
+            .share-detail-empty-icon { font-size: 2rem; }
+            .share-detail-empty h3 { font-size: 0.9rem; }
+            .share-detail-empty p { font-size: 0.75rem; }
+        }
+
         .share-pg-footer {
             padding: 1.25rem 2rem; text-align: center;
             font-size: 0.72rem; color: var(--text-muted); opacity: 0.5; line-height: 1.7;
@@ -2212,6 +2298,10 @@
 
         <!-- MIDDLE: Candidate details panel (compact) -->
         <div class="share-detail-panel" id="shareDetailPanel">
+            <div class="share-mobile-back" onclick="shareBackToList()">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                All Candidates
+            </div>
             <div class="share-detail-content" id="shareDetailContent">
                 <!-- Hero section -->
                 <div id="sharePgHero"></div>
@@ -2221,7 +2311,7 @@
                 <div class="share-detail-empty" id="shareDetailEmpty">
                     <div class="share-detail-empty-icon">👈</div>
                     <h3>Select a candidate</h3>
-                    <p>Click any candidate from the left panel to view their profile</p>
+                    <p>Tap any candidate to view their profile</p>
                 </div>
             </div>
         </div>
@@ -4268,8 +4358,16 @@ Return exactly this JSON:
         const content = document.getElementById('shareDetailContent');
         if (content) content.scrollTop = 0;
 
+        // Mobile: show detail panel, hide list
+        document.getElementById('candidateSharePage').classList.add('show-detail');
+
         // Auto-load resume into permanent sidebar
         loadShareResumeSidebar(idx);
+    }
+
+    // ─── Mobile: back to candidate list ───
+    function shareBackToList() {
+        document.getElementById('candidateSharePage').classList.remove('show-detail');
     }
 
     // ─── Toggle the details dropdown on the share page (kept for compatibility) ───
