@@ -935,6 +935,20 @@
 
         .rating-box { padding: 0.875rem; background: rgba(4, 8, 20, 0.8); border-radius: 10px; border-left: 3px solid var(--accent); font-size: 0.82rem; color: var(--text-secondary); line-height: 1.65; }
 
+        /* ─── Score Breakdown ─── */
+        .score-breakdown-list { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.25rem; }
+        .sbd-row { display: flex; flex-direction: column; gap: 0.22rem; }
+        .sbd-label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
+        .sbd-icon { font-size: 0.8rem; width: 18px; text-align: center; }
+        .sbd-weight { margin-left: auto; font-size: 0.65rem; color: var(--text-muted); font-weight: 400; }
+        .sbd-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
+        .sbd-bar { flex: 1; height: 5px; background: rgba(0,220,255,0.1); border-radius: 3px; overflow: hidden; }
+        .sbd-bar-fill { height: 100%; border-radius: 3px; transition: width 0.9s cubic-bezier(0.4,0,0.2,1); }
+        .sbd-bar-fill.fill-high { background: linear-gradient(90deg, var(--success), #00c87a); }
+        .sbd-bar-fill.fill-mid  { background: linear-gradient(90deg, var(--amber), #1a90ff); }
+        .sbd-bar-fill.fill-low  { background: linear-gradient(90deg, var(--danger), #c03040); }
+        .sbd-val { font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 700; min-width: 28px; text-align: right; }
+
         .filename-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(4, 8, 20, 0.7); border: 1px solid var(--border); border-radius: 6px; font-size: 0.73rem; color: var(--text-muted); }
 
         /* Toast */
@@ -2856,7 +2870,7 @@
 
         await rateLimiter.waitForSlot();
 
-        const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description and return ONLY valid JSON (no markdown fences, no extra text).
+        const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description using the WEIGHTED SCORING RUBRIC below. Return ONLY valid JSON (no markdown fences, no extra text).
 
 Job Description:
 ${jd}
@@ -2866,6 +2880,20 @@ Filters: Experience ${filters.minExp || 0}–${filters.maxExp || 'unlimited'} yr
 Resume:
 ${resumeText.slice(0, 7500)}
 
+SCORING RUBRIC — score each category 0–100, then compute match_score as the weighted sum:
+  • skills_score      (weight 40%): How well do the candidate's technical/domain skills match the JD requirements? 
+      100 = all required skills present + bonus skills; 75 = most required skills; 50 = ~half; 25 = few; 0 = none
+  • experience_score  (weight 25%): Does total years & relevance of experience fit the JD?
+      100 = exceeds requirements with directly relevant experience; 75 = meets requirements; 50 = slightly under or tangential; 25 = significantly under; 0 = no relevant experience
+  • education_score   (weight 15%): Does the education background match JD requirements (degree level, field)?
+      100 = exceeds (e.g. advanced degree in exact field); 75 = meets exactly; 50 = related field or level; 25 = some relevant coursework; 0 = no match or not stated
+  • achievements_score(weight 10%): Quality of measurable achievements, impact, and results in the resume.
+      100 = multiple strong quantified achievements directly relevant; 75 = some quantified achievements; 50 = achievements present but not quantified; 25 = minimal; 0 = none
+  • culture_score     (weight 10%): Soft skills, communication, leadership, teamwork signals relevant to the JD.
+      100 = strong explicit evidence of all key soft skills; 75 = good signals; 50 = some signals; 25 = weak; 0 = none
+
+match_score = round(skills_score*0.40 + experience_score*0.25 + education_score*0.15 + achievements_score*0.10 + culture_score*0.10)
+
 Return exactly this JSON:
 {
   "name": "full name or Unknown",
@@ -2873,12 +2901,19 @@ Return exactly this JSON:
   "phone": "phone or null",
   "experience_years": <number>,
   "location": "city or Remote",
-  "match_score": <integer 0-100>,
+  "match_score": <integer 0-100, computed from weighted rubric above>,
+  "score_breakdown": {
+    "skills_score": <integer 0-100>,
+    "experience_score": <integer 0-100>,
+    "education_score": <integer 0-100>,
+    "achievements_score": <integer 0-100>,
+    "culture_score": <integer 0-100>
+  },
   "key_skills": ["up to 6 skills from resume"],
   "skills_present": ["JD skills candidate HAS"],
   "skills_missing": ["JD skills candidate LACKS"],
   "highlights": ["2-3 standout achievements"],
-  "rating_reason": "2-3 sentences on why this exact score — cite strengths and gaps",
+  "rating_reason": "2-3 sentences explaining the overall score — reference specific sub-score drivers",
   "summary": "one-sentence profile"
 }`;
 
@@ -3297,6 +3332,31 @@ Return exactly this JSON:
                         : '❌ Not Recommended — Pass'}
                 </div>
             </div>
+
+            ${r.score_breakdown ? `
+            <div class="overlay-section">
+                <div class="overlay-section-title">📐 Score Breakdown</div>
+                <div class="score-breakdown-list">
+                    ${[
+                        { key: 'skills_score',       label: 'Skills Match',    weight: '40%', icon: '🛠' },
+                        { key: 'experience_score',   label: 'Experience',      weight: '25%', icon: '💼' },
+                        { key: 'education_score',    label: 'Education',       weight: '15%', icon: '🎓' },
+                        { key: 'achievements_score', label: 'Achievements',    weight: '10%', icon: '🏆' },
+                        { key: 'culture_score',      label: 'Soft Skills',     weight: '10%', icon: '🤝' }
+                    ].map(cat => {
+                        const val = r.score_breakdown[cat.key] ?? 0;
+                        const cls = val >= 75 ? 'score-high' : val >= 50 ? 'score-mid' : 'score-low';
+                        const fillCl = val >= 75 ? 'fill-high' : val >= 50 ? 'fill-mid' : 'fill-low';
+                        return `<div class="sbd-row">
+                            <div class="sbd-label"><span class="sbd-icon">${cat.icon}</span><span>${cat.label}</span><span class="sbd-weight">${cat.weight}</span></div>
+                            <div class="sbd-bar-wrap">
+                                <div class="sbd-bar"><div class="sbd-bar-fill ${fillCl}" style="width:${val}%"></div></div>
+                                <span class="sbd-val ${cls}">${val}</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>` : ''}
 
             ${r.rating_reason ? `
             <div class="overlay-section">
@@ -4173,6 +4233,24 @@ Return exactly this JSON:
                     </div>
                 </div>
                 ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
+                ${r.score_breakdown ? `
+                <div class="share-pg-section">
+                    <div class="share-pg-section-title">📐 Score Breakdown</div>
+                    <div class="score-breakdown-list">
+                        ${[
+                            { key: 'skills_score',       label: 'Skills Match', weight: '40%', icon: '🛠' },
+                            { key: 'experience_score',   label: 'Experience',   weight: '25%', icon: '💼' },
+                            { key: 'education_score',    label: 'Education',    weight: '15%', icon: '🎓' },
+                            { key: 'achievements_score', label: 'Achievements', weight: '10%', icon: '🏆' },
+                            { key: 'culture_score',      label: 'Soft Skills',  weight: '10%', icon: '🤝' }
+                        ].map(cat => {
+                            const val = r.score_breakdown[cat.key] ?? 0;
+                            const cls = val >= 75 ? 'score-high' : val >= 50 ? 'score-mid' : 'score-low';
+                            const fillCl = val >= 75 ? 'fill-high' : val >= 50 ? 'fill-mid' : 'fill-low';
+                            return '<div class="sbd-row"><div class="sbd-label"><span class="sbd-icon">' + cat.icon + '</span><span>' + cat.label + '</span><span class="sbd-weight">' + cat.weight + '</span></div><div class="sbd-bar-wrap"><div class="sbd-bar"><div class="sbd-bar-fill ' + fillCl + '" style="width:' + val + '%"></div></div><span class="sbd-val ' + cls + '">' + val + '</span></div></div>';
+                        }).join('')}
+                    </div>
+                </div>` : ''}
                 ${r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
                 ${r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
                 ${allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
