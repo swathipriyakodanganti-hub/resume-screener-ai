@@ -1792,6 +1792,26 @@
         .share-skills-col-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
         .share-skill-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 
+        .share-mobile-resume-btn {
+            display: none;
+            align-items: center; gap: 0.35rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem; font-weight: 600;
+            background: rgba(0,220,255,0.1);
+            border: 1px solid var(--border-accent);
+            color: var(--accent);
+            text-decoration: none;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .share-mobile-resume-btn:hover { background: rgba(0,220,255,0.2); }
+        @media (max-width: 768px) {
+            .share-mobile-resume-btn { display: inline-flex; }
+        }
+
         /* ── Mobile back button (hidden on desktop) ── */
         .share-mobile-back {
             display: none;
@@ -4293,7 +4313,15 @@ Return exactly this JSON:
         const recCls   = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
         const recTxt   = r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review' : '❌ Not Recommended — Pass';
 
-        // Resume button removed - auto-loads in sidebar now
+        // Build resume URL for mobile "open in new tab" button
+        const resumeUrl = r.drive_link
+            ? (() => { const m = r.drive_link.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/); return m ? `https://drive.google.com/file/d/${m[1]||m[2]}/view` : r.drive_link; })()
+            : null;
+        const mobileResumeBtn = resumeUrl
+            ? `<a class="share-mobile-resume-btn" href="${resumeUrl}" target="_blank" rel="noopener">📄 View Resume</a>`
+            : (r.resume_pdf_b64
+                ? `<button class="share-mobile-resume-btn" onclick="openShareResumeViewer(${idx})">📄 View Resume</button>`
+                : '');
 
         document.getElementById('sharePgHero').innerHTML = `
             <div class="share-detail-hero">
@@ -4303,6 +4331,7 @@ Return exactly this JSON:
                     <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
                     <div class="share-detail-actions">
                         <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.72rem;padding:3px 10px;">${recTxt}</div>
+                        ${mobileResumeBtn}
                     </div>
                 </div>
                 <div class="share-detail-score-ring ${ringCls}">
