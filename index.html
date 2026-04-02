@@ -565,37 +565,149 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ─── MAIN CONTENT ─── */
-        .main-content { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+        .main-content { flex: 1; overflow: hidden; padding: 0; display: flex; flex-direction: column; }
+
+        /* ── Three-panel layout for main results ── */
+        .main-three-panel {
+            display: flex; flex: 1; overflow: hidden;
+        }
+
+        /* Left: candidate list sidebar */
+        .main-candidates-sidebar {
+            width: 260px; min-width: 220px; max-width: 300px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .main-sidebar-header {
+            padding: 0.75rem 1rem 0.6rem;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .main-sidebar-title {
+            font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+            margin-bottom: 0.2rem;
+        }
+        .main-sidebar-meta { font-size: 0.68rem; color: var(--text-muted); }
+        .main-candidate-list {
+            flex: 1; overflow-y: auto; padding: 0.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,220,255,0.12) transparent;
+        }
+        .main-candidate-list::-webkit-scrollbar { width: 3px; }
+        .main-candidate-list::-webkit-scrollbar-thumb { background: rgba(0,220,255,0.12); border-radius: 4px; }
+
+        /* Candidate list item */
+        .main-cand-item {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 9px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            margin-bottom: 0.3rem;
+            position: relative;
+        }
+        .main-cand-item:hover { background: rgba(0,220,255,0.06); border-color: rgba(0,220,255,0.18); }
+        .main-cand-item.active { background: rgba(0,220,255,0.1); border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0,220,255,0.1); }
+        .main-cand-avatar {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-dark), #004080);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.68rem;
+            color: #d8f5ff; flex-shrink: 0;
+            border: 1px solid rgba(0,220,255,0.22);
+        }
+        .main-cand-info { flex: 1; min-width: 0; }
+        .main-cand-name {
+            font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600;
+            color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .main-cand-meta { font-size: 0.62rem; color: var(--text-muted); margin-top: 1px; }
+        .main-cand-score {
+            font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 700; flex-shrink: 0;
+        }
+        .main-cand-rank {
+            position: absolute; top: 0.28rem; right: 0.45rem;
+            font-size: 0.52rem; font-weight: 700; color: var(--text-muted);
+        }
+        .main-cand-bar {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+            background: rgba(0,220,255,0.06); border-radius: 0 0 9px 9px; overflow: hidden;
+        }
+        .main-cand-bar-fill { height: 100%; border-radius: 0 0 9px 9px; }
+
+        /* ── Middle: Detail panel ── */
+        .main-detail-panel {
+            width: 420px; min-width: 340px; max-width: 480px;
+            display: flex; flex-direction: column; overflow: hidden;
+            border-right: 1px solid var(--border); flex-shrink: 0;
+        }
+        .main-detail-content {
+            flex: 1; overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,220,255,0.12) transparent;
+        }
+        .main-detail-content::-webkit-scrollbar { width: 4px; }
+        .main-detail-content::-webkit-scrollbar-thumb { background: rgba(0,220,255,0.12); border-radius: 4px; }
+        .main-detail-empty {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; color: var(--text-muted); text-align: center; padding: 3rem 2rem;
+        }
+        .main-detail-empty-icon { font-size: 2.5rem; opacity: 0.2; margin-bottom: 0.75rem; }
+        .main-detail-empty h3 { font-family: 'Outfit', sans-serif; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+        .main-detail-empty p { font-size: 0.77rem; }
+
+        /* ── Right: Resume viewer ── */
+        .main-resume-panel {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            background: var(--bg-main);
+        }
+        .main-resume-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-sidebar); flex-shrink: 0;
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .main-resume-title {
+            font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 600;
+            color: var(--text-primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .main-resume-body {
+            flex: 1; overflow: hidden; display: flex; flex-direction: column; background: #ffffff;
+        }
+        #mainResumeFrame { flex: 1; border: none; width: 100%; height: 100%; }
+        .main-resume-empty {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: var(--text-muted); text-align: center; padding: 3rem 2rem;
+            background: var(--bg-main);
+        }
+        .main-resume-empty-icon { font-size: 2.5rem; opacity: 0.2; margin-bottom: 0.75rem; }
+        .main-resume-empty h3 { font-family: 'Outfit', sans-serif; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+        .main-resume-empty p { font-size: 0.77rem; }
 
         .main-header {
-            padding: 1.1rem 2rem 1rem;
+            padding: 0.75rem 1.25rem 0.7rem;
             border-bottom: none;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            background: rgba(4, 7, 16, 0.88);
+            background: rgba(4, 7, 16, 0.92);
             backdrop-filter: blur(20px);
             z-index: 50;
+            flex-shrink: 0;
         }
         .main-header::after {
             content: '';
             position: absolute;
             bottom: 0; left: 0; right: 0;
             height: 1px;
-            background: linear-gradient(90deg, transparent 0%, var(--accent) 20%, #fff 50%, var(--accent) 80%, transparent 100%);
-            box-shadow: 0 0 8px 1px var(--accent), 0 0 2px 0px #fff;
-            animation: glitchLine 3.5s infinite;
-        }
-        @keyframes glitchLine {
-            0%   { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
-            10%  { opacity: 0.8; transform: scaleX(0.98) translateX(-2px); clip-path: inset(0 15% 0 5%); }
-            12%  { opacity: 1;   transform: scaleX(1)    translateX(1px);  clip-path: inset(0 0 0 0); }
-            40%  { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
-            41%  { opacity: 0.5; transform: scaleX(0.95) translateX(4px);  clip-path: inset(0 30% 0 10%); }
-            43%  { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
-            100% { opacity: 1;   transform: scaleX(1)    translateX(0);    clip-path: inset(0 0 0 0); }
+            background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+            opacity: 0.3;
         }
 
         .results-title {
@@ -2183,26 +2295,57 @@
                 <button class="btn-export" onclick="exportResults()">💾 Export CSV</button>
             </div>
         </div>
-        
-        <!-- Rate Limit Info -->
-        <div style="margin: 1rem 1.5rem 0; padding: 0.7rem 1rem; background: rgba(0, 220, 255, 0.06); border: 1px solid rgba(0, 220, 255, 0.18); border-radius: 10px; font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: start; gap: 0.6rem;">
-            <span style="font-size: 0.9rem; opacity:0.7;">🛡️</span>
-            <div>
-                <strong style="color: var(--accent); font-size:0.76rem;">Rate Limiting Active</strong>
-                <div style="margin-top: 0.2rem; line-height: 1.5; color: var(--text-muted);" id="rateLimitInfo">
-                    Each API call is automatically delayed to prevent rate limit errors.
-                </div>
-            </div>
-        </div>
 
-        <div class="results-body">
-            <div class="results-grid" id="resultsGrid">
-                <div class="empty-state">
-                    <div class="empty-icon">📭</div>
-                    <h3>No results yet</h3>
-                    <p>Configure API, upload resumes, select a position and hit Analyze</p>
+        <!-- Three-panel layout -->
+        <div class="main-three-panel">
+
+            <!-- LEFT: Candidate list sidebar -->
+            <div class="main-candidates-sidebar">
+                <div class="main-sidebar-header">
+                    <div class="main-sidebar-title">Candidates</div>
+                    <div class="main-sidebar-meta" id="mainSidebarMeta">No results yet</div>
+                </div>
+                <div class="main-candidate-list" id="mainCandidateList">
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--text-muted);text-align:center;padding:1rem;">
+                        <div style="font-size:2rem;opacity:0.2;margin-bottom:0.5rem;">📭</div>
+                        <div style="font-size:0.75rem;">Analyze resumes to see candidates</div>
+                    </div>
+                </div>
+                <!-- Rate Limit Info (moved here) -->
+                <div id="rateLimitInfoWrap" style="padding:0.6rem 0.75rem;border-top:1px solid var(--border);flex-shrink:0;">
+                    <div style="font-size:0.65rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.4rem;">
+                        <span style="opacity:0.6;">🛡️</span>
+                        <div id="rateLimitInfo" style="line-height:1.45;">Each API call is delayed to prevent rate limit errors.</div>
+                    </div>
                 </div>
             </div>
+
+            <!-- MIDDLE: Candidate detail panel -->
+            <div class="main-detail-panel">
+                <div class="main-detail-content" id="mainDetailContent">
+                    <div class="main-detail-empty" id="mainDetailEmpty">
+                        <div class="main-detail-empty-icon">👈</div>
+                        <h3>Select a candidate</h3>
+                        <p>Click any candidate to view their analysis</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Resume viewer -->
+            <div class="main-resume-panel">
+                <div class="main-resume-header">
+                    <div class="main-resume-title" id="mainResumeTitle">📄 Resume</div>
+                </div>
+                <div class="main-resume-body">
+                    <iframe id="mainResumeFrame" src="" style="flex:1;border:none;width:100%;height:100%;display:none;"></iframe>
+                    <div class="main-resume-empty" id="mainResumeEmpty">
+                        <div class="main-resume-empty-icon">📄</div>
+                        <h3>No resume loaded</h3>
+                        <p>Select a candidate to view their resume</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -3101,6 +3244,9 @@ Return exactly this JSON:
     }
 
     // ─── Analyze — Real-time rendering ───
+    let _selectedMainIdx = null;
+    let _mainResumeUrl = null;
+
     async function analyzeResumes() {
         if (!geminiApiKey && !groqApiKey) { showToast('Configure your API key first', 'error'); return; }
         if (selectedProvider === 'groq' && !groqApiKey) { showToast('Configure your Groq API key first', 'error'); return; }
@@ -3110,7 +3256,6 @@ Return exactly this JSON:
 
         const btn  = document.getElementById('analyzeBtn');
         const btn2 = document.getElementById('analyzeBtn2');
-        const grid = document.getElementById('resultsGrid');
         const badge = document.getElementById('resultBadge');
 
         btn.disabled = true;
@@ -3124,12 +3269,13 @@ Return exactly this JSON:
         };
 
         analysisResults = [];
-        grid.innerHTML  = '';
+        _selectedMainIdx = null;
         badge.style.display = 'none';
-        // Reset selections and hide select-all on new analysis
         clearAllSelections();
         const saBtn = document.getElementById('btnSelectAll');
         if (saBtn) saBtn.style.display = 'none';
+
+        renderMainPanels();
 
         // Progress
         const pw = document.getElementById('progressWrap');
@@ -3169,15 +3315,13 @@ Return exactly this JSON:
 
                 if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable — ensure it contains selectable text (not a scanned image)');
 
-                // Use retry with backoff for API call
                 const result = await retryWithBackoff(async () => {
                     return await analyzeWithProvider(text, currentJD, filters);
                 });
 
                 result.filename  = file.name;
-                result.file_type = ext; // store type for viewer
+                result.file_type = ext;
 
-                // Store file as base64 for ALL types — PDF and DOCX
                 try {
                     result.resume_pdf_b64 = await fileToBase64(file);
                 } catch(e) {
@@ -3186,7 +3330,6 @@ Return exactly this JSON:
 
                 fileStatuses[file.name] = 'done';
 
-                // Always add all candidates regardless of filters
                 analysisResults.push(result);
                 const okExpLocal = (!filters.minExp || result.experience_years >= +filters.minExp) &&
                                    (!filters.maxExp  || result.experience_years <= +filters.maxExp);
@@ -3194,8 +3337,8 @@ Return exactly this JSON:
                                    (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
                 if (okExpLocal && okLocLocal) matched++;
 
-                const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-                grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
+                analysisResults.sort((a, b) => b.match_score - a.match_score);
+                renderMainPanels();
                 badge.style.display = 'inline-flex';
                 badge.textContent   = `${matched} matched`;
 
@@ -3233,7 +3376,6 @@ Return exactly this JSON:
 
                 fileStatuses[driveEntry.name] = 'done';
 
-                // Always add all candidates regardless of filters
                 analysisResults.push(result);
                 const okExpDrive = (!filters.minExp || result.experience_years >= +filters.minExp) &&
                                    (!filters.maxExp  || result.experience_years <= +filters.maxExp);
@@ -3241,8 +3383,8 @@ Return exactly this JSON:
                                    (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
                 if (okExpDrive && okLocDrive) matched++;
 
-                const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-                grid.innerHTML = sorted.map((r, idx) => buildCard(r, idx)).join('');
+                analysisResults.sort((a, b) => b.match_score - a.match_score);
+                renderMainPanels();
                 badge.style.display = 'inline-flex';
                 badge.textContent   = `${matched} matched`;
 
@@ -3260,9 +3402,7 @@ Return exactly this JSON:
 
         // Final sort
         analysisResults.sort((a, b) => b.match_score - a.match_score);
-        grid.innerHTML = analysisResults.length
-            ? analysisResults.map((r, i) => buildCard(r, i)).join('')
-            : `<div class="empty-state"><div class="empty-icon">🔍</div><h3>No matching candidates</h3><p>Try relaxing filters or verify your API key</p></div>`;
+        renderMainPanels();
 
         badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
         if (analysisResults.length) badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
@@ -3274,6 +3414,261 @@ Return exactly this JSON:
         btn.disabled = false;
         btn.innerHTML = '🚀';
         if (btn2) { btn2.disabled = false; btn2.innerHTML = '🚀 Analyze Resumes'; }
+    }
+
+    // ─── Render three-panel main UI ───
+    function renderMainPanels() {
+        const listEl   = document.getElementById('mainCandidateList');
+        const metaEl   = document.getElementById('mainSidebarMeta');
+        const detailEl = document.getElementById('mainDetailContent');
+
+        if (!analysisResults.length) {
+            listEl.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--text-muted);text-align:center;padding:1rem;"><div style="font-size:2rem;opacity:0.2;margin-bottom:0.5rem;">📭</div><div style="font-size:0.75rem;">Analyze resumes to see candidates</div></div>`;
+            metaEl.textContent = 'No results yet';
+            detailEl.innerHTML = `<div class="main-detail-empty" id="mainDetailEmpty"><div class="main-detail-empty-icon">👈</div><h3>Select a candidate</h3><p>Click any candidate to view their analysis</p></div>`;
+            return;
+        }
+
+        const avg = Math.round(analysisResults.reduce((s, r) => s + r.match_score, 0) / analysisResults.length);
+        const top = analysisResults[0].match_score;
+        metaEl.textContent = `${analysisResults.length} candidates · Avg ${avg}% · Top ${top}%`;
+
+        // Sidebar candidate list
+        listEl.innerHTML = analysisResults.map((r, i) => {
+            const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+            return `
+            <div class="main-cand-item${_selectedMainIdx === i ? ' active' : ''}" onclick="selectMainCandidate(${i})" id="main-cand-item-${i}">
+                <div class="main-cand-avatar">${initials(r.name)}</div>
+                <div class="main-cand-info">
+                    <div class="main-cand-name">${r.name}</div>
+                    <div class="main-cand-meta">📍 ${r.location || '—'} · 💼 ${r.experience_years} yrs</div>
+                </div>
+                <div class="main-cand-score ${scoreClass(r.match_score)}">${r.match_score}%</div>
+                <div class="main-cand-rank">${rankLabel}</div>
+                <div class="main-cand-bar"><div class="main-cand-bar-fill ${fillClass(r.match_score)}" style="width:${r.match_score}%"></div></div>
+            </div>`;
+        }).join('');
+
+        // If a candidate was selected, re-render their detail panel too
+        if (_selectedMainIdx !== null && _selectedMainIdx < analysisResults.length) {
+            renderMainDetail(_selectedMainIdx);
+        }
+    }
+
+    function selectMainCandidate(idx) {
+        _selectedMainIdx = idx;
+        // Highlight active item
+        document.querySelectorAll('.main-cand-item').forEach((el, i) => el.classList.toggle('active', i === idx));
+        renderMainDetail(idx);
+        loadMainResume(idx);
+    }
+
+    function renderMainDetail(idx) {
+        const r = analysisResults[idx];
+        if (!r) return;
+        const detailEl = document.getElementById('mainDetailContent');
+        const have    = r.skills_present || [];
+        const missing = r.skills_missing || [];
+        const recCls  = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
+        const recTxt  = r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Consider' : '❌ Pass';
+
+        detailEl.innerHTML = `
+            <!-- Hero -->
+            <div class="share-detail-hero" style="padding:1rem 1.25rem;">
+                <div class="share-detail-avatar">${initials(r.name)}</div>
+                <div class="share-detail-info">
+                    <div class="share-detail-name" style="font-size:0.95rem;">${r.name}</div>
+                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
+                    <div class="share-detail-actions">
+                        <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.73rem;padding:3px 10px;">${recTxt}</div>
+                        <label class="share-checkbox-wrap" onclick="event.stopPropagation()" title="Add to shortlist" style="margin-left:0.25rem;">
+                            <input type="checkbox" id="main-shortlist-cb-${idx}" onchange="toggleShareBtn(${idx}, this.checked)">
+                            <span class="share-checkbox-label">Shortlist</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="share-detail-score-ring ${ringClass(r.match_score)}" style="width:52px;height:52px;border-radius:50%;border:2.5px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <span style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;" class="${scoreClass(r.match_score)}">${r.match_score}%</span>
+                    <span style="font-size:0.52rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Match</span>
+                </div>
+            </div>
+
+            <!-- Stat row -->
+            <div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);">
+                <div class="share-cand-stat-row" style="margin-bottom:0;">
+                    <div class="share-cand-stat">
+                        <span class="sc-val ${scoreClass(r.match_score)}">${r.match_score}%</span>
+                        <div class="sc-lbl">Match</div>
+                    </div>
+                    <div class="share-cand-stat">
+                        <span class="sc-val">${r.experience_years}</span>
+                        <div class="sc-lbl">Yrs Exp</div>
+                    </div>
+                    <div class="share-cand-stat">
+                        <span class="sc-val" style="color:var(--success);">${have.length}</span>
+                        <div class="sc-lbl">Skills ✓</div>
+                    </div>
+                    <div class="share-cand-stat">
+                        <span class="sc-val" style="color:var(--danger);">${missing.length}</span>
+                        <div class="sc-lbl">Gaps</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail body -->
+            <div style="padding:1rem 1.25rem 2rem;">
+
+                ${r.summary ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title">👤 Profile Summary</div>
+                    <div class="overlay-text">${r.summary}</div>
+                </div>` : ''}
+
+                ${r.rating_reason ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title">🎯 Score Reasoning</div>
+                    <div class="rating-box">${r.rating_reason}</div>
+                </div>` : ''}
+
+                ${(have.length || missing.length) ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title">✅ Skills vs JD</div>
+                    <div class="share-skills-cols">
+                        ${have.length ? `<div>
+                            <div class="share-skills-col-label have">✓ Present</div>
+                            <div class="share-skill-tags">${have.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div>
+                        </div>` : ''}
+                        ${missing.length ? `<div>
+                            <div class="share-skills-col-label missing">✗ Missing</div>
+                            <div class="share-skill-tags">${missing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div>
+                        </div>` : ''}
+                    </div>
+                </div>` : ''}
+
+                ${r.highlights?.length ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title">⭐ Key Highlights</div>
+                    ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                </div>` : ''}
+
+                ${r.score_breakdown ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title">📊 Score Breakdown</div>
+                    <div class="score-breakdown-list">
+                    ${[
+                        { key: 'skills_score',       label: 'Skills Match',    weight: '40%', icon: '🛠' },
+                        { key: 'experience_score',   label: 'Experience',      weight: '25%', icon: '💼' },
+                        { key: 'education_score',    label: 'Education',       weight: '15%', icon: '🎓' },
+                        { key: 'achievements_score', label: 'Achievements',    weight: '10%', icon: '🏆' },
+                        { key: 'culture_score',      label: 'Soft Skills',     weight: '10%', icon: '🤝' }
+                    ].map(cat => {
+                        const val = r.score_breakdown[cat.key] ?? 0;
+                        const fillCl = val >= 75 ? 'fill-high' : val >= 50 ? 'fill-mid' : 'fill-low';
+                        const valCl = val >= 75 ? 'score-high' : val >= 50 ? 'score-mid' : 'score-low';
+                        return `<div class="sbd-row">
+                            <div class="sbd-label"><span class="sbd-icon">${cat.icon}</span><span>${cat.label}</span><span class="sbd-weight">${cat.weight}</span></div>
+                            <div class="sbd-bar-wrap"><div class="sbd-bar"><div class="sbd-bar-fill ${fillCl}" style="width:${val}%"></div></div><span class="sbd-val ${valCl}">${val}</span></div>
+                        </div>`;
+                    }).join('')}
+                    </div>
+                </div>` : ''}
+
+                ${(r.email || r.phone) ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title">📬 Contact</div>
+                    <div class="overlay-contact-grid">
+                        ${r.email ? `<div class="overlay-contact-item">📧 ${r.email}</div>` : ''}
+                        ${r.phone ? `<div class="overlay-contact-item">📞 ${r.phone}</div>` : ''}
+                    </div>
+                </div>` : ''}
+
+                ${r.filename ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title">📁 Source File</div>
+                    <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+                        <span class="filename-badge">📄 ${r.filename}</span>
+                    </div>
+                    <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:0.4rem;">Google Drive Link</div>
+                    <div style="display:flex;gap:0.5rem;">
+                        <input type="text" id="drive-input-${idx}"
+                            placeholder="https://drive.google.com/file/d/..."
+                            value="${r.drive_link || ''}"
+                            style="flex:1;padding:0.45rem 0.75rem;background:rgba(4,8,20,0.8);border:1px solid var(--border);border-radius:7px;color:var(--text-primary);font-size:0.78rem;font-family:'Source Sans 3',sans-serif;"
+                            oninput="saveDriveLink(${idx}, this.value)">
+                        ${r.drive_link ? `<a href="${r.drive_link}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:0.45rem 0.75rem;background:rgba(0,220,255,0.1);border:1px solid var(--border-accent);color:var(--accent);border-radius:7px;font-size:0.75rem;font-family:'Outfit',sans-serif;font-weight:600;text-decoration:none;">Open ↗</a>` : ''}
+                    </div>
+                </div>` : ''}
+
+            </div>
+        `;
+
+        // Restore shortlist checkbox state
+        const cb = document.getElementById(`main-shortlist-cb-${idx}`);
+        if (cb && _selectedCards && _selectedCards.has(idx)) cb.checked = true;
+    }
+
+    let _mainResumeObjUrl = null;
+
+    async function loadMainResume(idx) {
+        const r = analysisResults[idx];
+        if (!r) return;
+
+        const frame  = document.getElementById('mainResumeFrame');
+        const empty  = document.getElementById('mainResumeEmpty');
+        const titleEl = document.getElementById('mainResumeTitle');
+
+        titleEl.innerHTML = `📄 ${r.name || 'Resume'}`;
+
+        if (_mainResumeObjUrl) { URL.revokeObjectURL(_mainResumeObjUrl); _mainResumeObjUrl = null; }
+
+        // Try drive link first
+        if (r.drive_link) {
+            const fileId = extractDriveId(r.drive_link);
+            if (fileId) {
+                frame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+                frame.style.display = 'block';
+                empty.style.display = 'none';
+                return;
+            }
+        }
+
+        // Try base64
+        if (r.resume_pdf_b64) {
+            try {
+                const byteArr = Uint8Array.from(atob(r.resume_pdf_b64), c => c.charCodeAt(0));
+                const ext = (r.filename || '').split('.').pop().toLowerCase();
+                if (ext === 'docx') {
+                    const result = await mammoth.convertToHtml({ arrayBuffer: byteArr.buffer });
+                    const html = `<html><body style="font-family:Arial,sans-serif;padding:2rem;line-height:1.6;color:#222;">${result.value}</body></html>`;
+                    _mainResumeObjUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+                } else {
+                    _mainResumeObjUrl = URL.createObjectURL(new Blob([byteArr], { type: 'application/pdf' }));
+                }
+                frame.src = _mainResumeObjUrl;
+                frame.style.display = 'block';
+                empty.style.display = 'none';
+                return;
+            } catch(e) { console.warn('Resume load error:', e); }
+        }
+
+        // Try uploaded file
+        if (r.filename) {
+            const file = uploadedFiles.find(f => f.name === r.filename);
+            if (file) {
+                const ext = r.filename.split('.').pop().toLowerCase();
+                if (ext === 'pdf') {
+                    _mainResumeObjUrl = URL.createObjectURL(file);
+                    frame.src = _mainResumeObjUrl;
+                    frame.style.display = 'block';
+                    empty.style.display = 'none';
+                    return;
+                }
+            }
+        }
+
+        frame.style.display = 'none';
+        empty.style.display = 'flex';
+        empty.innerHTML = `<div class="main-resume-empty-icon">📄</div><h3>No preview available</h3><p>Add a Google Drive link in the detail panel to view the resume</p>`;
     }
 
     // ─── Card Helpers ───
@@ -3549,13 +3944,11 @@ Return exactly this JSON:
 
     // ─── Save Drive link to result object ───
     function saveDriveLink(idx, url) {
-        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const r = sorted[idx];
+        const r = analysisResults[idx];
         if (r) {
             r.drive_link = url.trim();
-            // Sync back to analysisResults
-            const orig = analysisResults.find(x => x.name === r.name && x.filename === r.filename);
-            if (orig) orig.drive_link = r.drive_link;
+            // Reload resume panel if this candidate is currently shown
+            if (_selectedMainIdx === idx) loadMainResume(idx);
         }
     }
 
@@ -3713,9 +4106,9 @@ Return exactly this JSON:
         } else {
             _selectedCards.delete(idx);
         }
-        // Visually highlight / un-highlight the card
-        const card = document.getElementById(`card-${idx}`);
-        if (card) card.classList.toggle('shortlisted', checked);
+        // Highlight sidebar item for new layout
+        const item = document.getElementById(`main-cand-item-${idx}`);
+        if (item) item.style.borderColor = checked ? 'rgba(64,200,255,0.5)' : '';
 
         updateFloatingBar();
     }
@@ -3765,7 +4158,7 @@ Return exactly this JSON:
     function clearAllSelections() {
         _selectedCards.clear();
         document.querySelectorAll('.share-checkbox-wrap input[type="checkbox"]').forEach(cb => cb.checked = false);
-        document.querySelectorAll('.result-card.shortlisted').forEach(c => c.classList.remove('shortlisted'));
+        document.querySelectorAll('.main-cand-item').forEach(el => el.style.borderColor = '');
         updateFloatingBar();
     }
 
