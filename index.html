@@ -1008,30 +1008,13 @@
         .main-content::-webkit-scrollbar { width: 5px; }
         .main-content::-webkit-scrollbar-thumb { background: rgba(0,220,255,0.12); border-radius: 4px; }
 
-        /* ─── LEFT RESUME VIEWER PANEL ─── */
+        /* ─── LEFT RESUME VIEWER PANEL (HIDDEN - now using permanent sidebar) ─── */
         .resume-viewer-backdrop {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            z-index: 9600; /* above .candidate-share-page (9500) */
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.35s ease;
+            display: none !important;
         }
-        .resume-viewer-backdrop.open { opacity: 1; pointer-events: all; }
-
         .resume-viewer-panel {
-            position: fixed; top: 0; left: 0; bottom: 0;
-            width: 48vw; max-width: 720px; min-width: 320px;
-            background: #020508;
-            border-right: 1px solid var(--border-accent);
-            z-index: 9700; /* above .candidate-share-page (9500) */
-            display: flex; flex-direction: column;
-            transform: translateX(-100%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 24px 0 60px rgba(0,0,0,0.8);
+            display: none !important;
         }
-
-        .resume-viewer-panel.open { transform: translateX(0); }
 
         .viewer-header {
             padding: 1rem 1.25rem;
@@ -1540,8 +1523,8 @@
             color: var(--accent);
         }
 
-        /* Two-panel shell */
-        .share-two-panel {
+        /* Three-panel shell */
+        .share-three-panel {
             display: flex; flex: 1; overflow: hidden;
         }
 
@@ -1621,9 +1604,91 @@
         }
         .share-cand-item-bar-fill { height: 100%; border-radius: 0 0 10px 10px; }
 
-        /* ── RIGHT PANEL: candidate detail ── */
+        /* ── MIDDLE PANEL: candidate detail (compact) ── */
         .share-detail-panel {
+            width: 450px; min-width: 380px; max-width: 500px;
+            display: flex; flex-direction: column; overflow: hidden;
+            border-right: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        
+        /* ── RIGHT PANEL: permanent resume viewer ── */
+        .share-resume-sidebar {
             flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            background: var(--bg-main);
+        }
+        .share-resume-header {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-sidebar);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .share-resume-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .share-resume-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            background: rgba(0, 220, 255, 0.12);
+            color: var(--accent);
+            border: 1px solid rgba(0, 220, 255, 0.25);
+        }
+        .share-resume-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+        }
+        #shareResumeFrame {
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        .share-resume-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 3rem 2rem;
+            background: var(--bg-main);
+        }
+        .share-resume-empty-icon {
+            font-size: 3rem;
+            opacity: 0.2;
+            margin-bottom: 1rem;
+        }
+        .share-resume-empty h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .share-resume-empty p {
+            font-size: 0.8rem;
         }
         .share-detail-content {
             flex: 1; overflow-y: auto;
@@ -2114,9 +2179,9 @@
     </div>
 
     <!-- Two-panel layout -->
-    <div class="share-two-panel">
+    <div class="share-three-panel">
 
-        <!-- LEFT: Candidate list sidebar (bulk mode) / Single hero (single mode) -->
+        <!-- LEFT: Candidate list sidebar -->
         <div class="share-candidates-sidebar" id="shareSidebar">
             <div class="share-sidebar-header">
                 <div class="share-sidebar-title" id="shareSidebarTitle">Candidates</div>
@@ -2131,7 +2196,7 @@
             </div>
         </div>
 
-        <!-- RIGHT: Candidate details panel -->
+        <!-- MIDDLE: Candidate details panel (compact) -->
         <div class="share-detail-panel" id="shareDetailPanel">
             <div class="share-detail-content" id="shareDetailContent">
                 <!-- Hero section -->
@@ -2143,6 +2208,23 @@
                     <div class="share-detail-empty-icon">👈</div>
                     <h3>Select a candidate</h3>
                     <p>Click any candidate from the left panel to view their profile</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Permanent resume viewer sidebar -->
+        <div class="share-resume-sidebar" id="shareResumeSidebar">
+            <div class="share-resume-header">
+                <div class="share-resume-title" id="shareResumeTitle">
+                    📄 Resume
+                </div>
+            </div>
+            <div class="share-resume-body">
+                <iframe id="shareResumeFrame"></iframe>
+                <div class="share-resume-empty" id="shareResumeEmpty">
+                    <div class="share-resume-empty-icon">📄</div>
+                    <h3>No resume loaded</h3>
+                    <p>Select a candidate to view their resume</p>
                 </div>
             </div>
         </div>
@@ -4061,9 +4143,7 @@ Return exactly this JSON:
         const recCls   = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
         const recTxt   = r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Borderline — Consider Further Review' : '❌ Not Recommended — Pass';
 
-        const resumeBtn = (r.drive_link || r.resume_pdf_b64)
-            ? `<button class="share-cand-resume-btn" onclick="openShareResumeViewer(${idx})">📄 View Resume</button>`
-            : '';
+        // Resume button removed - auto-loads in sidebar now
 
         document.getElementById('sharePgHero').innerHTML = `
             <div class="share-detail-hero">
@@ -4073,7 +4153,6 @@ Return exactly this JSON:
                     <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
                     <div class="share-detail-actions">
                         <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.72rem;padding:3px 10px;">${recTxt}</div>
-                        ${resumeBtn}
                     </div>
                 </div>
                 <div class="share-detail-score-ring ${ringCls}">
@@ -4110,11 +4189,167 @@ Return exactly this JSON:
         // Scroll detail panel to top
         const content = document.getElementById('shareDetailContent');
         if (content) content.scrollTop = 0;
+
+        // Auto-load resume into permanent sidebar
+        loadShareResumeSidebar(idx);
     }
 
     // ─── Toggle the details dropdown on the share page (kept for compatibility) ───
     function toggleShareCandDetails(idx) {
         selectShareCandidate(idx);
+    }
+
+    // ─── Load resume into permanent sidebar (new three-panel layout) ───
+    async function loadShareResumeSidebar(rank) {
+        const frame = document.getElementById('shareResumeFrame');
+        const emptyState = document.getElementById('shareResumeEmpty');
+        const titleEl = document.getElementById('shareResumeTitle');
+
+        const r = _shareCandidates && _shareCandidates[rank];
+        
+        if (!r) {
+            // Show empty state
+            if (frame) frame.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'flex';
+            if (titleEl) titleEl.innerHTML = '📄 Resume';
+            return;
+        }
+
+        const filename = (r.filename) || (r.name + ' — Resume');
+        if (titleEl) {
+            const hasNew = r.drive_link && !r.viewed; // You can track viewed state if needed
+            titleEl.innerHTML = `
+                📄 ${filename}
+                ${hasNew ? '<span class="share-resume-badge">NEW</span>' : ''}
+            `;
+        }
+
+        if (_viewerObjectUrl) { URL.revokeObjectURL(_viewerObjectUrl); _viewerObjectUrl = null; }
+
+        // 1. Google Drive link (primary path when data came from Firebase)
+        if (r.drive_link) {
+            const fileIdMatch = r.drive_link.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
+            
+            if (fileIdMatch) {
+                const fileId = fileIdMatch[1] || fileIdMatch[2];
+                const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                
+                frame.onerror = null;
+                frame.onload = null;
+                
+                let loadTimeout = setTimeout(() => {
+                    console.warn('Drive preview timed out in sidebar');
+                    showSidebarDriveFallback(fileId);
+                }, 8000);
+                
+                frame.onload = () => {
+                    clearTimeout(loadTimeout);
+                    console.log('✓ Drive preview loaded in sidebar');
+                };
+                
+                frame.onerror = () => {
+                    clearTimeout(loadTimeout);
+                    console.warn('Drive preview failed in sidebar');
+                    showSidebarDriveFallback(fileId);
+                };
+                
+                frame.src = embedUrl;
+                frame.style.display = 'block';
+                emptyState.style.display = 'none';
+                
+            } else {
+                console.error('Could not extract file ID from:', r.drive_link);
+                showSidebarDriveFallback(null, r.drive_link);
+            }
+
+        // 2. Base64 file (PDF or DOCX)
+        } else if (r.resume_pdf_b64) {
+            const isDocx = r.file_type === 'docx' || (r.filename && r.filename.toLowerCase().endsWith('.docx'));
+            try {
+                const byteChars = atob(r.resume_pdf_b64);
+                const byteArr   = new Uint8Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+
+                if (isDocx) {
+                    // Render DOCX as HTML using mammoth
+                    const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+                        *, *::before, *::after { box-sizing: border-box; }
+                        html, body {
+                            margin: 0; padding: 0;
+                            background: #ffffff !important;
+                            color: #1a1a1a !important;
+                            font-family: 'Segoe UI', Arial, sans-serif;
+                            font-size: 14px; line-height: 1.7;
+                        }
+                        body { padding: 2.5rem 3rem; max-width: 860px; margin: 0 auto; }
+                        h1, h2, h3, h4, h5, h6 { color: #111 !important; margin: 1.2em 0 0.4em; font-weight: 700; }
+                        p { margin: 0.4em 0; color: #1a1a1a !important; }
+                        a { color: #0066cc; }
+                        ul, ol { padding-left: 1.5rem; margin: 0.5em 0; }
+                        li { margin: 0.25em 0; color: #1a1a1a !important; }
+                        table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+                        td, th { border: 1px solid #ddd; padding: 0.5rem 0.75rem; color: #1a1a1a !important; }
+                        th { background: #f5f5f5; font-weight: 600; }
+                        strong, b { color: #111 !important; }
+                        hr { border: none; border-top: 1px solid #ddd; margin: 1.25rem 0; }
+                    </style></head><body>${result.value}</body></html>`;
+                    const htmlBlob = new Blob([html], { type: 'text/html' });
+                    _viewerObjectUrl = URL.createObjectURL(htmlBlob);
+                } else {
+                    // PDF
+                    const blob = new Blob([byteArr], { type: 'application/pdf' });
+                    _viewerObjectUrl = URL.createObjectURL(blob);
+                }
+
+                frame.src = _viewerObjectUrl;
+                frame.style.display = 'block';
+                emptyState.style.display = 'none';
+            } catch(e) {
+                console.error('Sidebar viewer error:', e);
+                frame.style.display = 'none';
+                emptyState.style.display = 'flex';
+                emptyState.innerHTML = `
+                    <div class="share-resume-empty-icon">⚠️</div>
+                    <h3>Failed to load resume</h3>
+                    <p>Try opening the Drive link directly</p>
+                `;
+            }
+
+        // 3. No resume available
+        } else {
+            frame.style.display = 'none';
+            emptyState.style.display = 'flex';
+            emptyState.innerHTML = `
+                <div class="share-resume-empty-icon">📄</div>
+                <h3>No resume available</h3>
+                <p style="font-size:0.78rem;color:var(--text-muted);">No resume linked for this candidate</p>
+            `;
+        }
+    }
+
+    // ─── Helper: Show fallback in sidebar when Drive embedding fails ───
+    function showSidebarDriveFallback(fileId, directUrl = null) {
+        const frame = document.getElementById('shareResumeFrame');
+        const emptyState = document.getElementById('shareResumeEmpty');
+        
+        const viewUrl = fileId 
+            ? `https://drive.google.com/file/d/${fileId}/view`
+            : directUrl;
+        
+        frame.style.display = 'none';
+        emptyState.style.display = 'flex';
+        emptyState.innerHTML = `
+            <div class="share-resume-empty-icon">📄</div>
+            <h3>Preview unavailable</h3>
+            <p style="margin-bottom:1rem;color:var(--text-secondary);">Due to Drive permissions</p>
+            ${viewUrl ? `<a href="${viewUrl}" target="_blank"
+               style="display:inline-block;padding:0.75rem 1.5rem;background:var(--accent);color:var(--primary);border-radius:8px;text-decoration:none;font-weight:600;transition:all 0.2s;">
+                📂 Open in Google Drive
+            </a>` : ''}
+        `;
     }
 
     // ─── Open resume viewer from share page — uses drive_link (Firebase path) or base64 fallback ───
