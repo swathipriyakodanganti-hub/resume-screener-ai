@@ -20,8 +20,19 @@ function testEmail() {
     'If you see this, email works!'
   );
 }
+
+// ─── Run this in Apps Script to create the Interviewer Feedback tab ───
+function testFeedback() {
+  const result = handleInlineFeedback({
+    reviewer:  'Test Reviewer',
+    position:  'Test Position',
+    decisions: { 'Test Candidate': 'proceed' }
+  });
+  Logger.log(result.getContent());
+}
+
 // ─── Set your Google Sheet ID here (optional for logging) ───
-const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
+const SHEET_ID = '1a0bPPx0LaaMX-ik4SySTaaWB114XZN1uBY87_hbxLEU';
 
 // ─── Authorization Function (RUN THIS FIRST!) ───
 // Run this once manually in Apps Script to authorize Drive access
