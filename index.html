@@ -3481,7 +3481,6 @@ Return exactly this JSON:
             const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
             return `
             <div class="main-cand-item${_selectedMainIdx === i ? ' active' : ''}" onclick="selectMainCandidate(${i})" id="main-cand-item-${i}">
-                <div class="main-cand-avatar">${initials(r.name)}</div>
                 <div class="main-cand-info">
                     <div class="main-cand-name">${r.name}</div>
                     <div class="main-cand-meta">📍 ${r.location || '—'} · 💼 ${r.experience_years} yrs</div>
@@ -3518,7 +3517,6 @@ Return exactly this JSON:
         detailEl.innerHTML = `
             <!-- Hero -->
             <div class="share-detail-hero" style="padding:1rem 1.25rem;">
-                <div class="share-detail-avatar">${initials(r.name)}</div>
                 <div class="share-detail-info">
                     <div class="share-detail-name" style="font-size:0.95rem;">${r.name}</div>
                     <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
