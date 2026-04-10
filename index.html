@@ -1458,6 +1458,73 @@
         }
         .btn-floating-clear:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,80,96,0.08); }
 
+        /* ─── REVIEWER DECISION BUTTONS ─── */
+        .share-decision-row {
+            display: flex; gap: 0.6rem; margin-top: 0.75rem; flex-wrap: wrap;
+        }
+        .btn-share-proceed, .btn-share-pass {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.42rem 1.05rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; background: transparent;
+            transition: all 0.18s ease;
+        }
+        .btn-share-proceed { color: #3fb850; }
+        .btn-share-proceed:hover, .btn-share-proceed.active {
+            background: rgba(63,184,80,0.14); border-color: #3fb850;
+        }
+        .btn-share-proceed.active { box-shadow: 0 0 0 2px rgba(63,184,80,0.22); }
+        .btn-share-pass { color: #f07070; }
+        .btn-share-pass:hover, .btn-share-pass.active {
+            background: rgba(240,112,112,0.13); border-color: #f07070;
+        }
+        .btn-share-pass.active { box-shadow: 0 0 0 2px rgba(240,112,112,0.22); }
+
+        /* Decision dot on sidebar item */
+        .share-cand-decision-dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            flex-shrink: 0; margin-left: auto; align-self: center;
+            display: none;
+        }
+        .share-cand-decision-dot.proceed { display: block; background: #3fb850; box-shadow: 0 0 5px rgba(63,184,80,0.55); }
+        .share-cand-decision-dot.pass    { display: block; background: #f07070; box-shadow: 0 0 5px rgba(240,112,112,0.55); }
+
+        /* Feedback floating bar */
+        .share-feedback-bar {
+            position: fixed;
+            bottom: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.25rem;
+            background: rgba(3, 12, 4, 0.97);
+            border: 1px solid rgba(63,184,80,0.45);
+            border-radius: 18px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.75), 0 0 32px rgba(63,184,80,0.15);
+            backdrop-filter: blur(28px);
+            transition: bottom 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+        }
+        .share-feedback-bar.visible { bottom: 2rem; }
+        .share-feedback-bar .floating-bar-count strong { color: #3fb850; }
+        .btn-submit-feedback {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 0.6rem 1.3rem;
+            background: linear-gradient(135deg, #1a5c1f 0%, #2a8c35 100%);
+            border: none; border-radius: 10px;
+            color: #d4ffd8;
+            font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s ease;
+            box-shadow: 0 4px 18px rgba(63,184,80,0.35);
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .btn-submit-feedback:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(63,184,80,0.5); }
+
         /* ─── BULK SHARE PAGE ─── */
         .bulk-share-header {
             padding: 1.5rem 2rem;
@@ -2583,6 +2650,35 @@
     <div class="floating-bar-divider"></div>
     <button class="btn-floating-share" onclick="openBulkShareModal()">📤 Share Shortlist</button>
     <button class="btn-floating-clear" onclick="clearAllSelections()" title="Clear selection">✕</button>
+</div>
+
+<!-- ─── REVIEWER FEEDBACK BAR ─── -->
+<div class="share-feedback-bar" id="shareFeedbackBar">
+    <div class="floating-bar-left">
+        <div class="floating-bar-text">
+            <div class="floating-bar-count"><strong id="shareFeedbackCount">0</strong> marked Proceed</div>
+            <div class="floating-bar-sub" id="shareFeedbackSub">Select decisions above, then submit</div>
+        </div>
+    </div>
+    <div class="floating-bar-divider"></div>
+    <button class="btn-submit-feedback" onclick="submitShareFeedback()">✅ Submit Feedback</button>
+</div>
+
+<!-- ─── REVIEWER NAME MODAL ─── -->
+<div id="shareFeedbackNameOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:6000;display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--surface-2);border:1px solid var(--border-accent);border-radius:16px;padding:2rem;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+        <div style="font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;">Submit Feedback</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1.1rem;">Enter your name so HR can identify your selections.</div>
+        <input type="text" id="shareFeedbackNameInput" placeholder="Your name" autocomplete="name"
+            style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.55rem 0.85rem;color:var(--text-primary);font-size:0.88rem;font-family:'Inter',sans-serif;outline:none;"
+            onkeydown="if(event.key==='Enter') confirmSubmitShareFeedback()">
+        <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end;">
+            <button onclick="document.getElementById('shareFeedbackNameOverlay').style.display='none'"
+                style="padding:0.45rem 1rem;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:0.82rem;cursor:pointer;">Cancel</button>
+            <button onclick="confirmSubmitShareFeedback()"
+                style="padding:0.45rem 1.1rem;background:linear-gradient(135deg,#1a5c1f,#2a8c35);border:none;border-radius:8px;color:#d4ffd8;font-size:0.82rem;font-weight:700;cursor:pointer;">Submit</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -4575,6 +4671,10 @@ Return exactly this JSON:
             const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesForUrl });
             shareLink = `${baseUrl}?view=${encoded}`;
         }
+        // Embed Apps Script URL so the reviewer's share page can submit feedback to Sheets
+        if (appsScriptUrl) {
+            shareLink += '&script=' + encodeURIComponent(appsScriptUrl);
+        }
 
         const recipients = _interviewers.filter(iv => _selectedEmails.has(iv.email));
         const avgScore   = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / candidates.length);
@@ -4654,6 +4754,10 @@ Return exactly this JSON:
         const encoded  = params.get('view');
         if (!sid && !encoded) return;
 
+        // Store for reviewer feedback submission
+        _shareSid          = sid || null;
+        _shareAppsScriptUrl = params.get('script') ? decodeURIComponent(params.get('script')) : null;
+
         // Hide main app, show share page
         const appShell = document.querySelector('.app-shell');
         if (appShell) appShell.style.display = 'none';
@@ -4663,6 +4767,7 @@ Return exactly this JSON:
         if (sid) {
             // ── Firebase short-ID mode ──
             const dbUrl = params.get('db') ? decodeURIComponent(params.get('db')) : (localStorage.getItem('firebaseDbUrl') || '');
+            _shareDbForFb = dbUrl || null;
             if (!dbUrl) {
                 document.getElementById('sharePgHero').innerHTML =
                     `<div style="padding:2rem;color:var(--danger);font-family:'Outfit',sans-serif;">
@@ -4747,8 +4852,121 @@ Return exactly this JSON:
 
     let _shareCandidates = null; // holds decoded candidates on the share page
     let _shareActiveIdx  = -1;  // currently selected candidate index in share page
+    let _shareFeedback      = {};  // { idx: 'proceed' | 'pass' }
+    let _shareSid           = null;
+    let _shareDbForFb       = null;
+    let _shareAppsScriptUrl = null;
 
-    // ─── Render a bulk shortlist share page ───
+    // ─── Build Proceed/Pass buttons HTML for a candidate ───
+    function _buildDecisionBtns(idx) {
+        const dec = _shareFeedback[idx];
+        return `
+            <button class="btn-share-proceed${dec === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+                ${dec === 'proceed' ? '✅ Proceeding' : '✅ Proceed'}
+            </button>
+            <button class="btn-share-pass${dec === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+                ${dec === 'pass' ? '❌ Passed' : '❌ Pass'}
+            </button>`;
+    }
+
+    // ─── Toggle a reviewer decision on a candidate ───
+    function setShareDecision(idx, decision) {
+        if (_shareFeedback[idx] === decision) {
+            delete _shareFeedback[idx];
+        } else {
+            _shareFeedback[idx] = decision;
+        }
+        // Refresh buttons if this candidate is currently visible
+        if (_shareActiveIdx === idx) {
+            const row = document.getElementById('shareDecisionRow');
+            if (row) row.innerHTML = _buildDecisionBtns(idx);
+        }
+        // Update dot on sidebar item
+        const dot = document.getElementById(`share-dec-dot-${idx}`);
+        if (dot) {
+            const d = _shareFeedback[idx];
+            dot.className = `share-cand-decision-dot${d ? ' ' + d : ''}`;
+        }
+        updateShareFeedbackBar();
+    }
+
+    // ─── Update floating feedback bar visibility/count ───
+    function updateShareFeedbackBar() {
+        const bar = document.getElementById('shareFeedbackBar');
+        if (!bar) return;
+        const vals = Object.values(_shareFeedback);
+        const proceedCount = vals.filter(v => v === 'proceed').length;
+        const passCount    = vals.filter(v => v === 'pass').length;
+        const total        = proceedCount + passCount;
+        if (total === 0) { bar.classList.remove('visible'); return; }
+        bar.classList.add('visible');
+        document.getElementById('shareFeedbackCount').textContent = proceedCount;
+        document.getElementById('shareFeedbackSub').textContent   =
+            (passCount > 0 ? passCount + ' passed · ' : '') + 'Tap "Submit" when done';
+    }
+
+    // ─── Show name prompt before saving feedback ───
+    function submitShareFeedback() {
+        const overlay = document.getElementById('shareFeedbackNameOverlay');
+        overlay.style.display = 'flex';
+        setTimeout(() => document.getElementById('shareFeedbackNameInput').focus(), 50);
+    }
+
+    // ─── Actually save feedback to Google Sheets via Apps Script (Firebase fallback) ───
+    async function confirmSubmitShareFeedback() {
+        const name = (document.getElementById('shareFeedbackNameInput').value || '').trim();
+        if (!name) { showToast('Please enter your name', 'error'); return; }
+
+        const overlay = document.getElementById('shareFeedbackNameOverlay');
+        overlay.style.display = 'none';
+
+        // Build decisions map: candidateName → 'proceed' | 'pass'
+        const decisions = {};
+        for (const [idxStr, dec] of Object.entries(_shareFeedback)) {
+            const c = _shareCandidates && _shareCandidates[+idxStr];
+            if (c) decisions[c.name] = dec;
+        }
+
+        const position = (document.getElementById('sharePgPositionBanner')?.textContent || '').replace(/^📋\s*/, '').trim();
+
+        if (_shareAppsScriptUrl) {
+            // ── Primary: save to Google Sheets via Apps Script ──
+            try {
+                await postToAppsScript(_shareAppsScriptUrl, {
+                    action: 'saveInlineFeedback',
+                    reviewer: name,
+                    position,
+                    decisions
+                });
+                showToast(`✅ Feedback saved to Google Sheets (${name})`, 'success');
+                document.getElementById('shareFeedbackBar').classList.remove('visible');
+            } catch (e) {
+                showToast('⚠️ Could not save: ' + e.message, 'error');
+            }
+        } else if (_shareSid && _shareDbForFb) {
+            // ── Fallback: save to Firebase ──
+            try {
+                const url = `${_shareDbForFb}/feedback/${_shareSid}.json`;
+                const res = await fetch(url, {
+                    method:  'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ reviewer: name, decisions, _submitted: Date.now() })
+                });
+                if (!res.ok) throw new Error(`Status ${res.status}`);
+                showToast(`✅ Feedback submitted (${name})`, 'success');
+                document.getElementById('shareFeedbackBar').classList.remove('visible');
+            } catch (e) {
+                showToast('⚠️ Could not save: ' + e.message, 'error');
+            }
+        } else {
+            // No connection — show summary toast
+            const lines = Object.entries(decisions)
+                .map(([n, d]) => (d === 'proceed' ? '✅ ' : '❌ ') + n).join(' | ');
+            showToast(`Feedback recorded: ${lines}`, 'success', 6000);
+        }
+    }
+
+
     function renderBulkSharePage(candidates, position) {
         candidates.sort((a, b) => b.match_score - a.match_score);
         _shareCandidates = candidates;
@@ -4797,6 +5015,7 @@ Return exactly this JSON:
                 <div class="share-cand-item-meta">💼 ${r.experience_years} yrs &nbsp;·&nbsp; 📍 ${r.location || '—'}</div>
             </div>
             <div class="share-cand-item-score ${scoreCls}">${r.match_score}%</div>
+            <div class="share-cand-decision-dot" id="share-dec-dot-${idx}"></div>
             <div class="share-cand-item-bar"><div class="share-cand-item-bar-fill ${fillCls}" style="width:${r.match_score}%"></div></div>
         </div>`;
     }
@@ -4843,6 +5062,9 @@ Return exactly this JSON:
                     <div class="share-detail-actions">
                         <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.72rem;padding:3px 10px;">${recTxt}</div>
                         ${mobileResumeBtn}
+                    </div>
+                    <div class="share-decision-row" id="shareDecisionRow">
+                        ${_buildDecisionBtns(idx)}
                     </div>
                 </div>
                 <div class="share-detail-score-ring ${ringCls}">
