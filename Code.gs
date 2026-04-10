@@ -760,6 +760,29 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// ─── Run this once to apply colour formatting to the existing sheet ───
+function applyFeedbackFormatting() {
+  const ss    = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName('Interviewer Feedback');
+  if (!sheet) { Logger.log('Sheet not found'); return; }
+  const maxRows   = 1000;
+  const fullRange = sheet.getRange(2, 1, maxRows, 5);
+  const proceedRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$E2="proceed"')
+    .setBackground('#C8F0DC')
+    .setFontColor('#1D6B45')
+    .setRanges([fullRange])
+    .build();
+  const passRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$E2="pass"')
+    .setBackground('#FADADD')
+    .setFontColor('#8B1A1A')
+    .setRanges([fullRange])
+    .build();
+  sheet.setConditionalFormatRules([proceedRule, passRule]);
+  Logger.log('✅ Conditional formatting applied to Interviewer Feedback');
+}
+
 // Handle inline Proceed/Pass feedback submitted from the share page
 function handleInlineFeedback(data) {
   const reviewer  = data.reviewer  || 'Unknown';
@@ -776,6 +799,23 @@ function handleInlineFeedback(data) {
       sheet.appendRow(['Timestamp', 'Position', 'Reviewer Name', 'Candidate Name', 'Decision']);
       sheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
       sheet.setFrozenRows(1);
+
+      // Conditional formatting: green row for "proceed", red row for "pass"
+      const maxRows = 1000;
+      const fullRange = sheet.getRange(2, 1, maxRows, 5);
+      const proceedRule = SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=$E2="proceed"')
+        .setBackground('#C8F0DC')
+        .setFontColor('#1D6B45')
+        .setRanges([fullRange])
+        .build();
+      const passRule = SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=$E2="pass"')
+        .setBackground('#FADADD')
+        .setFontColor('#8B1A1A')
+        .setRanges([fullRange])
+        .build();
+      sheet.setConditionalFormatRules([proceedRule, passRule]);
     }
     const ts = new Date().toISOString();
     for (const candidateName in decisions) {
