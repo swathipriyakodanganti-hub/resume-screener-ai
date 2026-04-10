@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  Resume Screener AI — Google Apps Script Backend
+//  Beam ATS — Google Apps Script Backend
 //  File: Code.gs
 //
 //  DEPLOYMENT STEPS:
@@ -229,7 +229,7 @@ function doGet(e) {
 
     // ── Health check endpoint ──
   return jsonResponse({ 
-    status: '✅ Resume Screener AI — Apps Script is running.',
+    status: '✅ Beam ATS — Apps Script is running.',
     timestamp: new Date().toISOString(),
     version: '2.1'
   });
@@ -393,7 +393,7 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
                 <div style="font-size:12px;font-weight:700;color:#E6F1FB;">Talent Acquisition Team</div>
                 <div style="font-size:11px;color:#85B7EB;margin-top:2px;">This email is confidential and intended only for the recipient.</div>
               </td>
-              <td align="right"><div style="font-size:10px;color:#85B7EB;">Resume Screener AI</div></td>
+              <td align="right"><div style="font-size:10px;color:#85B7EB;">Beam ATS</div></td>
             </tr></table>
           </td>
         </tr>
@@ -486,7 +486,7 @@ function buildEmailHtml(interviewerName, candidateName, position, shareLink, mat
                 <div style="font-size:12px;font-weight:700;color:#E6F1FB;">Talent Acquisition Team</div>
                 <div style="font-size:11px;color:#85B7EB;margin-top:2px;">This email is confidential and intended only for the recipient.</div>
               </td>
-              <td align="right"><div style="font-size:10px;color:#85B7EB;">Resume Screener AI</div></td>
+              <td align="right"><div style="font-size:10px;color:#85B7EB;">Beam ATS</div></td>
             </tr></table>
           </td>
         </tr>
@@ -661,7 +661,7 @@ function buildFeedbackFormHtml(sid, scriptUrl) {
       </form>
     </div>
     <div class="card-footer">
-      <div style="font-size:11px;color:#85B7EB;">Resume Screener AI &nbsp;&middot;&nbsp; Your feedback will be recorded in the recruiting team's spreadsheet.</div>
+      <div style="font-size:11px;color:#85B7EB;">Beam ATS &nbsp;&middot;&nbsp; Your feedback will be recorded in the recruiting team's spreadsheet.</div>
     </div>
   </div>
   <script>
