@@ -2330,7 +2330,7 @@
                                     <option value="">Any location</option>
                                     <option value="Hyderabad" selected>Hyderabad</option>
                                 </select>
-                                <small class="hint" style="margin-top:0.3rem;">Add a <strong>Locations</strong> tab in your JD sheet (col A)</small>
+                                <small class="hint" style="margin-top:0.3rem;">Add a <strong>Locations</strong> tab in your sheet — row 1 header: <strong>Location</strong>, then one city per row</small>
                             </div>
                         </div></div>
                     </div>
@@ -3059,8 +3059,10 @@
             const res  = await fetch(url);
             const text = await res.text();
             const json = JSON.parse(text.substring(47).slice(0, -2));
+            // Validate we actually got the Locations tab (first col header must be "Location")
+            const firstColLabel = (json.table.cols[0]?.label || '').toLowerCase();
+            if (firstColLabel !== 'location') return; // wrong sheet returned, bail out
             const sel  = document.getElementById('location');
-            // Keep the Any + Hyderabad defaults, then append sheet locations
             const existing = new Set(Array.from(sel.options).map(o => o.value.trim().toLowerCase()));
             json.table.rows.forEach(row => {
                 if (row.c[0] && row.c[0].v) {
@@ -3072,7 +3074,7 @@
                 }
             });
         } catch {
-            // Locations sheet is optional — silently ignore if not found
+            // Locations tab is optional — silently ignore
         }
     }
 
