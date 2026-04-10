@@ -4792,7 +4792,6 @@ Return exactly this JSON:
         return `
         <div class="share-cand-item" id="share-item-${idx}" onclick="selectShareCandidate(${idx})" style="animation:cardIn 0.35s ease-out ${idx*0.05}s backwards;">
             <div class="share-cand-item-rank">${rankLabel}</div>
-            <div class="share-cand-item-avatar">${initials(r.name)}</div>
             <div class="share-cand-item-info">
                 <div class="share-cand-item-name">${r.name}</div>
                 <div class="share-cand-item-meta">💼 ${r.experience_years} yrs &nbsp;·&nbsp; 📍 ${r.location || '—'}</div>
@@ -4838,7 +4837,6 @@ Return exactly this JSON:
 
         document.getElementById('sharePgHero').innerHTML = `
             <div class="share-detail-hero">
-                <div class="share-detail-avatar">${initials(r.name)}</div>
                 <div class="share-detail-info">
                     <div class="share-detail-name">${r.name}</div>
                     <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
@@ -5246,7 +5244,6 @@ Return exactly this JSON:
         return `
         <div class="bulk-candidate-card" style="animation-delay:${rank * 0.07}s">
             <div class="bulk-card-header">
-                <div class="bulk-card-avatar">${initials(r.name)}</div>
                 <div class="bulk-card-info">
                     <div class="bulk-card-name">${r.name}</div>
                     <div class="bulk-card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
