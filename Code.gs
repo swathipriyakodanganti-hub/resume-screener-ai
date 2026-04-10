@@ -38,12 +38,23 @@ const SHEET_ID = '1a0bPPx0LaaMX-ik4SySTaaWB114XZN1uBY87_hbxLEU';
 // Run this once manually in Apps Script to authorize Drive access
 function authorizeDriveAccess() {
   try {
-    // This will trigger the authorization prompt
     const folders = DriveApp.getFolders();
     Logger.log('✅ Authorization successful! Drive access granted.');
     return true;
   } catch (e) {
     Logger.log('❌ Authorization failed: ' + e.toString());
+    return false;
+  }
+}
+
+// ─── RUN THIS to authorize Google Sheets access ───
+function authorizeSheets() {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    Logger.log('✅ Sheets authorization successful! Opened: ' + ss.getName());
+    return true;
+  } catch (e) {
+    Logger.log('❌ Sheets authorization failed: ' + e.toString());
     return false;
   }
 }
