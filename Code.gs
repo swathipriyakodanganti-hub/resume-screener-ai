@@ -284,7 +284,7 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
     const sc  = c.match_score >= 75 ? '#1D9E75' : c.match_score >= 50 ? '#BA7517' : '#A32D2D';
     const sb  = c.match_score >= 75 ? '#E1F5EE' : c.match_score >= 50 ? '#FAEEDA' : '#FCEBEB';
     const ini = c.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-    const lbl = c.match_score >= 75 ? '✅ Recommended' : c.match_score >= 50 ? '🔶 Consider' : '❌ Pass';
+    const lbl = c.match_score >= 75 ? 'Recommended' : c.match_score >= 50 ? 'Consider' : 'Not Recommended';
     return `
       <tr>
         <td style="padding:10px 20px;border-bottom:1px solid #e2e8f0;">
@@ -744,6 +744,9 @@ function handleInlineFeedback(data) {
   const position  = data.position  || '';
   const decisions = data.decisions || {};
   try {
+    if (!SHEET_ID || SHEET_ID === 'YOUR_GOOGLE_SHEET_ID_HERE') {
+      throw new Error('SHEET_ID is not configured in Code.gs');
+    }
     const ss    = SpreadsheetApp.openById(SHEET_ID);
     let   sheet = ss.getSheetByName('Interviewer Feedback');
     if (!sheet) {
@@ -756,10 +759,11 @@ function handleInlineFeedback(data) {
     for (const candidateName in decisions) {
       sheet.appendRow([ts, position, reviewer, candidateName, decisions[candidateName]]);
     }
+    return jsonResponse({ success: true });
   } catch (err) {
     Logger.log('handleInlineFeedback error: ' + err.toString());
+    return jsonResponse({ success: false, error: err.message });
   }
-  return jsonResponse({ success: true });
 }
 
 // ───────────────────────────────────────────────────────────────
