@@ -3059,18 +3059,21 @@
             const res  = await fetch(url);
             const text = await res.text();
             const json = JSON.parse(text.substring(47).slice(0, -2));
-            // Validate we actually got the Locations tab (first col header must be "Location")
-            const firstColLabel = (json.table.cols[0]?.label || '').toLowerCase();
-            if (firstColLabel !== 'location') return; // wrong sheet returned, bail out
+            // Bail out if the tab doesn't exist (gviz returns error status)
+            if (json.status === 'error' || !json.table || !json.table.rows) return;
             const sel  = document.getElementById('location');
             const existing = new Set(Array.from(sel.options).map(o => o.value.trim().toLowerCase()));
+            // Include col header row as a potential value (handles no-header sheets)
+            const colLabel = json.table.cols[0]?.label?.trim();
+            const allValues = [];
+            if (colLabel && colLabel.toLowerCase() !== 'location') allValues.push(colLabel);
             json.table.rows.forEach(row => {
-                if (row.c[0] && row.c[0].v) {
-                    const val = String(row.c[0].v).trim();
-                    if (val && !existing.has(val.toLowerCase())) {
-                        sel.innerHTML += `<option value="${val}">${val}</option>`;
-                        existing.add(val.toLowerCase());
-                    }
+                if (row.c[0] && row.c[0].v) allValues.push(String(row.c[0].v).trim());
+            });
+            allValues.forEach(val => {
+                if (val && !existing.has(val.toLowerCase())) {
+                    sel.innerHTML += `<option value="${val}">${val}</option>`;
+                    existing.add(val.toLowerCase());
                 }
             });
         } catch {
