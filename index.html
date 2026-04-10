@@ -2324,7 +2324,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group"><label for="location">Location</label><input type="text" id="location" placeholder="e.g. Hyderabad, Remote"></div>
+                            <div class="form-group">
+                                <label for="location">Location</label>
+                                <select id="location">
+                                    <option value="">Any location</option>
+                                    <option value="Hyderabad" selected>Hyderabad</option>
+                                </select>
+                                <small class="hint" style="margin-top:0.3rem;">Add locations in a <strong>Locations</strong> sheet tab (col A)</small>
+                            </div>
                         </div></div>
                     </div>
 
@@ -2612,6 +2619,7 @@
         if (sheetsId) {
             document.getElementById('sheetsId').value = sheetsId;
             loadPositions();
+            loadLocations();
         }
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
@@ -2730,6 +2738,7 @@
         sheetsId = document.getElementById('sheetsId').value.trim();
         localStorage.setItem('sheetsId', sheetsId);
         loadPositions();
+        loadLocations();
     }
     
     function saveApiDelay() {
@@ -3043,6 +3052,30 @@
     });
 
     // ─── Google Sheets ───
+    async function loadLocations() {
+        if (!sheetsId) return;
+        try {
+            const url  = `https://docs.google.com/spreadsheets/d/${sheetsId}/gviz/tq?tqx=out:json&sheet=Locations`;
+            const res  = await fetch(url);
+            const text = await res.text();
+            const json = JSON.parse(text.substring(47).slice(0, -2));
+            const sel  = document.getElementById('location');
+            // Keep the Any + Hyderabad defaults, then append sheet locations
+            const existing = new Set(Array.from(sel.options).map(o => o.value.trim().toLowerCase()));
+            json.table.rows.forEach(row => {
+                if (row.c[0] && row.c[0].v) {
+                    const val = String(row.c[0].v).trim();
+                    if (val && !existing.has(val.toLowerCase())) {
+                        sel.innerHTML += `<option value="${val}">${val}</option>`;
+                        existing.add(val.toLowerCase());
+                    }
+                }
+            });
+        } catch {
+            // Locations sheet is optional — silently ignore if not found
+        }
+    }
+
     async function loadPositions() {
         if (!sheetsId) return;
         try {
