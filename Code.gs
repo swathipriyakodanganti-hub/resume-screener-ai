@@ -244,21 +244,14 @@ function doPost(e) {
       return jsonResponse({ success: false, error: 'No recipients provided' });
     }
 
-    // ── Create a feedback session when sending a bulk email ──
-    let feedbackLink = null;
-    if (isBulk && candidates && candidates.length) {
-      const feedbackSid = Utilities.getUuid();
-      createFeedbackSession(feedbackSid, position, candidates);
-      feedbackLink = ScriptApp.getService().getUrl() + '?action=feedback&sid=' + feedbackSid;
-    }
-
+    // ── Send emails ──
     recipients.forEach(({ name, email }) => {
       const subject = isBulk
         ? `Candidate Shortlist: ${candidateCount} profiles for ${position}`
         : `Candidate Profile: ${candidateName} for ${position}`;
 
       const htmlBody = isBulk
-        ? buildBulkEmailHtml(name, candidates || [], position, shareLink, feedbackLink)
+        ? buildBulkEmailHtml(name, candidates || [], position, shareLink)
         : buildEmailHtml(name, candidateName, position, shareLink, matchScore);
 
       const textBody = buildEmailText(name, candidateName || `${candidateCount} candidates`, position, shareLink);
@@ -282,7 +275,7 @@ function doPost(e) {
 // ───────────────────────────────────────────────────────────────
 // Bulk email HTML
 // ───────────────────────────────────────────────────────────────
-function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, feedbackLink) {
+function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
   const count    = candidates.length;
   const avgScore = count ? Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count) : 0;
   const topScore = count ? candidates[0].match_score : 0;
@@ -366,15 +359,7 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, fe
                    style="display:inline-block;padding:14px 32px;background:#0C447C;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 12px rgba(12,68,124,0.3);">
                   View All Candidates &amp; Resumes &rarr;
                 </a>
-                <div style="margin-top:10px;font-size:11px;color:#94a3b8;">Click to access detailed profiles with resumes</div>
-                ${feedbackLink ? `
-                <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0;">
-                  <a href="${feedbackLink}" target="_blank"
-                     style="display:inline-block;padding:12px 28px;background:#1D9E75;border-radius:8px;font-size:13px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 3px 10px rgba(29,158,117,0.3);">
-                    &#128203; Submit Your Feedback &rarr;
-                  </a>
-                  <div style="margin-top:8px;font-size:11px;color:#94a3b8;">Mark each candidate as Proceed / Hold / Pass</div>
-                </div>` : ''}
+                <div style="margin-top:10px;font-size:11px;color:#94a3b8;">Click to access detailed profiles, resumes and give your feedback</div>
               </td></tr>
             </table>
           </td>
