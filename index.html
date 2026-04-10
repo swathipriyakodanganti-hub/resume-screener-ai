@@ -6,77 +6,49 @@
     <title>Resume Screener AI - Powered by Gemini</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         :root {
-            --primary: #020508;
-            --primary-light: #080d14;
-            --accent: #00dcff;
-            --accent-dark: #0080ff;
-            --accent-glow: rgba(0, 220, 255, 0.22);
-            --amber: #40c8ff;
-            --amber-dim: rgba(64, 200, 255, 0.12);
-            --success: #00e8a0;
-            --success-glow: rgba(0, 232, 160, 0.18);
-            --warning: #40a8ff;
-            --danger: #ff5060;
-            --bg-main: #050810;
-            --bg-card: rgba(10, 16, 28, 0.85);
-            --bg-sidebar: rgba(4, 6, 14, 0.98);
-            --text-primary: #d8f5ff;
-            --text-secondary: #90d8f0;
-            --text-muted: #3a7890;
-            --border: rgba(0, 220, 255, 0.1);
-            --border-accent: rgba(0, 220, 255, 0.3);
-            --shadow: rgba(0, 0, 0, 0.8);
-            --sidebar-width: 56px;
-            --sidebar-expanded: 280px;
+            --primary: #0d1117;
+            --primary-light: #161b22;
+            --accent: #388bfd;
+            --accent-dark: #2f7dea;
+            --accent-glow: rgba(56,139,253,0.22);
+            --amber: #e3b341;
+            --amber-dim: rgba(227,179,65,0.12);
+            --success: #56d364;
+            --success-glow: rgba(86,211,100,0.18);
+            --warning: #e3b341;
+            --danger: #f85149;
+            --bg-main: #0d1117;
+            --bg-card: #161b22;
+            --bg-sidebar: #161b22;
+            --text-primary: #f0f6fc;
+            --text-secondary: #c9d1d9;
+            --text-muted: #8b949e;
+            --border: #21262d;
+            --border-accent: rgba(56,139,253,0.3);
+            --shadow: rgba(0,0,0,0.5);
+            --sidebar-width: 0px;
+            --sidebar-expanded: 0px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Source Sans 3', sans-serif;
+            font-family: 'Inter', 'Source Sans 3', sans-serif;
             background: var(--bg-main);
             color: var(--text-primary);
             line-height: 1.6;
-            overflow-x: hidden;
-            min-height: 100vh;
+            overflow: hidden;
+            height: 100vh;
         }
 
-        
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0, 128, 255, 0.14) 0%, transparent 55%),
-                radial-gradient(ellipse 60% 50% at 90% 80%, rgba(0, 220, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse 40% 40% at 55% 45%, rgba(0, 232, 160, 0.05) 0%, transparent 45%);
-            animation: bgShift 26s ease-in-out infinite;
-            z-index: 0;
-            pointer-events: none;
-        }
+        body::before, body::after { display: none; }
 
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 9999;
-            mix-blend-mode: screen;
-        }
-
-        @keyframes bgShift {
-            0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
-            33% { opacity: 0.8; transform: scale(1.03) rotate(0.5deg); }
-            66% { opacity: 0.9; transform: scale(1.01) rotate(-0.3deg); }
-        }
-
-        .app-shell { display: flex; height: 100vh; position: relative; z-index: 1; }
+        .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; z-index: 1; }
 
         /* ─── VOID CIRCUIT SCANLINE ─── */
         /* scanline removed */
@@ -2056,246 +2028,294 @@
             font-size: 0.78rem; color: var(--text-secondary);
             display: flex; align-items: center; gap: 0.5rem;
         }
+
+        /* ── Hide legacy sidebar ── */
+        .sidebar { display: none !important; }
+
+        /* ── Topbar ── */
+        .topbar {
+            height: 52px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 1.25rem;
+            flex-shrink: 0;
+            gap: 1rem;
+            z-index: 100;
+        }
+        .tb-logo {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.85rem; font-weight: 700; color: var(--text-primary);
+            white-space: nowrap; margin-right: 0.5rem;
+        }
+        .tb-logo-icon { font-size: 1.1rem; }
+        .tb-tabs { display: flex; align-items: center; gap: 0.15rem; flex: 1; }
+        .tb-tab {
+            padding: 0.35rem 0.9rem;
+            border-radius: 6px 6px 0 0;
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+            display: flex; align-items: center; gap: 0.4rem;
+            user-select: none;
+        }
+        .tb-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.04); }
+        .tb-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+        .tb-tab-badge {
+            background: var(--accent); color: #fff;
+            font-size: 0.6rem; font-weight: 700;
+            padding: 1px 5px; border-radius: 10px;
+            line-height: 1.4;
+        }
+        .tb-right {
+            display: flex; align-items: center; gap: 0.5rem;
+            margin-left: auto;
+        }
+        /* conn-badge override for topbar context */
+        #connBadge.conn-badge {
+            display: flex !important;
+            align-items: center; gap: 0.35rem;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 0.68rem; font-weight: 600;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.03);
+            white-space: nowrap;
+        }
+        #connBadge.conn-badge.connected { color: var(--success); border-color: rgba(86,211,100,0.25); background: rgba(86,211,100,0.06); }
+        .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+        /* ── App pages ── */
+        .app-pages { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+        .app-page { display: none; flex: 1; overflow: hidden; min-height: 0; }
+        .app-page.active { display: flex; flex-direction: column; }
+
+        /* ── Setup page ── */
+        .setup-page-wrap {
+            flex: 1; overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+            display: flex; gap: 1.25rem; align-items: flex-start;
+        }
+        .setup-col { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+        .setup-col-wide { flex: 1.4; }
+        .setup-section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .s-section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px solid transparent;
+            transition: background 0.2s;
+        }
+        .s-section-header:hover { background: rgba(255,255,255,0.03); }
+        .s-section-left { display: flex; align-items: center; gap: 0.5rem; }
+        .s-section-icon { font-size: 0.9rem; }
+        .s-section-title { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em; color: var(--text-primary); }
+        .s-toggle { font-size: 0.65rem; color: var(--text-muted); transition: transform 0.3s; }
+        .s-toggle.open { transform: rotate(0deg); }
+        .s-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .s-content.open { max-height: 2000px; }
+        .s-content-inner { padding: 0.8rem 1rem 1rem; }
+        .filter-row { display: flex; gap: 0.75rem; }
+        .filter-row .form-group { flex: 1; }
+
+        /* ── Results page ── */
+        #app-page-results { min-height: 0; }
+        #app-page-results .main-three-panel { flex: 1; min-height: 0; }
+
+        /* ── Progress bar (global, outside pages) ── */
+        .progress-wrap { display: none; flex-shrink: 0; }
+        .progress-wrap.visible { display: block; }
+
+        /* ── Button blink on hover ── */
+        @keyframes btnBlink {
+            0%, 100% { box-shadow: 0 0 0 0 transparent; }
+            50%       { box-shadow: 0 0 14px 4px var(--accent-glow); }
+        }
+        button:not(:disabled):hover,
+        .provider-btn:not(:disabled):hover,
+        .btn-analyze:not(:disabled):hover,
+        .btn-export:not(:disabled):hover,
+        .btn-add-links:not(:disabled):hover,
+        .tb-tab:hover {
+            animation: btnBlink 0.55s ease-in-out infinite;
+        }
     </style>
 
 </head>
 <body>
 <div class="app-shell">
 
-    <!-- ─── SIDEBAR ICON RAIL ─── -->
-    <aside class="sidebar" id="mainSidebar">
+    <!-- ─── TOP BAR ─── -->
+    <div class="topbar">
+        <div class="tb-logo">
+            <div class="tb-logo-icon">🔍</div>
+            Resume Screener AI
+        </div>
+        <div class="tb-tabs">
+            <div class="tb-tab" onclick="switchPage('setup')" id="page-tab-setup">⚙ Setup</div>
+            <div class="tb-tab active" onclick="switchPage('results')" id="page-tab-results">
+                📊 Results <span class="tb-tab-badge" id="resultBadge" style="display:none;"></span>
+            </div>
+            <div class="tb-tab" onclick="switchPage('share')" id="page-tab-share">📤 Share</div>
+        </div>
+        <div class="tb-right">
+            <span class="conn-badge" id="connBadge"><span class="conn-dot"></span>Not connected</span>
+            <span id="railConnDot" style="display:none;"></span>
+            <button class="btn-export" id="btnSelectAll" onclick="toggleSelectAll()" style="display:none;">☐ Select All</button>
+            <button class="btn-export" onclick="exportResults()">💾 Export CSV</button>
+        </div>
+    </div>
 
-        <!-- Rail header: minimal logo mark -->
-        <div class="sidebar-header">
-            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent-dark),#004080);display:flex;align-items:center;justify-content:center;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d8f5ff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    <!-- Global Progress Bar -->
+    <div class="progress-wrap" id="progressWrap">
+        <div class="progress-label">
+            <span id="progressText">Analyzing…</span>
+            <span id="progressCount">0/0</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <div class="app-pages">
+
+        <!-- ─── SETUP PAGE ─── -->
+        <div class="app-page" id="app-page-setup">
+            <div class="setup-page-wrap">
+
+                <!-- LEFT COL: API Config + Upload -->
+                <div class="setup-col">
+                    <div class="setup-section-card">
+                        <div class="s-section-header" onclick="toggleSideSection('api')">
+                            <div class="s-section-left"><span class="s-section-icon">🔑</span><span class="s-section-title">API Config</span></div>
+                            <span class="s-toggle open" id="apiToggle">▼</span>
+                        </div>
+                        <div class="s-content open" id="apiContent"><div class="s-content-inner">
+                            <div class="form-group"><label>AI Provider</label>
+                                <div class="provider-toggle">
+                                    <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">⚡ Groq <span class="provider-badge">Fast · Free</span></button>
+                                    <button class="provider-btn" id="btnGemini" onclick="switchProvider('gemini')">✦ Gemini <span class="provider-badge">Google</span></button>
+                                </div>
+                            </div>
+                            <div id="groqFields">
+                                <div class="form-group"><label for="groqKey">Groq API Key</label>
+                                    <input type="password" id="groqKey" placeholder="gsk_..." onchange="saveGroqKey()">
+                                    <small class="hint">Get free key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM free</small>
+                                </div>
+                            </div>
+                            <div id="geminiFields" style="display:none;">
+                                <div class="form-group"><label for="geminiKey">Gemini API Key</label>
+                                    <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveGeminiKey()">
+                                    <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM free</small>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="appsScriptUrlInput">⚙️ Apps Script Web App URL <span style="font-weight:400;color:var(--success);font-size:0.68rem;">★ Required for folder links</span></label>
+                                <div style="display:flex;gap:0.4rem;align-items:center;">
+                                    <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveAppsScriptUrl()" style="flex:1;">
+                                    <button class="btn-add-links" onclick="saveAppsScriptUrl()" style="white-space:nowrap;">Save</button>
+                                    <button class="btn-add-links" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(86,211,100,0.1);border-color:rgba(86,211,100,0.3);color:var(--success);white-space:nowrap;">Test</button>
+                                </div>
+                                <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
+                                <small class="hint">Deploy your <strong>Code.gs</strong> as a Web App and paste the URL here. Enables full folder listing.</small>
+                            </div>
+                            <div class="form-group"><label for="sheetsId">Google Sheets ID</label>
+                                <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
+                                <small class="hint">From: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit</small>
+                            </div>
+                            <div class="form-group"><label for="apiDelay">API Call Delay (seconds)</label>
+                                <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
+                                <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
+                            </div>
+                        </div></div>
+                    </div>
+
+                    <div class="setup-section-card">
+                        <div class="s-section-header" onclick="toggleSideSection('upload')">
+                            <div class="s-section-left"><span class="s-section-icon">📤</span><span class="s-section-title">Upload Resumes</span></div>
+                            <span class="s-toggle open" id="uploadToggle">▼</span>
+                        </div>
+                        <div class="s-content open" id="uploadContent"><div class="s-content-inner">
+                            <div class="upload-zone" id="uploadZone"
+                                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                <span class="upload-icon">📤</span>
+                                <p>Drop files or click to browse</p>
+                                <small>PDF, DOC, DOCX</small>
+                                <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
+                            </div>
+                            <div class="drive-links-divider">or paste Google Drive file / folder links</div>
+                            <div class="drive-links-input-wrap">
+                                <textarea id="driveLinksInput" class="drive-links-textarea"
+                                    placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
+                                <button class="btn-add-links" onclick="addDriveLinks()">＋ Add</button>
+                            </div>
+                            <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;">
+                                <label style="margin-bottom:0.4rem;">Loaded Resumes</label>
+                                <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
+                                    <span id="resumeDropLabel">0 files loaded</span>
+                                    <span id="resumeDropChevron" style="font-size:0.65rem;transition:transform 0.3s;">▼</span>
+                                </div>
+                                <div class="resume-dropdown-list" id="resumeDropList"></div>
+                            </div>
+                        </div></div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COL: Position + Filters + Analyze -->
+                <div class="setup-col setup-col-wide">
+                    <div class="setup-section-card">
+                        <div class="s-section-header" onclick="toggleSideSection('jd')">
+                            <div class="s-section-left"><span class="s-section-icon">📋</span><span class="s-section-title">Position &amp; Job Description</span></div>
+                            <span class="s-toggle open" id="jdToggle">▼</span>
+                        </div>
+                        <div class="s-content open" id="jdContent"><div class="s-content-inner">
+                            <div class="form-group"><label for="positionSelect">Select Position</label>
+                                <select id="positionSelect" onchange="loadJD()"><option value="">-- Select Position --</option></select>
+                            </div>
+                            <div class="jd-preview-box" id="jdPreview"></div>
+                        </div></div>
+                    </div>
+
+                    <div class="setup-section-card">
+                        <div class="s-section-header" onclick="toggleSideSection('filters')">
+                            <div class="s-section-left"><span class="s-section-icon">🔍</span><span class="s-section-title">Filters</span></div>
+                            <span class="s-toggle open" id="filtersToggle">▼</span>
+                        </div>
+                        <div class="s-content open" id="filtersContent"><div class="s-content-inner">
+                            <div class="filter-row">
+                                <div class="form-group"><label for="minExp">Min Exp (yrs)</label><input type="text" id="minExp" placeholder="e.g. 2"></div>
+                                <div class="form-group"><label for="maxExp">Max Exp (yrs)</label><input type="text" id="maxExp" placeholder="e.g. 5"></div>
+                            </div>
+                            <div class="form-group"><label for="location">Location</label><input type="text" id="location" placeholder="e.g. Hyderabad, Remote"></div>
+                        </div></div>
+                    </div>
+
+                    <div class="setup-section-card" style="padding:0.75rem 1rem;">
+                        <div style="font-size:0.65rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.4rem;">
+                            <span style="opacity:0.6;">🛡️</span>
+                            <div id="rateLimitInfo" style="line-height:1.45;">Each API call is delayed to prevent rate limit errors.</div>
+                        </div>
+                    </div>
+
+                    <button class="btn-analyze" onclick="analyzeResumes()" id="analyzeBtn2">🚀 Analyze Resumes</button>
+                    <button id="analyzeBtn" onclick="analyzeResumes()" style="display:none;visibility:hidden;"></button>
+                </div>
+
             </div>
         </div>
 
-        <!-- Rail icon buttons -->
-        <div class="sidebar-body">
-            <div class="rail-icon-btn" title="API Config" onclick="openFlyout('api')">
-                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span class="rail-conn-dot" id="railConnDot"></span>
-            </div>
-            <div class="rail-icon-btn" title="Upload Resumes" onclick="openFlyout('upload')">
-                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            </div>
-            <div class="rail-icon-btn" title="Position / JD" onclick="openFlyout('jd')">
-                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            </div>
-            <div class="rail-icon-btn" title="Filters" onclick="openFlyout('filters')">
-                <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-            </div>
-            <button class="rail-analyze-btn" onclick="analyzeResumes()" id="analyzeBtn" title="Analyze Resumes">
-                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#d8f5ff" stroke="none"/></svg>
-            </button>
-        </div>
 
-        <!-- Flyout panel (slides out on hover) -->
-        <div class="sidebar-flyout" id="sidebarFlyout">
-            <div class="flyout-header">
-                <div class="sidebar-logo">Resume Screener AI</div>
-                <div class="sidebar-subtitle">⚡ Groq · ✦ Gemini · Smart Hiring</div>
-                <span class="conn-badge" id="connBadge">
-                    <span class="conn-dot"></span>
-                    Not connected
-                </span>
-            </div>
-
-            <div class="flyout-body">
-
-            <!-- API Config -->
-            <div class="s-block">
-                <div class="s-section-header" onclick="toggleSideSection('api')">
-                    <div class="s-section-left">
-                        <span class="s-section-icon">🔑</span>
-                        <span class="s-section-title">API Config</span>
-                    </div>
-                    <span class="s-toggle open" id="apiToggle">▼</span>
-                </div>
-                <div class="s-content open" id="apiContent">
-                <div class="s-content-inner">
-                    <!-- Provider Toggle -->
-                    <div class="form-group">
-                        <label>AI Provider</label>
-                        <div class="provider-toggle">
-                            <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">
-                                ⚡ Groq <span class="provider-badge">Fast · Free</span>
-                            </button>
-                            <button class="provider-btn" id="btnGemini" onclick="switchProvider('gemini')">
-                                ✦ Gemini <span class="provider-badge">Google</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Groq fields -->
-                    <div id="groqFields">
-                        <div class="form-group">
-                            <label for="groqKey">Groq API Key</label>
-                            <input type="password" id="groqKey" placeholder="gsk_..." onchange="saveGroqKey()">
-                            <small class="hint">Get free key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM free</small>
-                        </div>
-                    </div>
-
-                    <!-- Gemini fields -->
-                    <div id="geminiFields" style="display:none;">
-                        <div class="form-group">
-                            <label for="geminiKey">Gemini API Key</label>
-                            <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveGeminiKey()">
-                            <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM free</small>
-                        </div>
-                    </div>
-
-                    <!-- Apps Script URL — required for full folder access -->
-                    <div class="form-group">
-                        <label for="appsScriptUrlInput">⚙️ Apps Script Web App URL <span style="font-weight:400;color:var(--success);font-size:0.68rem;">★ Required for folder links</span></label>
-                        <div style="display:flex;gap:0.4rem;align-items:center;">
-                            <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveAppsScriptUrl()" style="flex:1;">
-                            <button class="btn-add-links" onclick="saveAppsScriptUrl()" style="white-space:nowrap;">Save</button>
-                            <button class="btn-add-links" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(0,232,160,0.1);border-color:rgba(0,232,160,0.3);color:var(--success);white-space:nowrap;">Test</button>
-                        </div>
-                        <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
-                        <small class="hint">Deploy your <strong>Code.gs</strong> as a Web App and paste the URL here. Enables full folder listing — all profiles load reliably.</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="sheetsId">Google Sheets ID</label>
-                        <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
-                        <small class="hint">From: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="apiDelay">API Call Delay (seconds)</label>
-                        <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
-                        <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
-                    </div>
-                </div>
-                </div>
-            </div>
-
-            <!-- Upload -->
-            <div class="s-block">
-                <div class="s-section-header" onclick="toggleSideSection('upload')">
-                    <div class="s-section-left">
-                        <span class="s-section-icon">📤</span>
-                        <span class="s-section-title">Upload Resumes</span>
-                    </div>
-                    <span class="s-toggle open" id="uploadToggle">▼</span>
-                </div>
-                <div class="s-content open" id="uploadContent">
-                <div class="s-content-inner">
-                    <div class="upload-zone" id="uploadZone"
-                         ondrop="handleDrop(event)"
-                         ondragover="handleDragOver(event)"
-                         ondragleave="handleDragLeave(event)">
-                        <span class="upload-icon">📤</span>
-                        <p>Drop files or click to browse</p>
-                        <small>PDF, DOC, DOCX</small>
-                        <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
-                    </div>
-
-                    <!-- Drive links input -->
-                    <div class="drive-links-divider">or paste Google Drive file / folder links</div>
-                    <div class="drive-links-input-wrap">
-                        <textarea id="driveLinksInput" class="drive-links-textarea"
-                            placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
-                        <button class="btn-add-links" onclick="addDriveLinks()">＋ Add</button>
-                    </div>
-
-                    <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;">
-                        <label style="margin-bottom:0.4rem;">Loaded Resumes</label>
-                        <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
-                            <span id="resumeDropLabel">0 files loaded</span>
-                            <span id="resumeDropChevron" style="font-size:0.65rem;transition:transform 0.3s;">▼</span>
-                        </div>
-                        <div class="resume-dropdown-list" id="resumeDropList"></div>
-                    </div>
-
-                    <div class="progress-wrap" id="progressWrap">
-                        <div class="progress-label">
-                            <span id="progressText">Analyzing…</span>
-                            <span id="progressCount">0/0</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                    </div>
-                </div>
-                </div>
-            </div>
-
-            <!-- Position -->
-            <div class="s-block">
-                <div class="s-section-header" onclick="toggleSideSection('jd')">
-                    <div class="s-section-left">
-                        <span class="s-section-icon">📋</span>
-                        <span class="s-section-title">Position</span>
-                    </div>
-                    <span class="s-toggle open" id="jdToggle">▼</span>
-                </div>
-                <div class="s-content open" id="jdContent">
-                <div class="s-content-inner">
-                    <div class="form-group">
-                        <label for="positionSelect">Select Position</label>
-                        <select id="positionSelect" onchange="loadJD()">
-                            <option value="">-- Select Position --</option>
-                        </select>
-                    </div>
-                    <div class="jd-preview-box" id="jdPreview"></div>
-                </div>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="s-block">
-                <div class="s-section-header" onclick="toggleSideSection('filters')">
-                    <div class="s-section-left">
-                        <span class="s-section-icon">🔍</span>
-                        <span class="s-section-title">Filters</span>
-                    </div>
-                    <span class="s-toggle open" id="filtersToggle">▼</span>
-                </div>
-                <div class="s-content open" id="filtersContent">
-                <div class="s-content-inner">
-                    <div class="filter-row">
-                        <div class="form-group">
-                            <label for="minExp">Min Exp (yrs)</label>
-                            <input type="text" id="minExp" placeholder="e.g. 2">
-                        </div>
-                        <div class="form-group">
-                            <label for="maxExp">Max Exp (yrs)</label>
-                            <input type="text" id="maxExp" placeholder="e.g. 5">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="location">Location</label>
-                        <input type="text" id="location" placeholder="e.g. Hyderabad, Remote">
-                    </div>
-                </div>
-                </div>
-            </div>
-
-            <button class="btn-analyze" onclick="analyzeResumes()" id="analyzeBtn2">
-                🚀 Analyze Resumes
-            </button>
-
-            </div><!-- /flyout-body -->
-        </div><!-- /sidebar-flyout -->
-    </aside>
-
-    <!-- ─── MAIN CONTENT ─── -->
-    <div class="main-content">
-        <div class="main-header">
-            <div class="results-title">
-                📊 Results
-                <span class="result-badge" id="resultBadge" style="display:none;"></span>
-            </div>
-            <div class="header-actions">
-                <button class="btn-export" id="btnSelectAll" onclick="toggleSelectAll()" style="display:none;">☐ Select All</button>
-                <button class="btn-export" onclick="exportResults()">💾 Export CSV</button>
-            </div>
-        </div>
-
+        <!-- ─── RESULTS PAGE ─── -->
+        <div class="app-page active" id="app-page-results">
         <!-- Three-panel layout -->
         <div class="main-three-panel">
 
@@ -2309,13 +2329,6 @@
                     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--text-muted);text-align:center;padding:1rem;">
                         <div style="font-size:2rem;opacity:0.2;margin-bottom:0.5rem;">📭</div>
                         <div style="font-size:0.75rem;">Analyze resumes to see candidates</div>
-                    </div>
-                </div>
-                <!-- Rate Limit Info (moved here) -->
-                <div id="rateLimitInfoWrap" style="padding:0.6rem 0.75rem;border-top:1px solid var(--border);flex-shrink:0;">
-                    <div style="font-size:0.65rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.4rem;">
-                        <span style="opacity:0.6;">🛡️</span>
-                        <div id="rateLimitInfo" style="line-height:1.45;">Each API call is delayed to prevent rate limit errors.</div>
                     </div>
                 </div>
             </div>
@@ -2347,8 +2360,27 @@
             </div>
 
         </div>
-    </div>
-</div>
+        </div><!-- /app-page-results -->
+
+        <!-- ─── SHARE PAGE ─── -->
+        <div class="app-page" id="app-page-share">
+            <div class="setup-page-wrap" style="justify-content:center;align-items:flex-start;padding-top:2rem;">
+                <div style="max-width:600px;width:100%;">
+                    <div class="setup-section-card" style="padding:1.5rem 2rem;">
+                        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--accent);margin-bottom:0.3rem;">Share Results</div>
+                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;">Send Shortlist to Interviewer</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6;">
+                            Select candidates on the Results tab → click <strong style="color:var(--text-secondary);">Shortlist</strong> on each → then open the Share Modal to send profiles via Gmail through Apps Script.<br><br>
+                            Interviewers are loaded from the <strong style="color:var(--text-secondary);">"Emails" tab</strong> in your connected Google Sheet (Name col A, Email col B).
+                        </div>
+                        <button class="btn-analyze" onclick="openBulkShareModal()" style="max-width:280px;">📤 Open Share Modal</button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /app-page-share -->
+
+    </div><!-- /app-pages -->
+</div><!-- /app-shell -->
 
 <!-- Left Resume Viewer Panel -->
 <div class="resume-viewer-backdrop" id="resumeViewerBackdrop" onclick="closeResumeViewer()"></div>
@@ -2625,19 +2657,23 @@
 
     // ─── Open flyout and jump to a section ───
     function openFlyout(sectionId) {
-        const flyout = document.getElementById('sidebarFlyout');
-        if (!flyout) return;
-        // Clear any lingering inline styles so CSS hover takes full control
-        flyout.style.transform = '';
-        flyout.style.opacity   = '';
-        flyout.style.pointerEvents = '';
+        switchPage('setup');
         const content = document.getElementById(sectionId + 'Content');
         const toggle  = document.getElementById(sectionId + 'Toggle');
         if (content && !content.classList.contains('open')) {
             content.classList.add('open');
             if (toggle) toggle.classList.add('open');
         }
-        if (content) setTimeout(() => content.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+        if (content) setTimeout(() => content.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+    }
+
+    function switchPage(p) {
+        document.querySelectorAll('.tb-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.app-page').forEach(pg => pg.classList.remove('active'));
+        const tab  = document.getElementById('page-tab-' + p);
+        const page = document.getElementById('app-page-' + p);
+        if (tab)  tab.classList.add('active');
+        if (page) { page.classList.add('active'); }
     }
 
     // ─── API Keys ───
@@ -3125,6 +3161,11 @@
 
         const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description using the WEIGHTED SCORING RUBRIC below. Return ONLY valid JSON (no markdown fences, no extra text).
 
+IMPORTANT — SKILLS EVALUATION RULE:
+A technology or tool only counts as a demonstrated skill if it appears in the candidate's WORK EXPERIENCE or JOB RESPONSIBILITIES section (i.e., used in a real role, project, or task described in their employment history).
+Technologies listed ONLY in a standalone "Skills", "Technical Skills", or "Competencies" section — with no supporting evidence in job responsibilities or project descriptions — must be treated as UNVERIFIED and should NOT be counted toward skills_score, skills_present, or key_skills.
+This distinction is critical: we need people who have actually worked with the tech, not just listed it.
+
 Job Description:
 ${jd}
 
@@ -3134,8 +3175,9 @@ Resume:
 ${resumeText.slice(0, 7500)}
 
 SCORING RUBRIC — score each category 0–100, then compute match_score as the weighted sum:
-  • skills_score      (weight 40%): How well do the candidate's technical/domain skills match the JD requirements? 
-      100 = all required skills present + bonus skills; 75 = most required skills; 50 = ~half; 25 = few; 0 = none
+  • skills_score      (weight 40%): How well do the candidate's DEMONSTRATED skills (from work experience/responsibilities only) match the JD requirements?
+      100 = all required JD skills actively used in past roles + bonus skills; 75 = most required skills demonstrated in experience; 50 = ~half demonstrated; 25 = few demonstrated; 0 = none demonstrated in experience.
+      PENALIZE heavily if skills only appear in a skills list with no job-context evidence.
   • experience_score  (weight 25%): Does total years & relevance of experience fit the JD?
       100 = exceeds requirements with directly relevant experience; 75 = meets requirements; 50 = slightly under or tangential; 25 = significantly under; 0 = no relevant experience
   • education_score   (weight 15%): Does the education background match JD requirements (degree level, field)?
@@ -3162,11 +3204,11 @@ Return exactly this JSON:
     "achievements_score": <integer 0-100>,
     "culture_score": <integer 0-100>
   },
-  "key_skills": ["up to 6 skills from resume"],
-  "skills_present": ["JD skills candidate HAS"],
-  "skills_missing": ["JD skills candidate LACKS"],
+  "key_skills": ["up to 6 skills extracted from the candidate's work experience/job responsibilities — not from a skills list"],
+  "skills_present": ["JD-required skills the candidate has DEMONSTRATED in their work experience"],
+  "skills_missing": ["JD-required skills absent from the candidate's work experience (even if listed in a skills section)"],
   "highlights": ["2-3 standout achievements"],
-  "rating_reason": "2-3 sentences explaining the overall score — reference specific sub-score drivers",
+  "rating_reason": "2-3 sentences explaining the overall score — reference specific sub-score drivers and note if skills appear only in a skills list vs actual job responsibilities",
   "summary": "one-sentence profile"
 }`;
 
@@ -3408,6 +3450,7 @@ Return exactly this JSON:
         if (analysisResults.length) badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
 
         pt.textContent = 'Analysis complete ✓';
+        switchPage('results');
         setTimeout(() => pw.classList.remove('visible'), 2500);
 
         showToast(`Done! ${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''} matched.`, 'success');
