@@ -2291,8 +2291,24 @@
                         </div>
                         <div class="s-content open" id="filtersContent"><div class="s-content-inner">
                             <div class="filter-row">
-                                <div class="form-group"><label for="minExp">Min Exp (yrs)</label><input type="text" id="minExp" placeholder="e.g. 2"></div>
-                                <div class="form-group"><label for="maxExp">Max Exp (yrs)</label><input type="text" id="maxExp" placeholder="e.g. 5"></div>
+                                <div class="form-group">
+                                    <label>Min Experience</label>
+                                    <div style="display:flex;gap:0.4rem;align-items:center;">
+                                        <input type="number" id="minExp" min="0" max="40" step="1" placeholder="0" style="flex:1;" title="Years">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">yrs</span>
+                                        <input type="number" id="minExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;" title="Months">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">mo</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Max Experience</label>
+                                    <div style="display:flex;gap:0.4rem;align-items:center;">
+                                        <input type="number" id="maxExp" min="0" max="40" step="1" placeholder="∞" style="flex:1;" title="Years">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">yrs</span>
+                                        <input type="number" id="maxExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;" title="Months">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">mo</span>
+                                    </div>
+                                </div>
                             </div>
                             <div class="form-group"><label for="location">Location</label><input type="text" id="location" placeholder="e.g. Hyderabad, Remote"></div>
                         </div></div>
@@ -3168,7 +3184,7 @@ This distinction is critical: we need people who have actually worked with the t
 Job Description:
 ${jd}
 
-Filters: Experience ${filters.minExp || 0}–${filters.maxExp || 'unlimited'} yrs, Location: ${filters.location || 'any'}
+Filters: Experience ${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal*12)+'mo' : filters.minExpDecimal.toFixed(1)+'yrs') : '0'}–${filters.maxExpDecimal !== null ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal*12)+'mo' : filters.maxExpDecimal.toFixed(1)+'yrs') : 'unlimited'}, Location: ${filters.location || 'any'}
 
 Resume:
 ${resumeText.slice(0, 7500)}
@@ -3306,8 +3322,17 @@ Return exactly this JSON:
         const filters = {
             minExp:   document.getElementById('minExp').value,
             maxExp:   document.getElementById('maxExp').value,
+            minExpMonths: document.getElementById('minExpMonths').value,
+            maxExpMonths: document.getElementById('maxExpMonths').value,
             location: document.getElementById('location').value
         };
+        // Convert yrs + months to decimal years for filtering
+        filters.minExpDecimal = filters.minExp || filters.minExpMonths
+            ? (parseFloat(filters.minExp) || 0) + (parseFloat(filters.minExpMonths) || 0) / 12
+            : null;
+        filters.maxExpDecimal = filters.maxExp || filters.maxExpMonths
+            ? (parseFloat(filters.maxExp) || 0) + (parseFloat(filters.maxExpMonths) || 0) / 12
+            : null;
 
         analysisResults = [];
         _selectedMainIdx = null;
@@ -3372,8 +3397,8 @@ Return exactly this JSON:
                 fileStatuses[file.name] = 'done';
 
                 analysisResults.push(result);
-                const okExpLocal = (!filters.minExp || result.experience_years >= +filters.minExp) &&
-                                   (!filters.maxExp  || result.experience_years <= +filters.maxExp);
+                const okExpLocal = (filters.minExpDecimal === null || result.experience_years >= filters.minExpDecimal) &&
+                                   (filters.maxExpDecimal === null || result.experience_years <= filters.maxExpDecimal);
                 const okLocLocal = !filters.location ||
                                    (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
                 if (okExpLocal && okLocLocal) matched++;
@@ -3418,8 +3443,8 @@ Return exactly this JSON:
                 fileStatuses[driveEntry.name] = 'done';
 
                 analysisResults.push(result);
-                const okExpDrive = (!filters.minExp || result.experience_years >= +filters.minExp) &&
-                                   (!filters.maxExp  || result.experience_years <= +filters.maxExp);
+                const okExpDrive = (filters.minExpDecimal === null || result.experience_years >= filters.minExpDecimal) &&
+                                   (filters.maxExpDecimal === null || result.experience_years <= filters.maxExpDecimal);
                 const okLocDrive = !filters.location ||
                                    (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
                 if (okExpDrive && okLocDrive) matched++;
