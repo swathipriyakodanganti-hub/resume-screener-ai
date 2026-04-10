@@ -500,7 +500,12 @@
         .progress-wrap.visible { display: block; }
         .progress-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }
         .progress-bar { height: 3px; background: rgba(0, 220, 255, 0.12); border-radius: 2px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--amber)); border-radius: 2px; transition: width 0.5s ease; width: 0%; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--amber), var(--accent)); background-size: 200% 100%; border-radius: 2px; transition: width 0.5s ease; width: 0%; animation: shimmerBar 1.4s linear infinite; }
+
+        @keyframes shimmerBar {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
 
         /* Analyze button */
         .btn-analyze {
@@ -2326,8 +2331,8 @@
                             <div class="form-group">
                                 <label for="location">Location</label>
                                 <select id="location">
-                                    <option value="">Any location</option>
-                                    <option value="Hyderabad" selected>Hyderabad</option>
+                                    <option value="" selected>Any location</option>
+                                    <option value="Hyderabad">Hyderabad</option>
                                 </select>
                                 <small class="hint" style="margin-top:0.3rem;">Add a <strong>Locations</strong> tab in your sheet — row 1 header: <strong>Location</strong>, then one city per row</small>
                             </div>
@@ -3456,7 +3461,7 @@ Return exactly this JSON:
                 analysisResults.sort((a, b) => b.match_score - a.match_score);
                 renderMainPanels();
                 badge.style.display = 'inline-flex';
-                badge.textContent   = `${matched} matched`;
+                badge.textContent   = `${analysisResults.length}`;
 
             } catch (err) {
                 fileStatuses[file.name] = 'error';
@@ -3502,7 +3507,7 @@ Return exactly this JSON:
                 analysisResults.sort((a, b) => b.match_score - a.match_score);
                 renderMainPanels();
                 badge.style.display = 'inline-flex';
-                badge.textContent   = `${matched} matched`;
+                badge.textContent   = `${analysisResults.length}`;
 
             } catch (err) {
                 fileStatuses[driveEntry.name] = 'error';
