@@ -2304,25 +2304,24 @@
                             <span class="s-toggle open" id="filtersToggle">▼</span>
                         </div>
                         <div class="s-content open" id="filtersContent"><div class="s-content-inner">
-                            <div class="filter-row">
-                                <div class="form-group">
-                                    <label>Min Experience</label>
-                                    <div style="display:flex;gap:0.4rem;align-items:center;">
-                                        <input type="number" id="minExp" min="0" max="40" step="1" placeholder="0" style="flex:1;" title="Years">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">yrs</span>
-                                        <input type="number" id="minExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;" title="Months">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">mo</span>
+                            <div class="form-group">
+                                <label>Experience Range</label>
+                                <div style="display:flex;align-items:center;gap:0.5rem;">
+                                    <div style="display:flex;align-items:center;gap:0.3rem;flex:1;">
+                                        <input type="number" id="minExp" min="0" max="40" step="1" placeholder="0" style="flex:1;min-width:0;" title="Min years">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">yrs</span>
+                                        <input type="number" id="minExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;min-width:0;" title="Min months">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">mo</span>
+                                    </div>
+                                    <span style="color:var(--text-muted);font-size:0.8rem;flex-shrink:0;">→</span>
+                                    <div style="display:flex;align-items:center;gap:0.3rem;flex:1;">
+                                        <input type="number" id="maxExp" min="0" max="40" step="1" placeholder="any" style="flex:1;min-width:0;" title="Max years">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">yrs</span>
+                                        <input type="number" id="maxExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;min-width:0;" title="Max months">
+                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">mo</span>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label>Max Experience</label>
-                                    <div style="display:flex;gap:0.4rem;align-items:center;">
-                                        <input type="number" id="maxExp" min="0" max="40" step="1" placeholder="∞" style="flex:1;" title="Years">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">yrs</span>
-                                        <input type="number" id="maxExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;" title="Months">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">mo</span>
-                                    </div>
-                                </div>
+                                <small class="hint" style="margin-top:0.35rem;">Min → Max &nbsp;·&nbsp; e.g. <strong>0 yrs 6 mo → 2 yrs 0 mo</strong> for freshers to 2yr exp</small>
                             </div>
                             <div class="form-group">
                                 <label for="location">Location</label>
