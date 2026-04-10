@@ -3059,21 +3059,18 @@
             const res  = await fetch(url);
             const text = await res.text();
             const json = JSON.parse(text.substring(47).slice(0, -2));
-            // Bail out if the tab doesn't exist (gviz returns error status)
-            if (json.status === 'error' || !json.table || !json.table.rows) return;
+            // If more than 1 column, it's not the Locations sheet (Google returned a fallback sheet)
+            const numCols = (json.table.cols || []).filter(c => c.label || c.type).length;
+            if (numCols > 1) return;
             const sel  = document.getElementById('location');
             const existing = new Set(Array.from(sel.options).map(o => o.value.trim().toLowerCase()));
-            // Include col header row as a potential value (handles no-header sheets)
-            const colLabel = json.table.cols[0]?.label?.trim();
-            const allValues = [];
-            if (colLabel && colLabel.toLowerCase() !== 'location') allValues.push(colLabel);
             json.table.rows.forEach(row => {
-                if (row.c[0] && row.c[0].v) allValues.push(String(row.c[0].v).trim());
-            });
-            allValues.forEach(val => {
-                if (val && !existing.has(val.toLowerCase())) {
-                    sel.innerHTML += `<option value="${val}">${val}</option>`;
-                    existing.add(val.toLowerCase());
+                if (row.c[0] && row.c[0].v) {
+                    const val = String(row.c[0].v).trim();
+                    if (val && !existing.has(val.toLowerCase())) {
+                        sel.innerHTML += `<option value="${val}">${val}</option>`;
+                        existing.add(val.toLowerCase());
+                    }
                 }
             });
         } catch {
@@ -3102,9 +3099,8 @@
     async function loadJD() {
         const sel = document.getElementById('positionSelect');
         const idx = sel.value;
-        const preview  = document.getElementById('jdPreview');
         const editBox  = document.getElementById('jdEditBox');
-        if (!idx) { preview.classList.remove('visible'); editBox.style.display = 'none'; currentJD = ''; return; }
+        if (!idx) { editBox.value = ''; currentJD = ''; return; }
         try {
             const url  = `https://docs.google.com/spreadsheets/d/${sheetsId}/gviz/tq?tqx=out:json&sheet=JD`;
             const res  = await fetch(url);
@@ -3112,10 +3108,7 @@
             const json = JSON.parse(text.substring(47).slice(0, -2));
             const row  = json.table.rows[idx];
             currentJD  = row.c[1] ? row.c[1].v : '';
-            preview.textContent = currentJD;
-            preview.classList.add('visible');
             editBox.value = currentJD;
-            editBox.style.display = 'block';
         } catch {
             showToast('Error loading job description', 'error');
         }
