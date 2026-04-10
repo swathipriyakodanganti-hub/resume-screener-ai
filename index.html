@@ -4931,17 +4931,24 @@ Return exactly this JSON:
 
         if (_shareAppsScriptUrl) {
             // ── Primary: save to Google Sheets via Apps Script ──
+            // Use fetch with no-cors + text/plain — simple CORS request (no preflight),
+            // body arrives in Apps Script as e.postData.contents
             try {
-                await postToAppsScript(_shareAppsScriptUrl, {
-                    action: 'saveInlineFeedback',
-                    reviewer: name,
-                    position,
-                    decisions
+                await fetch(_shareAppsScriptUrl, {
+                    method:  'POST',
+                    mode:    'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body:    JSON.stringify({
+                        action:   'saveInlineFeedback',
+                        reviewer: name,
+                        position,
+                        decisions
+                    })
                 });
-                showToast(`✅ Feedback saved to Google Sheets (${name})`, 'success');
+                showToast(`✅ Feedback saved! Thank you, ${name}`, 'success');
                 document.getElementById('shareFeedbackBar').classList.remove('visible');
             } catch (e) {
-                showToast('⚠️ Could not save: ' + e.message, 'error');
+                showToast('⚠️ Could not save feedback: ' + e.message, 'error');
             }
         } else if (_shareSid && _shareDbForFb) {
             // ── Fallback: save to Firebase ──
@@ -4959,10 +4966,8 @@ Return exactly this JSON:
                 showToast('⚠️ Could not save: ' + e.message, 'error');
             }
         } else {
-            // No connection — show summary toast
-            const lines = Object.entries(decisions)
-                .map(([n, d]) => (d === 'proceed' ? '✅ ' : '❌ ') + n).join(' | ');
-            showToast(`Feedback recorded: ${lines}`, 'success', 6000);
+            // No Apps Script URL in the link — this share link is outdated
+            showToast('⚠️ Feedback not saved — this link is outdated. Ask the recruiting team to re-send the email.', 'error', 8000);
         }
     }
 
