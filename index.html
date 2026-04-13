@@ -544,6 +544,19 @@
         .jd-rec-item-desc { color: var(--text-secondary); font-size: 0.75rem; line-height: 1.45; }
         .jd-rec-red-flags .jd-rec-item { background: rgba(248,81,73,0.06); border-color: rgba(248,81,73,0.2); }
         .jd-rec-red-flags .jd-rec-item-title { color: var(--danger); }
+        .jd-rec-add-btn {
+            flex-shrink: 0; align-self: center; margin-left: auto;
+            padding: 0.25rem 0.6rem;
+            background: rgba(56,139,253,0.1); border: 1px solid var(--border-accent);
+            border-radius: 6px; color: var(--accent);
+            font-family: 'Outfit', sans-serif; font-size: 0.68rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .jd-rec-add-btn:hover { background: rgba(56,139,253,0.22); }
+        .jd-rec-add-btn.added {
+            background: rgba(86,211,100,0.12); border-color: rgba(86,211,100,0.35);
+            color: var(--success); cursor: default;
+        }
 
         /* Progress */
         .progress-wrap { display: none; margin-top: 0.75rem; }
@@ -2918,6 +2931,27 @@
         localStorage.setItem('extraRequirements', extraRequirements);
     }
 
+    function addFocusAreaToInstructions(idx, title, description) {
+        const textarea = document.getElementById('extraReqsInput');
+        const line = `${title}: ${description}`;
+        const current = textarea.value.trim();
+        textarea.value = current ? current + '\n' + line : line;
+        extraRequirements = textarea.value;
+        localStorage.setItem('extraRequirements', extraRequirements);
+
+        const btn = document.getElementById(`jdRecAddBtn_${idx}`);
+        if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
+
+        // Open the Extra Screening Instructions card so user sees it was added
+        const content = document.getElementById('extraReqsContent');
+        const toggle  = document.getElementById('extraReqsToggle');
+        if (content && !content.classList.contains('open')) {
+            content.classList.add('open');
+            if (toggle) toggle.classList.add('open');
+        }
+        showToast(`"${title}" added to screening instructions`, 'success');
+    }
+
     async function getJdRecommendations() {
         const jd = document.getElementById('jdEditBox').value.trim();
         if (!jd) { showToast('Paste or select a Job Description first', 'error'); return; }
@@ -2983,19 +3017,20 @@ Rules:
             if (!match) throw new Error('No JSON in response');
             const rec = JSON.parse(match[0]);
 
-            const renderItems = (items) => (items || []).map(it =>
+            const renderItems = (items, addable) => (items || []).map((it, i) =>
                 `<div class="jd-rec-item">
                     <span class="jd-rec-item-icon">${it.icon || '•'}</span>
                     <div class="jd-rec-item-body">
                         <div class="jd-rec-item-title">${it.title}</div>
                         <div class="jd-rec-item-desc">${it.description}</div>
                     </div>
+                    ${addable ? `<button class="jd-rec-add-btn" id="jdRecAddBtn_${i}" onclick="addFocusAreaToInstructions(${i}, ${JSON.stringify(it.title)}, ${JSON.stringify(it.description)})">＋ Add</button>` : ''}
                 </div>`
             ).join('');
 
-            document.getElementById('jdRecFocusAreas').innerHTML = renderItems(rec.focus_areas);
-            document.getElementById('jdRecRedFlags').innerHTML   = renderItems(rec.red_flags);
-            document.getElementById('jdRecQuestions').innerHTML  = renderItems(rec.screening_questions);
+            document.getElementById('jdRecFocusAreas').innerHTML = renderItems(rec.focus_areas, true);
+            document.getElementById('jdRecRedFlags').innerHTML   = renderItems(rec.red_flags, false);
+            document.getElementById('jdRecQuestions').innerHTML  = renderItems(rec.screening_questions, false);
             panel.classList.add('visible');
         } catch (err) {
             showToast('Could not get recommendations: ' + err.message, 'error');
