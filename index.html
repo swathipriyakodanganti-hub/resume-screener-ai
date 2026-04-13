@@ -3635,6 +3635,9 @@ Return exactly this JSON:
   "highlights": ["2-3 standout achievements"],
   "rating_reason": "2-3 sentences explaining the overall score — reference specific sub-score drivers and note if skills appear only in a skills list vs actual job responsibilities",
   "summary": "one-sentence profile",
+  "screening_questions": [
+    { "q": "the interview question", "why": "one sentence on why this question matters for THIS candidate given their specific profile gaps or experience" }
+  ],
   "extra_requirements_feedback": ["if extra screening instructions were provided, list each issue or finding for every instruction — be specific (e.g. 'Grammar: found 3 spelling errors in the summary section'). If no issues found for an instruction, write 'No issues found'. If no extra instructions were given, return an empty array."]
 }`;
 
@@ -3654,7 +3657,7 @@ Return exactly this JSON:
                         model: 'llama-3.3-70b-versatile',
                         messages: [{ role: 'user', content: prompt }],
                         temperature: 0.2,
-                        max_tokens: 1024
+                        max_tokens: 1500
                     })
                 });
             } catch { throw new Error('Network error reaching Groq API'); }
@@ -3680,7 +3683,7 @@ Return exactly this JSON:
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
                     })
                 });
             } catch { throw new Error('Network error reaching Gemini API'); }
@@ -4032,6 +4035,16 @@ Return exactly this JSON:
                 <div class="overlay-section">
                     <div class="overlay-section-title">⭐ Key Highlights</div>
                     ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                </div>` : ''}
+
+                ${r.screening_questions?.length ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title" style="color:#a78bfa;">🎤 Personalised Screening Questions</div>
+                    ${r.screening_questions.map((sq, qi) => `
+                    <div style="border:1px solid rgba(167,139,250,0.2);background:rgba(167,139,250,0.06);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">
+                        <div style="font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:0.25rem;">Q${qi+1}. ${sq.q}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;border-top:1px solid rgba(167,139,250,0.12);padding-top:0.25rem;margin-top:0.25rem;">💡 ${sq.why}</div>
+                    </div>`).join('')}
                 </div>` : ''}
 
                 ${r.extra_requirements_feedback?.length ? `
