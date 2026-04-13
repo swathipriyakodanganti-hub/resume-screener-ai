@@ -871,6 +871,7 @@
         }
 
         @keyframes cardIn { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes fabPulse { 0%,100% { box-shadow: 0 4px 20px rgba(248,81,73,0.5); } 50% { box-shadow: 0 4px 32px rgba(248,81,73,0.85); } }
 
         .result-card:hover {
             border-color: rgba(0, 220, 255, 0.4);
@@ -2356,11 +2357,22 @@
     <div class="progress-wrap" id="progressWrap">
         <div class="progress-label">
             <span id="progressText">Analyzing…</span>
-            <span id="progressCount">0/0</span>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span id="progressCount">0/0</span>
+                <button id="stopAnalysisBtn" onclick="stopAnalysis()" style="display:none;padding:2px 10px;font-size:0.7rem;background:rgba(248,81,73,0.15);color:#f85149;border:1px solid rgba(248,81,73,0.4);border-radius:5px;cursor:pointer;font-weight:600;">⏹ Stop</button>
+                <!-- Floating stop button — visible during analysis -->
+                <div id="stopAnalysisFab" onclick="stopAnalysis()" style="display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;padding:0.55rem 1.4rem;background:#f85149;color:#fff;border:none;border-radius:999px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(248,81,73,0.5);letter-spacing:0.02em;user-select:none;animation:fabPulse 2s ease-in-out infinite;">⏹ Stop Analysis</div>
+            </div>
         </div>
         <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
         </div>
+    </div>
+    <!-- Resume banner shown after stop or API limit -->
+    <div id="resumeBanner" style="display:none;background:rgba(227,179,65,0.1);border:1px solid rgba(227,179,65,0.35);border-radius:8px;padding:0.6rem 1rem;margin:0.5rem 1rem;font-size:0.78rem;color:#e3b341;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+        <span id="resumeBannerMsg">⏸ Analysis paused.</span>
+        <button onclick="resumeAnalysis()" style="padding:3px 12px;background:rgba(227,179,65,0.2);color:#e3b341;border:1px solid rgba(227,179,65,0.5);border-radius:5px;cursor:pointer;font-size:0.75rem;font-weight:700;">▶ Resume</button>
+        <button onclick="dismissResumeBanner()" style="padding:3px 8px;background:none;color:#8b949e;border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;font-size:0.72rem;">✕ Discard remaining</button>
     </div>
 
     <div class="app-pages">
@@ -3550,8 +3562,11 @@ Rules:
                 return await fn();
             } catch (err) {
                 lastError = err;
-                
-                // If rate limit error, use exponential backoff
+
+                // Never retry API limit errors — caller handles stop/resume
+                if (err.message?.startsWith('RATE_LIMIT:')) throw err;
+
+                // If transient rate limit, use exponential backoff
                 if (err.message.includes('Rate limit') || err.message.includes('429')) {
                     const backoffMs = Math.min(2000 * Math.pow(2, attempt), 15000); // 2s, 4s, 8s, max 15s
                     console.log(`🔄 Rate limit hit! Retry ${attempt}/${maxRetries} after ${(backoffMs/1000).toFixed(1)}s`);
@@ -3628,10 +3643,6 @@ Return exactly this JSON:
   "highlights": ["2-3 standout achievements"],
   "rating_reason": "2-3 sentences explaining the overall score — reference specific sub-score drivers and note if skills appear only in a skills list vs actual job responsibilities",
   "summary": "one-sentence profile",
-  "screening_questions": [
-    { "q": "the interview question", "why": "one sentence on why this question matters for THIS candidate given their specific profile gaps or experience", "expected_answer": "2-3 sentences in plain simple English on what a good answer looks like — no jargon, so a non-technical recruiter can evaluate the response" }
-  ],
-IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-fit question, 1 on a missing or unverified skill, 1 on a specific past experience from their resume, 1 on a soft skill or culture fit, 1 curveball based on a gap or inconsistency.
   "extra_requirements_feedback": ["if extra screening instructions were provided, list each issue or finding for every instruction — be specific (e.g. 'Grammar: found 3 spelling errors in the summary section'). If no issues found for an instruction, write 'No issues found'. If no extra instructions were given, return an empty array."]
 }`;
 
@@ -3651,7 +3662,7 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                         model: 'llama-3.3-70b-versatile',
                         messages: [{ role: 'user', content: prompt }],
                         temperature: 0.2,
-                        max_tokens: 2200
+                        max_tokens: 1400
                     })
                 });
             } catch { throw new Error('Network error reaching Groq API'); }
@@ -3660,7 +3671,7 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                 let errMsg = `HTTP ${res.status}`;
                 try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
                 if (res.status === 401) throw new Error('Groq API key invalid — check console.groq.com');
-                if (res.status === 429) throw new Error('Rate limit hit — increase delay or wait');
+                if (res.status === 429) throw new Error(`RATE_LIMIT:Groq rate limit hit — wait a moment or switch to a fresh key`);
                 throw new Error(`Groq error: ${errMsg}`);
             }
 
@@ -3677,7 +3688,7 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.2, maxOutputTokens: 2200 }
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 1400 }
                     })
                 });
             } catch { throw new Error('Network error reaching Gemini API'); }
@@ -3687,13 +3698,17 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                 try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
                 if (res.status === 400) throw new Error('Invalid request — check your API key');
                 if (res.status === 403) throw new Error('API key invalid or lacks permission');
-                if (res.status === 429) throw new Error('Rate limit hit — increase delay to 5s+');
+                if (res.status === 429) throw new Error(`RATE_LIMIT:Gemini rate limit hit — wait a moment or switch to a fresh key`);
                 throw new Error(`Gemini error: ${errMsg}`);
             }
 
             const data = await res.json();
             if (data.promptFeedback?.blockReason) throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
-            if (!data.candidates?.length) throw new Error('Gemini returned no candidates — check quota/key');
+            if (!data.candidates?.length) {
+                const reason = data?.error?.message || '';
+                if (/quota|rate/i.test(reason)) throw new Error(`RATE_LIMIT:Gemini quota exceeded — ${reason}`);
+                throw new Error('Gemini returned no candidates — check quota/key');
+            }
             const cand = data.candidates[0];
             if (cand.finishReason === 'SAFETY') throw new Error('Response blocked by Gemini safety filters');
             raw = cand?.content?.parts?.[0]?.text;
@@ -3712,67 +3727,151 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
     let _selectedMainIdx = null;
     let _mainResumeUrl = null;
 
+    // ─── Stop / Resume state ───
+    let _stopSignal    = false;
+    let _apiLimitHit   = false;
+    let _pendingUploadedFiles = [];
+    let _pendingDriveFiles    = [];
+    let _savedFilters  = null;
+    let _savedTotal    = 0;
+    let _savedDone     = 0;
+
+    function stopAnalysis() {
+        _stopSignal = true;
+        const stopBtn = document.getElementById('stopAnalysisBtn');
+        const stopFab = document.getElementById('stopAnalysisFab');
+        if (stopBtn) { stopBtn.textContent = '⏹ Stopping…'; stopBtn.disabled = true; }
+        if (stopFab) { stopFab.textContent = '⏹ Stopping…'; stopFab.style.pointerEvents = 'none'; stopFab.style.opacity = '0.6'; }
+    }
+
+    function dismissResumeBanner() {
+        _pendingUploadedFiles = [];
+        _pendingDriveFiles    = [];
+        document.getElementById('resumeBanner').style.display = 'none';
+    }
+
+    function _showResumeBanner(msg) {
+        const b = document.getElementById('resumeBanner');
+        document.getElementById('resumeBannerMsg').textContent = msg;
+        b.style.display = 'flex';
+    }
+
+    async function resumeAnalysis() {
+        if (!_pendingUploadedFiles.length && !_pendingDriveFiles.length) {
+            showToast('No pending files to resume', 'error'); return;
+        }
+        // Sync latest key values from inputs in case onchange hasn't fired yet
+        const _groqIn = document.getElementById('groqKey');
+        const _gemIn  = document.getElementById('geminiKey');
+        if (_groqIn?.value.trim())  groqApiKey   = _groqIn.value.trim();
+        if (_gemIn?.value.trim())   geminiApiKey = _gemIn.value.trim();
+        if (!geminiApiKey && !groqApiKey) { showToast('Configure your API key first', 'error'); return; }
+        if (selectedProvider === 'groq'   && !groqApiKey)   { showToast('Configure your Groq API key first', 'error'); return; }
+        if (selectedProvider === 'gemini' && !geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
+        document.getElementById('resumeBanner').style.display = 'none';
+        await _runAnalysisLoop(_pendingUploadedFiles.splice(0), _pendingDriveFiles.splice(0), _savedFilters, _savedTotal, _savedDone, true);
+    }
+
     async function analyzeResumes() {
         if (!geminiApiKey && !groqApiKey) { showToast('Configure your API key first', 'error'); return; }
         if (selectedProvider === 'groq' && !groqApiKey) { showToast('Configure your Groq API key first', 'error'); return; }
         if (selectedProvider === 'gemini' && !geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
         if (!uploadedFiles.length && !driveFiles.length) { showToast('Upload a resume or paste a Drive link first', 'error'); return; }
-        // Sync any manual edits made in the JD text box
         const jdEditBox = document.getElementById('jdEditBox');
         if (jdEditBox && jdEditBox.value.trim()) currentJD = jdEditBox.value.trim();
-        if (!currentJD)          { showToast('Select a job description first', 'error'); return; }
-
-        const btn  = document.getElementById('analyzeBtn');
-        const btn2 = document.getElementById('analyzeBtn2');
-        const badge = document.getElementById('resultBadge');
-
-        btn.disabled = true;
-        btn.innerHTML = '⏳';
-        if (btn2) { btn2.disabled = true; btn2.innerHTML = '<span class="spinner"></span> Analyzing…'; }
+        if (!currentJD) { showToast('Select a job description first', 'error'); return; }
 
         const filters = {
-            minExp:   document.getElementById('minExp').value,
-            maxExp:   document.getElementById('maxExp').value,
+            minExp: document.getElementById('minExp').value,
+            maxExp: document.getElementById('maxExp').value,
             minExpMonths: document.getElementById('minExpMonths').value,
             maxExpMonths: document.getElementById('maxExpMonths').value,
             location: document.getElementById('location').value
         };
-        // Convert yrs + months to decimal years for filtering
         filters.minExpDecimal = filters.minExp || filters.minExpMonths
-            ? (parseFloat(filters.minExp) || 0) + (parseFloat(filters.minExpMonths) || 0) / 12
-            : null;
+            ? (parseFloat(filters.minExp) || 0) + (parseFloat(filters.minExpMonths) || 0) / 12 : null;
         filters.maxExpDecimal = filters.maxExp || filters.maxExpMonths
-            ? (parseFloat(filters.maxExp) || 0) + (parseFloat(filters.maxExpMonths) || 0) / 12
-            : null;
+            ? (parseFloat(filters.maxExp) || 0) + (parseFloat(filters.maxExpMonths) || 0) / 12 : null;
 
         analysisResults = [];
         _selectedMainIdx = null;
+        _pendingUploadedFiles = [];
+        _pendingDriveFiles    = [];
+        document.getElementById('resumeBanner').style.display = 'none';
+        const badge = document.getElementById('resultBadge');
         badge.style.display = 'none';
         clearAllSelections();
         const saBtn = document.getElementById('btnSelectAll');
         if (saBtn) saBtn.style.display = 'none';
-
         renderMainPanels();
 
-        // Progress
-        const pw = document.getElementById('progressWrap');
-        const pf = document.getElementById('progressFill');
-        const pt = document.getElementById('progressText');
-        const pc = document.getElementById('progressCount');
-        pw.classList.add('visible');
-        pf.style.width = '0%';
-
         const total = uploadedFiles.length + driveFiles.length;
-        let done    = 0;
-        let matched = 0;
-
-        // Reset statuses
         uploadedFiles.forEach(f => { fileStatuses[f.name] = 'pending'; });
         driveFiles.forEach(d => { fileStatuses[d.name] = 'pending'; });
         renderResumeDropdown();
 
-        // ── PDF / DOC file loop ──
-        for (const file of uploadedFiles) {
+        await _runAnalysisLoop([...uploadedFiles], [...driveFiles], filters, total, 0, false);
+    }
+
+    async function _runAnalysisLoop(uploadQueue, driveQueue, filters, total, startDone, isResume) {
+        _stopSignal  = false;
+        _apiLimitHit = false;
+        _savedFilters = filters;
+        _savedTotal   = total;
+
+        const btn  = document.getElementById('analyzeBtn');
+        const btn2 = document.getElementById('analyzeBtn2');
+        const badge = document.getElementById('resultBadge');
+        const pw  = document.getElementById('progressWrap');
+        const pf  = document.getElementById('progressFill');
+        const pt  = document.getElementById('progressText');
+        const pc  = document.getElementById('progressCount');
+        const stopBtn = document.getElementById('stopAnalysisBtn');
+        const stopFab = document.getElementById('stopAnalysisFab');
+
+        btn.disabled = true; btn.innerHTML = '⏳';
+        if (btn2) { btn2.disabled = true; btn2.innerHTML = '<span class="spinner"></span> Analyzing…'; }
+        stopBtn.style.display = 'inline-block';
+        stopBtn.textContent = '⏹ Stop';
+        stopBtn.disabled = false;
+        if (stopFab) { stopFab.style.display = 'block'; stopFab.textContent = '⏹ Stop Analysis'; stopFab.style.pointerEvents = 'auto'; }
+        pw.classList.add('visible');
+
+        let done = startDone;
+        pf.style.width = `${(done / total) * 100}%`;
+        pc.textContent = `${done}/${total}`;
+
+        const _finish = (wasStopped, wasLimit) => {
+            btn.disabled = false; btn.innerHTML = '🚀';
+            if (btn2) { btn2.disabled = false; btn2.innerHTML = '🚀 Analyze Resumes'; }
+            stopBtn.style.display = 'none';
+            if (stopFab) stopFab.style.display = 'none';
+            if (wasStopped || wasLimit) {
+                const remaining = uploadQueue.length + driveQueue.length;
+                const reason = wasLimit
+                    ? `⚠️ API limit reached — update your key then resume (${remaining} file${remaining !== 1 ? 's' : ''} remaining)`
+                    : `⏸ Analysis stopped — ${remaining} file${remaining !== 1 ? 's' : ''} remaining`;
+                _pendingUploadedFiles = [...uploadQueue];
+                _pendingDriveFiles    = [...driveQueue];
+                _showResumeBanner(reason);
+                pt.textContent = wasLimit ? 'API limit reached ⚠️' : 'Stopped ⏹';
+                setTimeout(() => pw.classList.remove('visible'), 1500);
+            } else {
+                analysisResults.sort((a, b) => b.match_score - a.match_score);
+                renderMainPanels();
+                badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
+                if (analysisResults.length) badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
+                pt.textContent = 'Analysis complete ✓';
+                switchPage('results');
+                setTimeout(() => pw.classList.remove('visible'), 2500);
+                showToast(`Done! ${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''} analyzed.`, 'success');
+            }
+        };
+
+        // ── Uploaded file loop ──
+        while (uploadQueue.length) {
+            if (_stopSignal) { _finish(true, false); return; }
+            const file = uploadQueue.shift();
             fileStatuses[file.name] = 'analyzing';
             renderResumeDropdown();
             pt.textContent = `Analyzing: ${truncate(file.name, 22)}`;
@@ -3789,37 +3888,27 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                 } else {
                     text = await file.text().catch(() => '');
                 }
+                if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable');
 
-                if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable — ensure it contains selectable text (not a scanned image)');
-
-                const result = await retryWithBackoff(async () => {
-                    return await analyzeWithProvider(text, currentJD, filters);
-                });
-
+                const result = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
                 result.filename  = file.name;
                 result.file_type = ext;
-
-                try {
-                    result.resume_pdf_b64 = await fileToBase64(file);
-                } catch(e) {
-                    console.warn('Could not encode file:', e);
-                }
+                try { result.resume_pdf_b64 = await fileToBase64(file); } catch {}
 
                 fileStatuses[file.name] = 'done';
-
                 analysisResults.push(result);
-                const okExpLocal = (filters.minExpDecimal === null || result.experience_years >= filters.minExpDecimal) &&
-                                   (filters.maxExpDecimal === null || result.experience_years <= filters.maxExpDecimal);
-                const okLocLocal = !filters.location ||
-                                   (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
-                if (okExpLocal && okLocLocal) matched++;
-
                 analysisResults.sort((a, b) => b.match_score - a.match_score);
                 renderMainPanels();
                 badge.style.display = 'inline-flex';
                 badge.textContent   = `${analysisResults.length}`;
 
             } catch (err) {
+                if (err.message?.startsWith('RATE_LIMIT:')) {
+                    fileStatuses[file.name] = 'pending';
+                    uploadQueue.unshift(file);
+                    showToast(`API limit reached: ${err.message.slice(11)}`, 'error');
+                    _finish(false, true); return;
+                }
                 fileStatuses[file.name] = 'error';
                 console.error(`${file.name}:`, err);
                 showToast(`"${truncate(file.name, 20)}": ${err.message}`, 'error');
@@ -3832,7 +3921,9 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
         }
 
         // ── Drive link loop ──
-        for (const driveEntry of driveFiles) {
+        while (driveQueue.length) {
+            if (_stopSignal) { _finish(true, false); return; }
+            const driveEntry = driveQueue.shift();
             fileStatuses[driveEntry.name] = 'analyzing';
             renderResumeDropdown();
             pt.textContent = `Fetching: ${truncate(driveEntry.driveLink, 22)}`;
@@ -3840,32 +3931,27 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
             try {
                 const { file: pdfFile, base64: pdfBase64 } = await fetchDrivePdf(driveEntry);
                 const text = await extractTextFromPDF(pdfFile);
-
                 if (!text || text.trim().length < 30) throw new Error('Could not extract text — ensure the file is a readable PDF');
 
-                const result = await retryWithBackoff(async () => {
-                    return await analyzeWithProvider(text, currentJD, filters);
-                });
-
+                const result = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
                 result.filename        = driveEntry.name;
                 result.drive_link      = driveEntry.driveLink;
                 result.resume_pdf_b64  = pdfBase64;
 
                 fileStatuses[driveEntry.name] = 'done';
-
                 analysisResults.push(result);
-                const okExpDrive = (filters.minExpDecimal === null || result.experience_years >= filters.minExpDecimal) &&
-                                   (filters.maxExpDecimal === null || result.experience_years <= filters.maxExpDecimal);
-                const okLocDrive = !filters.location ||
-                                   (result.location || '').toLowerCase().includes(filters.location.toLowerCase());
-                if (okExpDrive && okLocDrive) matched++;
-
                 analysisResults.sort((a, b) => b.match_score - a.match_score);
                 renderMainPanels();
                 badge.style.display = 'inline-flex';
                 badge.textContent   = `${analysisResults.length}`;
 
             } catch (err) {
+                if (err.message?.startsWith('RATE_LIMIT:')) {
+                    fileStatuses[driveEntry.name] = 'pending';
+                    driveQueue.unshift(driveEntry);
+                    showToast(`API limit reached: ${err.message.slice(11)}`, 'error');
+                    _finish(false, true); return;
+                }
                 fileStatuses[driveEntry.name] = 'error';
                 console.error(`Drive ${driveEntry.fileId}:`, err);
                 showToast(`Drive resume: ${err.message}`, 'error');
@@ -3877,21 +3963,102 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
             renderResumeDropdown();
         }
 
-        // Final sort
-        analysisResults.sort((a, b) => b.match_score - a.match_score);
-        renderMainPanels();
+        _finish(false, false);
+    }
 
-        badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
-        if (analysisResults.length) badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
+    // ─── On-demand Personalised Questions ───
+    async function generateQuestionsFor(idx) {
+        const r = analysisResults[idx];
+        if (!r) return;
+        const btnId = `genQBtn-${idx}`;
+        const secId = `genQSec-${idx}`;
+        const btn = document.getElementById(btnId);
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating…'; }
 
-        pt.textContent = 'Analysis complete ✓';
-        switchPage('results');
-        setTimeout(() => pw.classList.remove('visible'), 2500);
+        const isGroq = selectedProvider === 'groq';
+        const activeKey = isGroq ? groqApiKey : geminiApiKey;
+        if (!activeKey) { showToast('Configure your API key first', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '🎤 Generate Questions'; } return; }
 
-        showToast(`Done! ${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''} matched.`, 'success');
-        btn.disabled = false;
-        btn.innerHTML = '🚀';
-        if (btn2) { btn2.disabled = false; btn2.innerHTML = '🚀 Analyze Resumes'; }
+        const prompt = `You are a senior recruiter. Generate exactly 5 personalised screening interview questions for this candidate applying for this role.
+Return ONLY valid JSON (no markdown fences).
+
+Job Description:
+${currentJD}
+
+Candidate Profile:
+Name: ${r.name}
+Experience: ${r.experience_years} years
+Skills Present: ${(r.skills_present || []).join(', ')}
+Skills Missing: ${(r.skills_missing || []).join(', ')}
+Highlights: ${(r.highlights || []).join('; ')}
+Summary: ${r.summary || ''}
+
+Return exactly this JSON:
+{
+  "screening_questions": [
+    { "q": "interview question", "why": "one sentence why this matters for this specific candidate", "expected_answer": "2-3 plain-English sentences on what a good answer looks like for a non-technical recruiter" }
+  ]
+}
+IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified skill, 1 on a specific past experience from their background, 1 soft skill/culture fit, 1 curveball based on a gap or inconsistency.`;
+
+        try {
+            let raw;
+            if (isGroq) {
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqApiKey}` },
+                    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 1400 })
+                });
+                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+                raw = (await res.json())?.choices?.[0]?.message?.content;
+            } else {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1400 } })
+                });
+                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+                raw = (await res.json())?.candidates?.[0]?.content?.parts?.[0]?.text;
+            }
+            if (!raw) throw new Error('Empty response from AI');
+            const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+            const match = cleaned.match(/\{[\s\S]*\}/);
+            if (!match) throw new Error('Could not parse AI response');
+            const parsed = JSON.parse(match[0]);
+            if (!parsed.screening_questions?.length) throw new Error('No questions returned');
+
+            r.screening_questions = parsed.screening_questions;
+            // Re-render just the questions section
+            const sec = document.getElementById(secId);
+            if (sec) {
+                sec.innerHTML = _renderQuestionsHTML(r.screening_questions, idx);
+            }
+            showToast('Questions generated!', 'success');
+        } catch (err) {
+            showToast(`Questions failed: ${err.message}`, 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '🎤 Generate Questions'; }
+        }
+    }
+
+    function _renderQuestionsHTML(questions, idx) {
+        const qItems = questions.map((sq, qi) => `
+            <div style="border:1px solid rgba(167,139,250,0.2);background:rgba(167,139,250,0.06);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">
+                <div style="font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:0.25rem;">Q${qi+1}. ${sq.q}</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;border-top:1px solid rgba(167,139,250,0.12);padding-top:0.25rem;margin-top:0.25rem;">💡 ${sq.why}</div>
+                ${sq.expected_answer ? `
+                <details style="margin-top:0.35rem;">
+                    <summary style="font-size:0.7rem;color:#a78bfa;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:0.3rem;">
+                        <span style="font-size:0.6rem;">▶</span> What a good answer looks like
+                    </summary>
+                    <div style="margin-top:0.35rem;padding:0.45rem 0.6rem;background:rgba(167,139,250,0.1);border-radius:6px;font-size:0.75rem;color:var(--text-secondary);line-height:1.5;">${sq.expected_answer}</div>
+                </details>` : ''}
+            </div>`).join('');
+        return `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                <div class="overlay-section-title" style="color:#a78bfa;margin-bottom:0;">🎤 Personalised Screening Questions</div>
+                <button id="genQBtn-${idx}" onclick="generateQuestionsFor(${idx})" style="font-size:0.68rem;padding:3px 10px;background:rgba(167,139,250,0.12);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);border-radius:5px;cursor:pointer;font-weight:600;">↺ Regenerate</button>
+            </div>
+            ${qItems}`;
     }
 
     // ─── Render three-panel main UI ───
@@ -4031,22 +4198,18 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                     ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
                 </div>` : ''}
 
-                ${r.screening_questions?.length ? `
-                <div class="overlay-section">
-                    <div class="overlay-section-title" style="color:#a78bfa;">🎤 Personalised Screening Questions</div>
-                    ${r.screening_questions.map((sq, qi) => `
-                    <div style="border:1px solid rgba(167,139,250,0.2);background:rgba(167,139,250,0.06);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">
-                        <div style="font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:0.25rem;">Q${qi+1}. ${sq.q}</div>
-                        <div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;border-top:1px solid rgba(167,139,250,0.12);padding-top:0.25rem;margin-top:0.25rem;">💡 ${sq.why}</div>
-                        ${sq.expected_answer ? `
-                        <details style="margin-top:0.35rem;">
-                            <summary style="font-size:0.7rem;color:#a78bfa;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:0.3rem;">
-                                <span style="font-size:0.6rem;">▶</span> What a good answer looks like
-                            </summary>
-                            <div style="margin-top:0.35rem;padding:0.45rem 0.6rem;background:rgba(167,139,250,0.1);border-radius:6px;font-size:0.75rem;color:var(--text-secondary);line-height:1.5;">${sq.expected_answer}</div>
-                        </details>` : ''}
-                    </div>`).join('')}
-                </div>` : ''}
+                ${(function() {
+                    const hasQ = r.screening_questions?.length;
+                    return `<div class="overlay-section" id="genQSec-${idx}">
+                    ${hasQ ? _renderQuestionsHTML(r.screening_questions, idx) : `
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <div class="overlay-section-title" style="color:#a78bfa;margin-bottom:0;">🎤 Personalised Screening Questions</div>
+                            <button id="genQBtn-${idx}" onclick="generateQuestionsFor(${idx})" style="font-size:0.72rem;padding:4px 12px;background:rgba(167,139,250,0.12);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);border-radius:6px;cursor:pointer;font-weight:600;">🎤 Generate Questions</button>
+                        </div>
+                        <div style="font-size:0.73rem;color:var(--text-muted);margin-top:0.4rem;font-style:italic;">Click to generate AI-personalised interview questions for this candidate — uses API tokens.</div>
+                    `}
+                    </div>`;
+                })()}
 
                 ${r.extra_requirements_feedback?.length ? `
                 <div class="overlay-section">
@@ -4569,7 +4732,7 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
             const skillsPresent = (r.skills_present || []).map(s => `<span class="stag have">✓ ${s}</span>`).join('');
             const skillsMissing = (r.skills_missing || []).map(s => `<span class="stag miss">✗ ${s}</span>`).join('');
 
-            const highlights = (r.highlights || []).map(h => `<li>${h}</li>`).join('');
+            const highlights = (r.highlights || []).slice(0, 3).map(h => `<li>${h}</li>`).join('');
 
             const questions = (r.screening_questions || []).map((sq, qi) => `
                 <div class="sq-item">
@@ -4577,6 +4740,7 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                     <div class="sq-why">💡 ${sq.why}</div>
                     ${sq.expected_answer ? `<div class="sq-ans">▶ Good answer: ${sq.expected_answer}</div>` : ''}
                 </div>`).join('');
+            const sqCount = (r.screening_questions || []).length;
 
             const feedback = (r.extra_requirements_feedback || []).map(f => {
                 const low = f.toLowerCase();
@@ -4609,7 +4773,6 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                     <div class="card-info">
                         <div class="card-name">${r.name}</div>
                         <div class="card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
-                        <div class="card-summary">${r.summary || ''}</div>
                     </div>
                     <div class="card-score-wrap">
                         <div class="card-score" style="color:${recColor};">${r.match_score}%</div>
@@ -4617,7 +4780,7 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                     </div>
                 </div>
 
-                ${r.rating_reason ? `<div class="rating-box">${r.rating_reason}</div>` : ''}
+                ${r.rating_reason ? `<button class="reason-toggle" onclick="toggleReason(this)"><span>💬 Score Reasoning</span><span class="sq-arrow">▼</span></button><div class="reason-body">${r.rating_reason}</div>` : ''}
 
                 <div class="two-col">
                     <div>
@@ -4627,13 +4790,23 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
                     <div>
                         ${skillsPresent || skillsMissing ? `<div class="sec-title">🛠 Skills</div>
                         <div class="skills-wrap">${skillsPresent}${skillsMissing}</div>` : ''}
-                        ${highlights ? `<div class="sec-title" style="margin-top:0.75rem;">⭐ Highlights</div><ul class="hl-list">${highlights}</ul>` : ''}
+                        ${highlights ? `<div class="sec-title" style="margin-top:0.5rem;">⭐ Highlights</div><ul class="hl-list">${highlights}</ul>` : ''}
                     </div>
                 </div>
 
-                ${questions ? `<div class="sec-title" style="color:#a78bfa;">🎤 Screening Questions</div><div class="sq-list">${questions}</div>` : ''}
+                ${questions ? `<button class="sq-toggle" onclick="toggleSq(this)"><span>🎤 Screening Questions (${sqCount})</span><span class="sq-arrow">▼</span></button><div class="sq-body">${questions}</div>` : `<div style="font-size:0.68rem;color:#8b949e;font-style:italic;margin-bottom:0.35rem;">🎤 No screening questions generated — use the Generate button in the candidate detail panel.</div>`}
                 ${feedback  ? `<div class="sec-title" style="color:#e3b341;">📝 Custom Screening Feedback</div><div class="fb-list">${feedback}</div>` : ''}
             </div>`;
+        }).join('');
+
+        const tocHTML = analysisResults.map((r, i) => {
+            const recColor = r.match_score >= 75 ? '#56d364' : r.match_score >= 50 ? '#e3b341' : '#f85149';
+            const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+            return `<a class="toc-item" href="#rc-${i}" onclick="highlightCard(${i})">
+                <span class="toc-rank">${rank}</span>
+                <span class="toc-name">${r.name}</span>
+                <span class="toc-score" style="color:${recColor};">${r.match_score}%</span>
+            </a>`;
         }).join('');
 
         const html = `<!DOCTYPE html>
@@ -4645,70 +4818,136 @@ IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-f
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:#0d1117;color:#f0f6fc;padding:2rem;line-height:1.6;}
-.report-header{text-align:center;padding:2rem 1rem 2.5rem;border-bottom:1px solid #21262d;margin-bottom:2rem;}
-.report-title{font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;color:#f0f6fc;margin-bottom:0.25rem;}
-.report-sub{font-size:0.85rem;color:#8b949e;margin-bottom:1rem;}
-.report-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;}
-.stat-box{text-align:center;}
-.stat-num{font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:700;color:#388bfd;}
-.stat-lbl{font-size:0.7rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.07em;}
-.card{background:#161b22;border:1px solid #21262d;border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;page-break-inside:avoid;}
-.card-header{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1rem;}
-.card-rank{font-size:1.4rem;flex-shrink:0;padding-top:0.1rem;}
+body{font-family:'Inter',sans-serif;background:#0d1117;color:#f0f6fc;line-height:1.5;display:flex;height:100vh;overflow:hidden;}
+/* ── Sidebar ── */
+.sidebar{width:210px;flex-shrink:0;background:#161b22;border-right:1px solid #21262d;display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-head{padding:0.75rem 0.85rem;border-bottom:1px solid #21262d;}
+.sidebar-title{font-family:'Outfit',sans-serif;font-size:0.85rem;font-weight:700;color:#f0f6fc;}
+.sidebar-sub{font-size:0.68rem;color:#8b949e;margin-top:1px;}
+.sidebar-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.3rem;padding:0.6rem 0.85rem;border-bottom:1px solid #21262d;}
+.sstat{text-align:center;background:rgba(255,255,255,0.04);border-radius:6px;padding:0.3rem 0.2rem;}
+.sstat-n{font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;color:#388bfd;}
+.sstat-l{font-size:0.58rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.05em;}
+.toc-list{flex:1;overflow-y:auto;padding:0.4rem 0;}
+.toc-item{display:flex;align-items:center;gap:0.45rem;padding:0.35rem 0.85rem;text-decoration:none;color:#c9d1d9;transition:background 0.15s;cursor:pointer;}
+.toc-item:hover,.toc-item.active{background:rgba(56,139,253,0.1);}
+.toc-rank{font-size:0.75rem;flex-shrink:0;width:22px;}
+.toc-name{font-size:0.75rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.toc-score{font-family:'Outfit',sans-serif;font-size:0.78rem;font-weight:700;flex-shrink:0;}
+/* ── Main content ── */
+.main{flex:1;overflow-y:auto;padding:1rem;}
+/* ── Cards ── */
+.card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:0.6rem 0.85rem;margin-bottom:0.55rem;page-break-inside:avoid;scroll-margin-top:1rem;transition:border-color 0.2s;}
+.card.highlight{border-color:#388bfd;}
+.card-header{display:flex;align-items:flex-start;gap:0.6rem;margin-bottom:0.45rem;}
+.card-rank{font-size:1.1rem;flex-shrink:0;padding-top:0.05rem;}
 .card-info{flex:1;min-width:0;}
-.card-name{font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:700;color:#f0f6fc;}
-.card-meta{font-size:0.75rem;color:#8b949e;margin-top:0.2rem;}
-.card-summary{font-size:0.8rem;color:#c9d1d9;margin-top:0.4rem;font-style:italic;}
+.card-name{font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;color:#f0f6fc;}
+.card-meta{font-size:0.7rem;color:#8b949e;margin-top:0.15rem;}
+.card-summary{font-size:0.75rem;color:#c9d1d9;margin-top:0.3rem;font-style:italic;line-height:1.4;}
 .card-score-wrap{text-align:right;flex-shrink:0;}
-.card-score{font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:700;}
-.card-rec{font-size:0.75rem;font-weight:600;margin-top:0.1rem;}
-.rating-box{padding:0.75rem 1rem;background:rgba(56,139,253,0.07);border-left:3px solid #388bfd;border-radius:8px;font-size:0.82rem;color:#c9d1d9;margin-bottom:1rem;}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1rem;}
-@media(max-width:600px){.two-col{grid-template-columns:1fr;}}
-.sec-title{font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8b949e;margin-bottom:0.5rem;margin-top:0.25rem;}
-.sbd{display:flex;flex-direction:column;gap:0.35rem;}
-.sbd-row{display:flex;align-items:center;gap:0.5rem;}
-.sbd-lbl{font-size:0.73rem;color:#c9d1d9;width:140px;flex-shrink:0;}
-.sbd-w{font-size:0.65rem;color:#8b949e;}
-.sbd-bar{flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.card-score{font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:700;}
+.card-rec{font-size:0.68rem;font-weight:600;margin-top:0.05rem;}
+.reason-toggle{width:100%;text-align:left;background:rgba(56,139,253,0.07);border:1px solid rgba(56,139,253,0.2);border-radius:5px;padding:0.28rem 0.6rem;color:#8b949e;font-size:0.68rem;font-weight:600;cursor:pointer;margin-bottom:0.35rem;display:flex;justify-content:space-between;align-items:center;}
+.reason-toggle:hover{background:rgba(56,139,253,0.13);}
+.reason-body{display:none;padding:0.45rem 0.65rem;background:rgba(56,139,253,0.07);border-left:3px solid #388bfd;border-radius:5px;font-size:0.72rem;color:#c9d1d9;margin-bottom:0.45rem;line-height:1.45;}
+.reason-body.open{display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;margin-bottom:0.45rem;}
+.sec-title{font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8b949e;margin-bottom:0.35rem;}
+.sbd{display:flex;flex-direction:column;gap:0.25rem;}
+.sbd-row{display:flex;align-items:center;gap:0.4rem;}
+.sbd-lbl{font-size:0.68rem;color:#c9d1d9;width:120px;flex-shrink:0;}
+.sbd-w{font-size:0.6rem;color:#8b949e;}
+.sbd-bar{flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
 .sbd-fill{height:100%;border-radius:3px;}
-.sbd-num{font-family:'Outfit',sans-serif;font-size:0.78rem;font-weight:700;width:28px;text-align:right;}
-.skills-wrap{display:flex;flex-wrap:wrap;gap:0.3rem;}
-.stag{font-size:0.72rem;padding:2px 8px;border-radius:20px;font-weight:600;}
+.sbd-num{font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:700;width:24px;text-align:right;}
+.skills-wrap{display:flex;flex-wrap:wrap;gap:0.25rem;}
+.stag{font-size:0.67rem;padding:1px 7px;border-radius:20px;font-weight:600;}
 .stag.have{background:rgba(86,211,100,0.12);color:#56d364;border:1px solid rgba(86,211,100,0.25);}
 .stag.miss{background:rgba(248,81,73,0.1);color:#f85149;border:1px solid rgba(248,81,73,0.22);}
-.hl-list{padding-left:1.1rem;font-size:0.8rem;color:#c9d1d9;display:flex;flex-direction:column;gap:0.25rem;}
-.sq-list{display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;}
-.sq-item{background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:0.65rem 0.85rem;}
-.sq-q{font-size:0.82rem;font-weight:600;color:#f0f6fc;margin-bottom:0.2rem;}
-.sq-why{font-size:0.73rem;color:#8b949e;font-style:italic;margin-bottom:0.25rem;}
-.sq-ans{font-size:0.75rem;color:#c9d1d9;background:rgba(167,139,250,0.1);border-radius:6px;padding:0.4rem 0.6rem;margin-top:0.3rem;line-height:1.5;}
-.fb-list{display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.5rem;}
-.fb-item{font-size:0.8rem;padding:0.45rem 0.7rem;border-radius:6px;border-left:3px solid;}
+.hl-list{padding-left:1rem;font-size:0.73rem;color:#c9d1d9;display:flex;flex-direction:column;gap:0.2rem;}
+/* Collapsible screening questions */
+.sq-toggle{width:100%;text-align:left;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:6px;padding:0.35rem 0.65rem;color:#a78bfa;font-size:0.72rem;font-weight:600;cursor:pointer;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;}
+.sq-toggle:hover{background:rgba(167,139,250,0.14);}
+.sq-body{display:none;margin-bottom:0.5rem;}
+.sq-body.open{display:flex;flex-direction:column;gap:0.4rem;}
+.sq-item{background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:6px;padding:0.45rem 0.7rem;}
+.sq-q{font-size:0.76rem;font-weight:600;color:#f0f6fc;margin-bottom:0.15rem;}
+.sq-why{font-size:0.68rem;color:#8b949e;font-style:italic;margin-bottom:0.2rem;}
+.sq-ans{font-size:0.7rem;color:#c9d1d9;background:rgba(167,139,250,0.09);border-radius:5px;padding:0.3rem 0.5rem;margin-top:0.25rem;line-height:1.45;}
+.fb-list{display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.35rem;}
+.fb-item{font-size:0.74rem;padding:0.35rem 0.6rem;border-radius:5px;border-left:3px solid;line-height:1.4;}
 .fb-pass{background:rgba(86,211,100,0.07);border-color:#56d364;color:#c9d1d9;}
 .fb-fail{background:rgba(248,81,73,0.07);border-color:#f85149;color:#c9d1d9;}
 .fb-warn{background:rgba(227,179,65,0.07);border-color:#e3b341;color:#c9d1d9;}
-.print-btn{position:fixed;top:1.25rem;right:1.25rem;padding:0.55rem 1.1rem;background:#388bfd;color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;box-shadow:0 4px 16px rgba(56,139,253,0.4);z-index:999;}
+.print-btn{position:fixed;bottom:1rem;right:1rem;padding:0.45rem 0.9rem;background:#388bfd;color:#fff;border:none;border-radius:7px;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;box-shadow:0 4px 14px rgba(56,139,253,0.4);z-index:999;}
 .print-btn:hover{background:#2f7dea;}
-@media print{.print-btn{display:none;}body{background:#fff;color:#000;padding:1rem;}.card{background:#f8f9fa;border-color:#dee2e6;color:#000;}.card-name,.card-score,.report-title{color:#000!important;}.rating-box{background:#e8f0fe;}.sec-title{color:#555!important;}.card-meta,.card-summary,.sq-why,.sq-ans,.sbd-lbl{color:#444!important;}}
+@media print{
+  body{display:block;height:auto;overflow:visible;background:#fff;color:#000;padding:0.5rem;}
+  .sidebar{display:none;}
+  .main{padding:0;}
+  .print-btn{display:none;}
+  .card{background:#f8f9fa;border-color:#dee2e6;color:#000;margin-bottom:0.5rem;}
+  .card-name,.card-score,.sidebar-title{color:#000!important;}
+  .rating-box{background:#e8f0fe;}
+  .sec-title{color:#555!important;}
+  .card-meta,.card-summary,.sq-why,.sq-ans,.sbd-lbl{color:#444!important;}
+  .sq-body{display:flex!important;}
+  .reason-body{display:block!important;}
+}
 </style>
 </head>
 <body>
 <button class="print-btn" onclick="window.print()">🖨 Print / Save PDF</button>
-<div class="report-header">
-    <div class="report-title">Pearl Hire — Screening Report</div>
-    <div class="report-sub">${jdTitle} &nbsp;·&nbsp; Generated ${new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})}</div>
-    <div class="report-stats">
-        <div class="stat-box"><div class="stat-num">${analysisResults.length}</div><div class="stat-lbl">Candidates</div></div>
-        <div class="stat-box"><div class="stat-num">${avg}%</div><div class="stat-lbl">Avg Score</div></div>
-        <div class="stat-box"><div class="stat-num">${top}%</div><div class="stat-lbl">Top Score</div></div>
-        <div class="stat-box"><div class="stat-num">${analysisResults.filter(r=>r.match_score>=75).length}</div><div class="stat-lbl">Proceed</div></div>
-        <div class="stat-box"><div class="stat-num">${analysisResults.filter(r=>r.match_score>=50&&r.match_score<75).length}</div><div class="stat-lbl">Consider</div></div>
-        <div class="stat-box"><div class="stat-num">${analysisResults.filter(r=>r.match_score<50).length}</div><div class="stat-lbl">Pass</div></div>
-    </div>
-</div>
+
+<aside class="sidebar">
+  <div class="sidebar-head">
+    <div class="sidebar-title">Pearl Hire</div>
+    <div class="sidebar-sub">${jdTitle} &nbsp;·&nbsp; ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+  </div>
+  <div class="sidebar-stats">
+    <div class="sstat"><div class="sstat-n">${analysisResults.length}</div><div class="sstat-l">Total</div></div>
+    <div class="sstat"><div class="sstat-n">${avg}%</div><div class="sstat-l">Avg</div></div>
+    <div class="sstat"><div class="sstat-n">${top}%</div><div class="sstat-l">Top</div></div>
+    <div class="sstat" style="grid-column:span 1;"><div class="sstat-n" style="color:#56d364;">${analysisResults.filter(r=>r.match_score>=75).length}</div><div class="sstat-l">Proceed</div></div>
+    <div class="sstat"><div class="sstat-n" style="color:#e3b341;">${analysisResults.filter(r=>r.match_score>=50&&r.match_score<75).length}</div><div class="sstat-l">Consider</div></div>
+    <div class="sstat"><div class="sstat-n" style="color:#f85149;">${analysisResults.filter(r=>r.match_score<50).length}</div><div class="sstat-l">Pass</div></div>
+  </div>
+  <div class="toc-list">
+    ${tocHTML}
+  </div>
+</aside>
+
+<main class="main">
 ${cardHTML}
+</main>
+
+<script>
+function highlightCard(i){
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('highlight'));
+  const el=document.getElementById('rc-'+i);
+  if(el){el.classList.add('highlight');el.scrollIntoView({behavior:'smooth',block:'start'});}
+  document.querySelectorAll('.toc-item').forEach((a,idx)=>a.classList.toggle('active',idx===i));
+}
+function toggleSq(btn){
+  const body=btn.nextElementSibling;
+  const open=body.classList.toggle('open');
+  btn.querySelector('.sq-arrow').textContent=open?'▲':'▼';
+}
+function toggleReason(btn){
+  const body=btn.nextElementSibling;
+  const open=body.classList.toggle('open');
+  btn.querySelector('.sq-arrow').textContent=open?'▲':'▼';
+}
+// Highlight active toc item on scroll
+const cards=[...document.querySelectorAll('.card')];
+const main=document.querySelector('.main');
+main.addEventListener('scroll',()=>{
+  let active=0;
+  cards.forEach((c,i)=>{if(c.getBoundingClientRect().top<160)active=i;});
+  document.querySelectorAll('.toc-item').forEach((a,i)=>a.classList.toggle('active',i===active));
+});
+</script>
 </body></html>`;
 
         const w = window.open('', '_blank');
