@@ -305,7 +305,6 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
   const candidateRows = candidates.map((c, i) => {
     const sc  = c.match_score >= 75 ? '#1D9E75' : c.match_score >= 50 ? '#BA7517' : '#A32D2D';
     const sb  = c.match_score >= 75 ? '#E1F5EE' : c.match_score >= 50 ? '#FAEEDA' : '#FCEBEB';
-    const ini = c.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
     const lbl = c.match_score >= 75 ? 'Recommended' : c.match_score >= 50 ? 'Consider' : 'Not Recommended';
     return `
       <tr>
@@ -313,8 +312,7 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td style="vertical-align:middle;padding-right:10px;">
-                <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:2px;">#${i+1}</div>
-                <div style="width:36px;height:36px;border-radius:8px;background:#E6F1FB;text-align:center;line-height:36px;font-size:13px;font-weight:700;color:#0C447C;">${ini}</div>
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;">#${i+1}</div>
               </td>
               <td style="vertical-align:middle;">
                 <div style="font-size:14px;font-weight:700;color:#1a1a2e;">${c.name}</div>
@@ -411,8 +409,6 @@ function buildEmailHtml(interviewerName, candidateName, position, shareLink, mat
   const scoreColor = matchScore >= 75 ? '#1D9E75' : matchScore >= 50 ? '#BA7517' : '#A32D2D';
   const scoreBg    = matchScore >= 75 ? '#E1F5EE' : matchScore >= 50 ? '#FAEEDA' : '#FCEBEB';
   const scoreLabel = matchScore >= 75 ? 'Strong Match' : matchScore >= 50 ? 'Good Match' : 'Low Match';
-  const ini = candidateName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Profile</title></head>
@@ -438,15 +434,8 @@ function buildEmailHtml(interviewerName, candidateName, position, shareLink, mat
                 <td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
                   <table width="100%" cellpadding="0" cellspacing="0"><tr>
                     <td style="vertical-align:middle;">
-                      <table cellpadding="0" cellspacing="0"><tr>
-                        <td style="vertical-align:middle;padding-right:14px;">
-                          <div style="width:44px;height:44px;border-radius:50%;background:#E6F1FB;text-align:center;line-height:44px;font-size:15px;font-weight:700;color:#0C447C;">${ini}</div>
-                        </td>
-                        <td style="vertical-align:middle;">
-                          <div style="font-size:16px;font-weight:700;color:#1a1a2e;">${candidateName}</div>
-                          <div style="font-size:12px;color:#64748b;margin-top:2px;">Candidate Profile &middot; ${position}</div>
-                        </td>
-                      </tr></table>
+                      <div style="font-size:16px;font-weight:700;color:#1a1a2e;">${candidateName}</div>
+                      <div style="font-size:12px;color:#64748b;margin-top:4px;">Candidate Profile &middot; ${position}</div>
                     </td>
                     <td align="right" style="vertical-align:middle;">
                       <div style="display:inline-block;background:${scoreBg};border-radius:20px;padding:5px 14px;">

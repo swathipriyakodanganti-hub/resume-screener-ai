@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design 5 — Clean Two-Column Split</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #ffffff; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    height: 54px; background: #fff; border-bottom: 1px solid #e2e8f0;
+    display: flex; align-items: center; padding: 0 1.5rem;
+    justify-content: space-between; flex-shrink: 0;
+  }
+  .logo { display: flex; align-items: center; gap: 0.6rem; }
+  .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: #0f172a; display: flex; align-items: center; justify-content: center; }
+  .logo-mark svg { width: 15px; height: 15px; stroke: #94a3b8; stroke-width: 2; fill: none; stroke-linecap: round; }
+  .logo-text { font-size: 0.96rem; font-weight: 700; color: #0f172a; }
+  .logo-sub { font-size: 0.68rem; color: #94a3b8; font-weight: 400; }
+  .topbar-right { display: flex; align-items: center; gap: 0.6rem; }
+  .chip-connected { display: flex; align-items: center; gap: 5px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 20px; padding: 3px 10px; font-size: 0.7rem; font-weight: 600; }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+  .tbtn { padding: 6px 14px; border-radius: 7px; font-size: 0.78rem; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
+  .tbtn:hover { background: #f8fafc; }
+  .tbtn.dark { background: #0f172a; border-color: #0f172a; color: #fff; }
+  .tbtn.dark:hover { background: #1e293b; }
+
+  /* ── TWO COLUMN ── */
+  .shell { display: flex; flex: 1; overflow: hidden; }
+
+  /* LEFT: Setup */
+  .left-col {
+    width: 340px; min-width: 310px; background: #f8fafc;
+    border-right: 1px solid #e2e8f0; display: flex; flex-direction: column;
+    overflow-y: auto; flex-shrink: 0;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+  .left-header {
+    padding: 1rem 1.25rem; border-bottom: 1px solid #e2e8f0; background: #fff;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8;
+  }
+
+  .left-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .section { display: flex; flex-direction: column; gap: 0.5rem; }
+  .section-head {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; font-weight: 700; color: #1e293b; margin-bottom: 0.1rem;
+  }
+  .section-head-icon { width: 20px; height: 20px; border-radius: 6px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+
+  .field { width: 100%; padding: 0.55rem 0.8rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.83rem; font-family: inherit; color: #1e293b; background: #fff; transition: all 0.2s; }
+  .field:focus { outline: none; border-color: #0f172a; box-shadow: 0 0 0 3px rgba(15,23,42,0.06); }
+  .field::placeholder { color: #cbd5e1; }
+  textarea.field { resize: none; height: 100px; line-height: 1.6; }
+
+  .prov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .prov-card {
+    padding: 0.75rem; border: 1.5px solid #e2e8f0; border-radius: 9px; cursor: pointer;
+    background: #fff; text-align: center; transition: all 0.2s;
+  }
+  .prov-card.active { border-color: #0f172a; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .prov-card:hover { border-color: #94a3b8; }
+  .prov-icon { font-size: 1.1rem; display: block; margin-bottom: 0.2rem; }
+  .prov-name { font-size: 0.8rem; font-weight: 700; color: #1e293b; }
+  .prov-tag { font-size: 0.62rem; color: #94a3b8; margin-top: 1px; }
+  .prov-card.active .prov-name { color: #0f172a; }
+
+  .upload-zone {
+    border: 1.5px dashed #e2e8f0; border-radius: 10px; padding: 1.25rem 1rem;
+    text-align: center; cursor: pointer; background: #fff; transition: all 0.2s;
+  }
+  .upload-zone:hover { border-color: #0f172a; background: #f8fafc; }
+  .uz-icon { font-size: 1.75rem; opacity: 0.4; display: block; margin-bottom: 0.4rem; }
+  .uz-main { font-size: 0.82rem; font-weight: 600; color: #475569; }
+  .uz-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 3px; }
+  .uz-loaded { display: inline-flex; align-items: center; gap: 5px; margin-top: 0.6rem; color: #15803d; font-size: 0.72rem; font-weight: 600; }
+
+  .filter-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .field-wrap { display: flex; flex-direction: column; gap: 0.25rem; }
+  .field-label { font-size: 0.7rem; font-weight: 600; color: #94a3b8; }
+  .divider { height: 1px; background: #e2e8f0; }
+  .btn-analyze {
+    width: 100%; padding: 0.8rem; border: none; border-radius: 10px;
+    background: #0f172a; color: #fff; font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.01em;
+  }
+  .btn-analyze:hover { background: #1e293b; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(15,23,42,0.2); }
+
+  /* RIGHT: Results */
+  .right-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
+
+  .right-header {
+    padding: 0.875rem 1.5rem; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .right-title { font-size: 0.88rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.6rem; }
+  .count-pill { background: #f1f5f9; color: #64748b; font-size: 0.68rem; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
+  .sort-tabs { display: flex; gap: 0.25rem; }
+  .sort-tab { padding: 4px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; color: #94a3b8; background: transparent; }
+  .sort-tab:hover { color: #1e293b; }
+  .sort-tab.active { background: #f1f5f9; color: #1e293b; border-color: #e2e8f0; }
+
+  .results-list { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  /* Result card */
+  .rcard {
+    border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden;
+    transition: border-color 0.18s, box-shadow 0.18s; cursor: pointer; background: #fff;
+  }
+  .rcard:hover { border-color: #94a3b8; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .rcard.shortlisted { border-color: #0f172a; }
+
+  .rc-main { padding: 0.875rem 1rem; display: flex; align-items: center; gap: 0.875rem; }
+  .rc-rank { font-size: 0.68rem; font-weight: 800; color: #cbd5e1; width: 16px; text-align: center; flex-shrink: 0; }
+  .rc-av { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .rc-info { flex: 1; min-width: 0; }
+  .rc-name { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
+  .rc-meta { font-size: 0.72rem; color: #94a3b8; margin-top: 1px; }
+  .rc-score { font-size: 1.05rem; font-weight: 800; flex-shrink: 0; }
+  .rc-score.high { color: #15803d; }
+  .rc-score.mid  { color: #d97706; }
+  .rc-score.low  { color: #dc2626; }
+
+  .rc-bar { height: 2px; background: #f1f5f9; margin: 0 1rem; }
+  .rc-bar-fill { height: 100%; border-radius: 2px; }
+
+  .rc-bottom { padding: 0.6rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .rc-chips { display: flex; flex-wrap: wrap; gap: 0.25rem; flex: 1; }
+  .chip-h { padding: 2px 7px; border-radius: 5px; font-size: 0.65rem; font-weight: 600; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .chip-m { padding: 2px 7px; border-radius: 5px; font-size: 0.65rem; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .chip-n { padding: 2px 7px; border-radius: 5px; font-size: 0.65rem; font-weight: 600; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+  .rc-actions { display: flex; gap: 0.3rem; }
+  .ra { padding: 3px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 600; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; white-space: nowrap; transition: all 0.15s; }
+  .ra:hover { background: #f8fafc; }
+  .ra.sl { background: #0f172a; border-color: #0f172a; color: #fff; }
+  .ra.sl:hover { background: #1e293b; }
+
+  /* Summary bar at bottom */
+  .summary-bar {
+    padding: 0.6rem 1.5rem; border-top: 1px solid #e2e8f0; flex-shrink: 0;
+    display: flex; align-items: center; gap: 1.5rem; background: #f8fafc;
+    font-size: 0.72rem; color: #64748b;
+  }
+  .sum-item { display: flex; align-items: center; gap: 0.4rem; }
+  .sum-dot { width: 6px; height: 6px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">Resume Screener AI</div>
+      <div class="logo-sub">Powered by Groq · Gemini</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="chip-connected"><span class="chip-dot"></span>Groq Connected</div>
+    <button class="tbtn">☐ Select All</button>
+    <button class="tbtn">💾 Export CSV</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- LEFT: Configure -->
+  <div class="left-col">
+    <div class="left-header">Configure</div>
+    <div class="left-body">
+
+      <div class="section">
+        <div class="section-head"><span class="section-head-icon">🔑</span> AI Provider</div>
+        <div class="prov-grid">
+          <div class="prov-card active">
+            <span class="prov-icon">⚡</span>
+            <div class="prov-name">Groq</div>
+            <div class="prov-tag">Fast · Free tier</div>
+          </div>
+          <div class="prov-card">
+            <span class="prov-icon">✦</span>
+            <div class="prov-name">Gemini</div>
+            <div class="prov-tag">Google · 15 RPM</div>
+          </div>
+        </div>
+        <input class="field" type="password" value="gsk_••••••••••••••••••" placeholder="Enter API key…">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-head"><span class="section-head-icon">📁</span> Resumes</div>
+        <div class="upload-zone">
+          <span class="uz-icon">📂</span>
+          <div class="uz-main">Drop PDF / DOCX files</div>
+          <div class="uz-sub">or paste a Google Drive folder URL below</div>
+          <div class="uz-loaded">● 8 resumes loaded</div>
+        </div>
+        <input class="field" type="text" placeholder="Google Drive folder URL (optional)" style="font-size:0.75rem;">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-head"><span class="section-head-icon">📄</span> Job Description</div>
+        <input class="field" type="text" value="Senior React Developer" placeholder="Position title…">
+        <textarea class="field" placeholder="Paste full job description…">We are looking for a Senior React Developer with 4+ years of experience in React, Node.js, TypeScript and AWS. Must have strong problem-solving skills and experience with agile teams.</textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-head"><span class="section-head-icon">🔍</span> Filters</div>
+        <div class="filter-grid2">
+          <div class="field-wrap">
+            <div class="field-label">Min Experience (yrs)</div>
+            <input class="field" type="text" value="3" placeholder="e.g. 2">
+          </div>
+          <div class="field-wrap">
+            <div class="field-label">Max Experience (yrs)</div>
+            <input class="field" type="text" value="8" placeholder="e.g. 8">
+          </div>
+        </div>
+        <div class="field-wrap">
+          <div class="field-label">Preferred Location</div>
+          <input class="field" type="text" value="Hyderabad, Remote" placeholder="e.g. Hyderabad, Remote">
+        </div>
+      </div>
+
+      <button class="btn-analyze">▶ Analyze Resumes</button>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: Results -->
+  <div class="right-col">
+    <div class="right-header">
+      <div class="right-title">
+        Results
+        <span class="count-pill">8 candidates</span>
+      </div>
+      <div class="sort-tabs">
+        <button class="sort-tab active">Score ↓</button>
+        <button class="sort-tab">Name</button>
+        <button class="sort-tab">Experience</button>
+      </div>
+    </div>
+
+    <div class="results-list">
+
+      <!-- Card 1 -->
+      <div class="rcard shortlisted">
+        <div class="rc-main">
+          <div class="rc-rank">1</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#0f172a,#1d4ed8)">PS</div>
+          <div class="rc-info">
+            <div class="rc-name">Priya Sharma</div>
+            <div class="rc-meta">📍 Hyderabad · 💼 5 years</div>
+          </div>
+          <div class="rc-score high">92%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:92%;background:#22c55e;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-h">✓ React</span>
+            <span class="chip-h">✓ Node.js</span>
+            <span class="chip-h">✓ TypeScript</span>
+            <span class="chip-m">✗ Kubernetes</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra sl">✓ Shortlisted</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="rcard">
+        <div class="rc-main">
+          <div class="rc-rank">2</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#b45309,#d97706)">VR</div>
+          <div class="rc-info">
+            <div class="rc-name">Vikram Rao</div>
+            <div class="rc-meta">📍 Delhi · 💼 7 years</div>
+          </div>
+          <div class="rc-score high">88%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:88%;background:#22c55e;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-h">✓ React</span>
+            <span class="chip-h">✓ AWS</span>
+            <span class="chip-m">✗ TypeScript</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra">☐ Shortlist</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="rcard">
+        <div class="rc-main">
+          <div class="rc-rank">3</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#0891b2,#10b981)">AM</div>
+          <div class="rc-info">
+            <div class="rc-name">Arjun Mehta</div>
+            <div class="rc-meta">📍 Remote · 💼 6 years</div>
+          </div>
+          <div class="rc-score high">84%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:84%;background:#22c55e;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-h">✓ React</span>
+            <span class="chip-h">✓ AWS</span>
+            <span class="chip-m">✗ TypeScript</span>
+            <span class="chip-n">Python</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra">☐ Shortlist</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="rcard">
+        <div class="rc-main">
+          <div class="rc-rank">4</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#7c3aed,#db2777)">ST</div>
+          <div class="rc-info">
+            <div class="rc-name">Sara Thomas</div>
+            <div class="rc-meta">📍 Bangalore · 💼 4 years</div>
+          </div>
+          <div class="rc-score mid">71%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:71%;background:#f59e0b;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-h">✓ React</span>
+            <span class="chip-m">✗ Node.js</span>
+            <span class="chip-m">✗ AWS</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra">☐ Shortlist</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="rcard">
+        <div class="rc-main">
+          <div class="rc-rank">5</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#1d4ed8,#4f46e5)">AJ</div>
+          <div class="rc-info">
+            <div class="rc-name">Ananya Joshi</div>
+            <div class="rc-meta">📍 Pune · 💼 4 years</div>
+          </div>
+          <div class="rc-score mid">67%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:67%;background:#f59e0b;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-h">✓ React</span>
+            <span class="chip-m">✗ AWS</span>
+            <span class="chip-m">✗ TypeScript</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra">☐ Shortlist</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="rcard">
+        <div class="rc-main">
+          <div class="rc-rank">6</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#059669,#0d9488)">RK</div>
+          <div class="rc-info">
+            <div class="rc-name">Ravi Kumar</div>
+            <div class="rc-meta">📍 Chennai · 💼 3 years</div>
+          </div>
+          <div class="rc-score mid">63%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:63%;background:#f59e0b;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-h">✓ React</span>
+            <span class="chip-m">✗ TypeScript</span>
+            <span class="chip-m">✗ AWS</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra">☐ Shortlist</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 7 -->
+      <div class="rcard">
+        <div class="rc-main">
+          <div class="rc-rank">7</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#0e7490,#0891b2)">SK</div>
+          <div class="rc-info">
+            <div class="rc-name">Suresh Kumar</div>
+            <div class="rc-meta">📍 Hyderabad · 💼 3 years</div>
+          </div>
+          <div class="rc-score mid">55%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:55%;background:#f59e0b;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-m">✗ React</span>
+            <span class="chip-m">✗ Node.js</span>
+            <span class="chip-n">JavaScript</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra">☐ Shortlist</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 8 -->
+      <div class="rcard">
+        <div class="rc-main">
+          <div class="rc-rank">8</div>
+          <div class="rc-av" style="background:linear-gradient(135deg,#be185d,#9333ea)">NK</div>
+          <div class="rc-info">
+            <div class="rc-name">Neha Kapoor</div>
+            <div class="rc-meta">📍 Mumbai · 💼 2 years</div>
+          </div>
+          <div class="rc-score low">44%</div>
+        </div>
+        <div class="rc-bar"><div class="rc-bar-fill" style="width:44%;background:#ef4444;"></div></div>
+        <div class="rc-bottom">
+          <div class="rc-chips">
+            <span class="chip-m">✗ React</span>
+            <span class="chip-m">✗ Node.js</span>
+            <span class="chip-n">HTML/CSS</span>
+          </div>
+          <div class="rc-actions">
+            <button class="ra">☐ Shortlist</button>
+            <button class="ra">👁 View</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary bar -->
+    <div class="summary-bar">
+      <div class="sum-item"><span class="sum-dot" style="background:#22c55e;"></span>3 above 75%</div>
+      <div class="sum-item"><span class="sum-dot" style="background:#f59e0b;"></span>4 between 50–75%</div>
+      <div class="sum-item"><span class="sum-dot" style="background:#ef4444;"></span>1 below 50%</div>
+      <div style="margin-left:auto;">1 shortlisted · Senior React Developer</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

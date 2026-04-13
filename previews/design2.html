@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design 2 — Stepper Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  .header {
+    background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 2rem;
+    height: 58px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-size: 1.05rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; }
+  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #06b6d4); }
+  .header-sub { font-size: 0.72rem; color: #94a3b8; }
+
+  /* ── STEPPER BAR ── */
+  .stepper-bar {
+    background: #fff; border-bottom: 1px solid #e2e8f0;
+    padding: 0 2rem; display: flex; align-items: center; gap: 0; overflow-x: auto;
+  }
+  .step-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.9rem 1.25rem; cursor: pointer; position: relative;
+    white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .step-item:hover { background: #f8fafc; }
+  .step-item.active { border-bottom-color: #6366f1; }
+  .step-item.done { border-bottom-color: #10b981; }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+    background: #e2e8f0; color: #64748b;
+  }
+  .step-item.active .step-num { background: #6366f1; color: #fff; }
+  .step-item.done .step-num { background: #10b981; color: #fff; }
+  .step-label { font-size: 0.82rem; font-weight: 500; color: #64748b; }
+  .step-item.active .step-label { color: #6366f1; font-weight: 600; }
+  .step-item.done .step-label { color: #10b981; }
+  .step-arrow { color: #cbd5e1; font-size: 0.8rem; padding: 0 0.25rem; }
+
+  /* ── MAIN CONTENT ── */
+  .wizard-body { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 2.5rem 1rem; }
+  .wizard-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06); width: 100%; max-width: 660px;
+    overflow: hidden;
+  }
+  .wizard-card-header {
+    padding: 1.5rem 2rem 1.25rem; border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, rgba(99,102,241,0.04) 0%, rgba(6,182,212,0.02) 100%);
+  }
+  .wc-step-tag { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6366f1; margin-bottom: 0.35rem; }
+  .wc-title { font-size: 1.2rem; font-weight: 700; color: #1e293b; }
+  .wc-sub { font-size: 0.82rem; color: #64748b; margin-top: 0.25rem; }
+
+  .wizard-card-body { padding: 1.75rem 2rem; display: flex; flex-direction: column; gap: 1.1rem; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-group label { font-size: 0.78rem; font-weight: 600; color: #475569; }
+  .field { padding: 0.6rem 0.875rem; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 0.86rem; font-family: inherit; color: #1e293b; background: #fff; transition: border-color 0.2s; }
+  .field:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+  textarea.field { resize: none; height: 110px; line-height: 1.6; }
+
+  .provider-row { display: flex; gap: 0.75rem; }
+  .prov-btn {
+    flex: 1; padding: 0.75rem 1rem; border-radius: 10px; border: 2px solid #e2e8f0;
+    background: #fff; cursor: pointer; text-align: center; transition: all 0.2s;
+  }
+  .prov-btn:hover { border-color: #a5b4fc; }
+  .prov-btn.active { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+  .prov-btn-icon { font-size: 1.3rem; display: block; margin-bottom: 0.25rem; }
+  .prov-btn-name { font-size: 0.86rem; font-weight: 700; color: #1e293b; }
+  .prov-btn-sub { font-size: 0.68rem; color: #94a3b8; margin-top: 1px; }
+  .prov-btn.active .prov-btn-name { color: #6366f1; }
+
+  .upload-zone {
+    border: 2px dashed #e2e8f0; border-radius: 12px; padding: 2rem 1.5rem;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;
+  }
+  .upload-zone:hover { border-color: #6366f1; background: rgba(99,102,241,0.03); }
+  .uz-icon { font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: 0.6; }
+  .uz-text { font-size: 0.88rem; font-weight: 500; color: #475569; }
+  .uz-sub { font-size: 0.74rem; color: #94a3b8; margin-top: 0.25rem; }
+  .uz-loaded { display: inline-flex; align-items: center; gap: 6px; margin-top: 0.75rem; background: rgba(16,185,129,0.08); color: #059669; border: 1px solid rgba(16,185,129,0.2); border-radius: 20px; padding: 4px 12px; font-size: 0.72rem; font-weight: 600; }
+
+  .hint { font-size: 0.72rem; color: #94a3b8; }
+  .hint a { color: #6366f1; text-decoration: none; }
+
+  .wizard-card-footer {
+    padding: 1.25rem 2rem; border-top: 1px solid #f1f5f9;
+    display: flex; justify-content: space-between; align-items: center; background: #fafafa;
+  }
+  .btn-prev { padding: 0.6rem 1.25rem; border: 1.5px solid #e2e8f0; border-radius: 9px; background: #fff; color: #64748b; font-size: 0.84rem; font-weight: 500; cursor: pointer; }
+  .btn-prev:hover { background: #f1f5f9; }
+  .btn-next { padding: 0.6rem 1.5rem; border: none; border-radius: 9px; background: #6366f1; color: #fff; font-size: 0.86rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 14px rgba(99,102,241,0.3); }
+  .btn-next:hover { background: #5457e8; }
+
+  /* RESULTS STEP (step 4) */
+  .results-preview { display: flex; flex-direction: column; gap: 0.75rem; }
+  .res-row {
+    display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1rem;
+    border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+  }
+  .res-row:hover { border-color: #6366f1; background: rgba(99,102,241,0.03); }
+  .res-rank { width: 24px; height: 24px; border-radius: 7px; background: #6366f1; color: #fff; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .res-name { font-size: 0.9rem; font-weight: 600; color: #1e293b; }
+  .res-meta { font-size: 0.72rem; color: #94a3b8; }
+  .res-chips { display: flex; gap: 0.3rem; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
+  .chip-have { background: rgba(16,185,129,0.08); color: #059669; border: 1px solid rgba(16,185,129,0.2); padding: 1px 8px; border-radius: 5px; font-size: 0.67rem; font-weight: 600; }
+  .chip-miss { background: rgba(239,68,68,0.06); color: #dc2626; border: 1px solid rgba(239,68,68,0.15); padding: 1px 8px; border-radius: 5px; font-size: 0.67rem; font-weight: 600; }
+  .score-badge { font-size: 1.05rem; font-weight: 700; padding: 3px 10px; border-radius: 8px; flex-shrink: 0; }
+  .s-high { background: rgba(16,185,129,0.1); color: #10b981; }
+  .s-mid  { background: rgba(245,158,11,0.1); color: #f59e0b; }
+
+  /* Progress dots */
+  .progress-dots { display: flex; gap: 0.35rem; align-items: center; }
+  .pdot { width: 7px; height: 7px; border-radius: 50%; background: #e2e8f0; }
+  .pdot.done { background: #6366f1; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Resume Screener AI
+  </div>
+  <div class="header-sub">Powered by Groq · Gemini</div>
+</div>
+
+<!-- STEPPER BAR -->
+<div class="stepper-bar">
+  <div class="step-item done">
+    <div class="step-num">✓</div>
+    <div class="step-label">API Setup</div>
+  </div>
+  <span class="step-arrow">›</span>
+  <div class="step-item done">
+    <div class="step-num">✓</div>
+    <div class="step-label">Upload Resumes</div>
+  </div>
+  <span class="step-arrow">›</span>
+  <div class="step-item active">
+    <div class="step-num">3</div>
+    <div class="step-label">Job Description</div>
+  </div>
+  <span class="step-arrow">›</span>
+  <div class="step-item">
+    <div class="step-num">4</div>
+    <div class="step-label">Results</div>
+  </div>
+</div>
+
+<!-- WIZARD BODY — showing Step 3: Job Description -->
+<div class="wizard-body">
+  <div class="wizard-card">
+    <div class="wizard-card-header">
+      <div class="wc-step-tag">Step 3 of 4</div>
+      <div class="wc-title">Describe the Role</div>
+      <div class="wc-sub">Tell the AI what you're hiring for — it'll score each resume against this.</div>
+    </div>
+
+    <div class="wizard-card-body">
+      <div class="form-group">
+        <label>Position Title</label>
+        <input class="field" type="text" value="Senior React Developer" placeholder="e.g. Senior React Developer">
+      </div>
+      <div class="form-group">
+        <label>Job Description</label>
+        <textarea class="field" placeholder="Paste full job description…">We are looking for a Senior React Developer with 4+ years of experience in React, Node.js, TypeScript and AWS. Must have strong problem-solving skills and experience with agile teams.</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Min Experience (yrs)</label>
+          <input class="field" type="text" value="3" placeholder="e.g. 2">
+        </div>
+        <div class="form-group">
+          <label>Max Experience (yrs)</label>
+          <input class="field" type="text" value="8" placeholder="e.g. 8">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Preferred Location</label>
+        <input class="field" type="text" value="Hyderabad, Remote" placeholder="e.g. Hyderabad, Remote, Any">
+      </div>
+    </div>
+
+    <div class="wizard-card-footer">
+      <div class="progress-dots">
+        <div class="pdot done"></div><div class="pdot done"></div><div class="pdot done"></div><div class="pdot"></div>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center;">
+        <button class="btn-prev">← Back</button>
+        <button class="btn-next">Analyze Resumes ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTE: Scroll down to see what step 4 (Results) looks like -->
+<div style="background:#f1f5f9;padding:1rem 2rem;text-align:center;font-size:0.78rem;color:#94a3b8;border-top:1px solid #e2e8f0;">
+  ↓ Step 4 — Results page preview below ↓
+</div>
+
+<!-- STEP 4: RESULTS -->
+<div class="wizard-body" style="padding-top:1.5rem;padding-bottom:2rem;background:#f8fafc;">
+  <div class="wizard-card">
+    <div class="wizard-card-header">
+      <div class="wc-step-tag">Step 4 of 4 — Complete</div>
+      <div class="wc-title">Screening Results</div>
+      <div class="wc-sub">8 candidates analyzed · Ranked by AI match score · Senior React Developer</div>
+    </div>
+    <div class="wizard-card-body">
+      <div class="results-preview">
+        <div class="res-row">
+          <div class="res-rank">1</div>
+          <div style="flex:1;">
+            <div class="res-name">Priya Sharma</div>
+            <div class="res-meta">📍 Hyderabad · 5 yrs</div>
+          </div>
+          <div class="res-chips">
+            <span class="chip-have">✓ React</span><span class="chip-have">✓ Node</span><span class="chip-miss">✗ K8s</span>
+          </div>
+          <div class="score-badge s-high">92%</div>
+        </div>
+        <div class="res-row">
+          <div class="res-rank" style="background:#0891b2;">2</div>
+          <div style="flex:1;">
+            <div class="res-name">Arjun Mehta</div>
+            <div class="res-meta">📍 Remote · 6 yrs</div>
+          </div>
+          <div class="res-chips">
+            <span class="chip-have">✓ React</span><span class="chip-have">✓ AWS</span><span class="chip-miss">✗ TypeScript</span>
+          </div>
+          <div class="score-badge s-high">84%</div>
+        </div>
+        <div class="res-row">
+          <div class="res-rank" style="background:#7c3aed;">3</div>
+          <div style="flex:1;">
+            <div class="res-name">Sara Thomas</div>
+            <div class="res-meta">📍 Bangalore · 4 yrs</div>
+          </div>
+          <div class="res-chips">
+            <span class="chip-have">✓ React</span><span class="chip-miss">✗ Node</span><span class="chip-miss">✗ AWS</span>
+          </div>
+          <div class="score-badge s-mid">71%</div>
+        </div>
+        <div class="res-row">
+          <div class="res-rank" style="background:#64748b;">4</div>
+          <div style="flex:1;">
+            <div class="res-name">Ravi Kumar</div>
+            <div class="res-meta">📍 Chennai · 3 yrs</div>
+          </div>
+          <div class="res-chips">
+            <span class="chip-have">✓ React</span><span class="chip-miss">✗ TypeScript</span><span class="chip-miss">✗ AWS</span>
+          </div>
+          <div class="score-badge s-mid">63%</div>
+        </div>
+      </div>
+    </div>
+    <div class="wizard-card-footer">
+      <button class="btn-prev">← New Search</button>
+      <button class="btn-next">💾 Export CSV</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

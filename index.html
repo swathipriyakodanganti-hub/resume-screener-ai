@@ -2416,6 +2416,26 @@
                         </div></div>
                     </div>
 
+                    <div class="setup-section-card">
+                        <div class="s-section-header" onclick="toggleSideSection('extraReqs')">
+                            <div class="s-section-left"><span class="s-section-icon">✏️</span><span class="s-section-title">Extra Screening Instructions</span></div>
+                            <span class="s-toggle open" id="extraReqsToggle">▼</span>
+                        </div>
+                        <div class="s-content open" id="extraReqsContent"><div class="s-content-inner">
+                            <div class="form-group">
+                                <label for="extraReqsInput">Custom AI Focus Areas</label>
+                                <textarea id="extraReqsInput" rows="4"
+                                    placeholder="e.g. Focus heavily on grammar and spelling mistakes in the resume. Check if the resume is well-structured. Flag any inconsistencies in dates or job titles..."
+                                    oninput="saveExtraRequirements()"
+                                    style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.8rem;font-family:'Source Sans 3',sans-serif;padding:0.6rem 0.75rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
+                                    onfocus="this.style.borderColor='var(--accent)'"
+                                    onblur="this.style.borderColor='var(--border)'"
+                                ></textarea>
+                                <small class="hint">Tell the AI what to specifically look for or focus on. Each issue found will appear in the results as <strong>Custom Screening Feedback</strong>.</small>
+                            </div>
+                        </div></div>
+                    </div>
+
                     <div class="setup-section-card" style="padding:0.75rem 1rem;">
                         <div style="font-size:0.65rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.4rem;">
                             <span style="opacity:0.6;">🛡️</span>
@@ -2701,7 +2721,8 @@
     let groqApiKey     = localStorage.getItem('groqApiKey') || '';
     let driveApiKey    = localStorage.getItem('driveApiKey') || '';
     let selectedProvider = localStorage.getItem('selectedProvider') || 'groq';
-    let sheetsId       = localStorage.getItem('sheetsId') || '';
+    let sheetsId           = localStorage.getItem('sheetsId') || '';
+    let extraRequirements  = localStorage.getItem('extraRequirements') || '';
     let resumeDropOpen = false;
     let fileStatuses   = {};
 
@@ -2733,6 +2754,9 @@
         }
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
+
+        const savedExtraReqs = localStorage.getItem('extraRequirements') || '';
+        if (savedExtraReqs) document.getElementById('extraReqsInput').value = savedExtraReqs;
 
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -2829,6 +2853,11 @@
         localStorage.setItem('groqApiKey', groqApiKey);
         updateConnStatus(!!groqApiKey);
         showToast('Groq API key saved!', 'success');
+    }
+
+    function saveExtraRequirements() {
+        extraRequirements = document.getElementById('extraReqsInput').value;
+        localStorage.setItem('extraRequirements', extraRequirements);
     }
 
     function saveGeminiKey() {
@@ -3343,7 +3372,10 @@ Job Description:
 ${jd}
 
 Filters: Experience ${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal*12)+'mo' : filters.minExpDecimal.toFixed(1)+'yrs') : '0'}–${filters.maxExpDecimal !== null ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal*12)+'mo' : filters.maxExpDecimal.toFixed(1)+'yrs') : 'unlimited'}, Location: ${filters.location || 'any'}
-
+${extraRequirements.trim() ? `
+Extra Screening Instructions (recruiter-defined — evaluate and report each one in extra_requirements_feedback):
+${extraRequirements.trim()}
+` : ''}
 Resume:
 ${resumeText.slice(0, 7500)}
 
@@ -3382,7 +3414,8 @@ Return exactly this JSON:
   "skills_missing": ["JD-required skills absent from the candidate's work experience (even if listed in a skills section)"],
   "highlights": ["2-3 standout achievements"],
   "rating_reason": "2-3 sentences explaining the overall score — reference specific sub-score drivers and note if skills appear only in a skills list vs actual job responsibilities",
-  "summary": "one-sentence profile"
+  "summary": "one-sentence profile",
+  "extra_requirements_feedback": ["if extra screening instructions were provided, list each issue or finding for every instruction — be specific (e.g. 'Grammar: found 3 spelling errors in the summary section'). If no issues found for an instruction, write 'No issues found'. If no extra instructions were given, return an empty array."]
 }`;
 
         let raw;
@@ -3775,6 +3808,12 @@ Return exactly this JSON:
                 <div class="overlay-section">
                     <div class="overlay-section-title">⭐ Key Highlights</div>
                     ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                </div>` : ''}
+
+                ${r.extra_requirements_feedback?.length ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title" style="color:var(--amber);">📝 Custom Screening Feedback</div>
+                    ${r.extra_requirements_feedback.map(f => `<div class="overlay-highlight-item" style="border-left:3px solid var(--amber);background:var(--amber-dim);padding:0.5rem 0.75rem;border-radius:6px;font-size:0.8rem;margin-bottom:0.35rem;">${f}</div>`).join('')}
                 </div>` : ''}
 
                 ${r.score_breakdown ? `
