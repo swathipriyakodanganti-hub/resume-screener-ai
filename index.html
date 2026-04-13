@@ -499,6 +499,52 @@
         .jd-preview-box.visible { display: block; }
         .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
+        /* ── JD Recommendations panel ── */
+        .jd-rec-btn {
+            display: flex; align-items: center; gap: 0.4rem;
+            padding: 0.45rem 0.9rem;
+            background: rgba(56,139,253,0.1);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            color: var(--accent);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .jd-rec-btn:hover { background: rgba(56,139,253,0.2); box-shadow: 0 0 12px rgba(56,139,253,0.25); }
+        .jd-rec-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .jd-rec-panel {
+            background: rgba(4,8,20,0.85);
+            border: 1px solid var(--border-accent);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+            margin-top: 0.6rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.6rem;
+            animation: fadeIn 0.25s ease;
+        }
+        .jd-rec-panel.visible { display: flex; }
+        .jd-rec-header {
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+            color: var(--accent); margin-bottom: 0.15rem;
+        }
+        .jd-rec-item {
+            display: flex; gap: 0.55rem; align-items: flex-start;
+            padding: 0.55rem 0.7rem;
+            background: rgba(56,139,253,0.06);
+            border: 1px solid rgba(56,139,253,0.14);
+            border-radius: 8px;
+            font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary);
+        }
+        .jd-rec-item-icon { flex-shrink: 0; font-size: 0.85rem; margin-top: 0.05rem; }
+        .jd-rec-item-body { display: flex; flex-direction: column; gap: 0.18rem; }
+        .jd-rec-item-title { font-weight: 600; color: var(--text-primary); font-size: 0.78rem; }
+        .jd-rec-item-desc { color: var(--text-secondary); font-size: 0.75rem; line-height: 1.45; }
+        .jd-rec-red-flags .jd-rec-item { background: rgba(248,81,73,0.06); border-color: rgba(248,81,73,0.2); }
+        .jd-rec-red-flags .jd-rec-item-title { color: var(--danger); }
+
         /* Progress */
         .progress-wrap { display: none; margin-top: 0.75rem; }
         .progress-wrap.visible { display: block; }
@@ -2378,6 +2424,18 @@
 
                     <div style="margin-top:0.5rem;">
                         <textarea class="jd-preview-box" id="jdEditBox" placeholder="Select a position above, or type / paste a job description here…" oninput="currentJD = this.value;" style="display:block;"></textarea>
+                        <div style="display:flex;justify-content:flex-end;margin-top:0.45rem;">
+                            <button class="jd-rec-btn" id="jdRecBtn" onclick="getJdRecommendations()">✨ Get AI Recommendations</button>
+                        </div>
+                        <div class="jd-rec-panel" id="jdRecPanel">
+                            <div class="jd-rec-header">🎯 Recruiter Focus Areas</div>
+                            <div id="jdRecFocusAreas"></div>
+                            <div class="jd-rec-header" style="margin-top:0.4rem;">⚠️ Red Flags to Watch For</div>
+                            <div class="jd-rec-red-flags" id="jdRecRedFlags"></div>
+                            <div class="jd-rec-header" style="margin-top:0.4rem;">💡 Suggested Screening Questions</div>
+                            <div id="jdRecQuestions"></div>
+                            <div style="font-size:0.67rem;color:var(--text-muted);margin-top:0.3rem;">AI-generated · based on the job description above</div>
+                        </div>
                     </div>
 
                     <div class="setup-section-card">
@@ -2858,6 +2916,93 @@
     function saveExtraRequirements() {
         extraRequirements = document.getElementById('extraReqsInput').value;
         localStorage.setItem('extraRequirements', extraRequirements);
+    }
+
+    async function getJdRecommendations() {
+        const jd = document.getElementById('jdEditBox').value.trim();
+        if (!jd) { showToast('Paste or select a Job Description first', 'error'); return; }
+        const activeKey = selectedProvider === 'groq' ? groqApiKey : geminiApiKey;
+        if (!activeKey) { showToast('Configure your API key first', 'error'); return; }
+
+        const btn   = document.getElementById('jdRecBtn');
+        const panel = document.getElementById('jdRecPanel');
+        btn.disabled = true;
+        btn.textContent = '⏳ Analyzing JD…';
+        panel.classList.remove('visible');
+
+        const prompt = `You are a senior technical recruiter. Read the job description below and return ONLY valid JSON (no markdown, no extra text).
+
+Job Description:
+${jd.slice(0, 5000)}
+
+Return this exact JSON shape:
+{
+  "focus_areas": [
+    { "icon": "<single emoji>", "title": "short title", "description": "1-2 sentences on what to look for in resumes for this area" }
+  ],
+  "red_flags": [
+    { "icon": "<single emoji>", "title": "short title", "description": "1-2 sentences on the warning sign and why it matters for this role" }
+  ],
+  "screening_questions": [
+    { "icon": "<single emoji>", "title": "short label", "description": "the actual question to ask the candidate" }
+  ]
+}
+
+Rules:
+- focus_areas: 3-5 items — what skills/traits matter most for THIS specific role
+- red_flags: 3-4 items — resume patterns that indicate poor fit for THIS role
+- screening_questions: 3-4 targeted questions to ask during phone screen
+- Be specific to the JD, not generic
+- Keep descriptions concise (max 2 sentences)`;
+
+        try {
+            let raw;
+            if (selectedProvider === 'groq') {
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqApiKey}` },
+                    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 1200 })
+                });
+                if (!res.ok) throw new Error(`Groq error ${res.status}`);
+                const data = await res.json();
+                raw = data?.choices?.[0]?.message?.content;
+            } else {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1200 } })
+                });
+                if (!res.ok) throw new Error(`Gemini error ${res.status}`);
+                const data = await res.json();
+                raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            }
+
+            if (!raw) throw new Error('Empty response from AI');
+            const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+            const match = cleaned.match(/\{[\s\S]*\}/);
+            if (!match) throw new Error('No JSON in response');
+            const rec = JSON.parse(match[0]);
+
+            const renderItems = (items) => (items || []).map(it =>
+                `<div class="jd-rec-item">
+                    <span class="jd-rec-item-icon">${it.icon || '•'}</span>
+                    <div class="jd-rec-item-body">
+                        <div class="jd-rec-item-title">${it.title}</div>
+                        <div class="jd-rec-item-desc">${it.description}</div>
+                    </div>
+                </div>`
+            ).join('');
+
+            document.getElementById('jdRecFocusAreas').innerHTML = renderItems(rec.focus_areas);
+            document.getElementById('jdRecRedFlags').innerHTML   = renderItems(rec.red_flags);
+            document.getElementById('jdRecQuestions').innerHTML  = renderItems(rec.screening_questions);
+            panel.classList.add('visible');
+        } catch (err) {
+            showToast('Could not get recommendations: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '✨ Get AI Recommendations';
+        }
     }
 
     function saveGeminiKey() {
