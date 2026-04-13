@@ -3631,6 +3631,7 @@ Return exactly this JSON:
   "screening_questions": [
     { "q": "the interview question", "why": "one sentence on why this question matters for THIS candidate given their specific profile gaps or experience", "expected_answer": "2-3 sentences in plain simple English on what a good answer looks like — no jargon, so a non-technical recruiter can evaluate the response" }
   ],
+IMPORTANT: screening_questions MUST contain exactly 5 questions. Cover: 1 role-fit question, 1 on a missing or unverified skill, 1 on a specific past experience from their resume, 1 on a soft skill or culture fit, 1 curveball based on a gap or inconsistency.
   "extra_requirements_feedback": ["if extra screening instructions were provided, list each issue or finding for every instruction — be specific (e.g. 'Grammar: found 3 spelling errors in the summary section'). If no issues found for an instruction, write 'No issues found'. If no extra instructions were given, return an empty array."]
 }`;
 
@@ -3650,7 +3651,7 @@ Return exactly this JSON:
                         model: 'llama-3.3-70b-versatile',
                         messages: [{ role: 'user', content: prompt }],
                         temperature: 0.2,
-                        max_tokens: 1500
+                        max_tokens: 2200
                     })
                 });
             } catch { throw new Error('Network error reaching Groq API'); }
@@ -3676,7 +3677,7 @@ Return exactly this JSON:
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
+                        generationConfig: { temperature: 0.2, maxOutputTokens: 2200 }
                     })
                 });
             } catch { throw new Error('Network error reaching Gemini API'); }
