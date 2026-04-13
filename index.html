@@ -2471,8 +2471,6 @@
                             <div id="jdRecFocusAreas"></div>
                             <div class="jd-rec-header" style="margin-top:0.4rem;">⚠️ Red Flags to Watch For</div>
                             <div class="jd-rec-red-flags" id="jdRecRedFlags"></div>
-                            <div class="jd-rec-header" style="margin-top:0.4rem;">💡 Suggested Screening Questions</div>
-                            <div id="jdRecQuestions"></div>
                             <div style="font-size:0.67rem;color:var(--text-muted);margin-top:0.3rem;">AI-generated · based on the job description above</div>
                         </div>
                     </div>
@@ -3015,16 +3013,12 @@ Return this exact JSON shape:
   ],
   "red_flags": [
     { "icon": "<single emoji>", "title": "short title", "description": "1-2 sentences on the warning sign and why it matters for this role" }
-  ],
-  "screening_questions": [
-    { "icon": "<single emoji>", "title": "short label", "description": "the actual question to ask the candidate" }
   ]
 }
 
 Rules:
 - focus_areas: 3-5 items — what skills/traits matter most for THIS specific role
 - red_flags: 3-4 items — resume patterns that indicate poor fit for THIS role
-- screening_questions: 3-4 targeted questions to ask during phone screen
 - Be specific to the JD, not generic
 - Keep descriptions concise (max 2 sentences)`;
 
@@ -3071,7 +3065,6 @@ Rules:
 
             document.getElementById('jdRecFocusAreas').innerHTML = renderItems(rec.focus_areas, 'fa');
             document.getElementById('jdRecRedFlags').innerHTML   = renderItems(rec.red_flags, 'rf');
-            document.getElementById('jdRecQuestions').innerHTML  = renderItems(rec.screening_questions, 'sq');
             panel.classList.add('visible');
         } catch (err) {
             showToast('Could not get recommendations: ' + err.message, 'error');
