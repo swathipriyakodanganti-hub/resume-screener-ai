@@ -2931,11 +2931,18 @@
         localStorage.setItem('extraRequirements', extraRequirements);
     }
 
+    // Lookup map for JD recommendation items (avoids HTML attribute escaping issues)
+    const _jdRecMap = {};
+
     function addFocusAreaToInstructions(idx, title, description) {
         // legacy stub — superseded by addToInstructionsAndAnalyze
     }
 
-    function addToInstructionsAndAnalyze(prefix, idx, title, description) {
+    function addToInstructionsAndAnalyze(key) {
+        const item = _jdRecMap[key];
+        if (!item) return;
+        const { prefix, idx, title, description } = item;
+
         const textarea = document.getElementById('extraReqsInput');
         const line = `${title}: ${description}`;
         const current = textarea.value.trim();
@@ -2944,7 +2951,7 @@
         localStorage.setItem('extraRequirements', extraRequirements);
 
         const btn = document.getElementById(`jdRecAddBtn_${prefix}_${idx}`);
-        if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
+        if (btn) { btn.textContent = '\u2713 Added'; btn.classList.add('added'); btn.disabled = true; }
 
         // Open the Extra Screening Instructions card
         const content = document.getElementById('extraReqsContent');
@@ -2954,7 +2961,7 @@
             if (toggle) toggle.classList.add('open');
         }
 
-        showToast(`"${title}" added — starting analysis…`, 'success');
+        showToast(`"${title}" added \u2014 starting analysis\u2026`, 'success');
         analyzeResumes();
     }
 
@@ -3023,16 +3030,18 @@ Rules:
             if (!match) throw new Error('No JSON in response');
             const rec = JSON.parse(match[0]);
 
-            const renderItems = (items, prefix) => (items || []).map((it, i) =>
-                `<div class="jd-rec-item">
+            const renderItems = (items, prefix) => (items || []).map((it, i) => {
+                const key = `${prefix}_${i}`;
+                _jdRecMap[key] = { prefix, idx: i, title: it.title, description: it.description };
+                return `<div class="jd-rec-item">
                     <span class="jd-rec-item-icon">${it.icon || '•'}</span>
                     <div class="jd-rec-item-body">
                         <div class="jd-rec-item-title">${it.title}</div>
                         <div class="jd-rec-item-desc">${it.description}</div>
                     </div>
-                    <button class="jd-rec-add-btn" id="jdRecAddBtn_${prefix}_${i}" onclick="addToInstructionsAndAnalyze('${prefix}', ${i}, ${JSON.stringify(it.title)}, ${JSON.stringify(it.description)})">+ Add</button>
-                </div>`
-            ).join('');
+                    <button class="jd-rec-add-btn" id="jdRecAddBtn_${key}" onclick="addToInstructionsAndAnalyze('${key}')">+ Add</button>
+                </div>`;
+            }).join('');
 
             document.getElementById('jdRecFocusAreas').innerHTML = renderItems(rec.focus_areas, 'fa');
             document.getElementById('jdRecRedFlags').innerHTML   = renderItems(rec.red_flags, 'rf');
