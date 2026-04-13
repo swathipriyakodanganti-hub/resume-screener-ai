@@ -4037,7 +4037,18 @@ Return exactly this JSON:
                 ${r.extra_requirements_feedback?.length ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title" style="color:var(--amber);">📝 Custom Screening Feedback</div>
-                    ${r.extra_requirements_feedback.map(f => `<div class="overlay-highlight-item" style="border-left:3px solid var(--amber);background:var(--amber-dim);padding:0.5rem 0.75rem;border-radius:6px;font-size:0.8rem;margin-bottom:0.35rem;">${f}</div>`).join('')}
+                    ${r.extra_requirements_feedback.map(f => {
+                        const low = f.toLowerCase();
+                        const isPass = /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low);
+                        const isFail = /found \d|missing|not found|lacks?|absent|none found|poor|weak|inconsistent|errors? found|mistakes? found|no (demonstrated|relevant|direct)|not (relevant|present|demonstrated|stated)|limited/.test(low);
+                        const color  = isPass ? 'var(--success)' : isFail ? 'var(--danger)' : 'var(--amber)';
+                        const bg     = isPass ? 'rgba(86,211,100,0.07)' : isFail ? 'rgba(248,81,73,0.07)' : 'var(--amber-dim)';
+                        const icon   = isPass ? '✅' : isFail ? '❌' : '⚠️';
+                        return `<div style="border-left:3px solid ${color};background:${bg};padding:0.5rem 0.75rem;border-radius:6px;font-size:0.8rem;margin-bottom:0.35rem;display:flex;gap:0.5rem;align-items:flex-start;">
+                            <span style="flex-shrink:0;margin-top:0.05rem;">${icon}</span>
+                            <span>${f}</span>
+                        </div>`;
+                    }).join('')}
                 </div>` : ''}
 
                 ${r.score_breakdown ? `
