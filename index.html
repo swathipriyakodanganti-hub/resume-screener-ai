@@ -4553,18 +4553,44 @@ Return exactly this JSON:
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeResumeViewer(); closeOverlay(); } });
 
     // ─── Export CSV ───
+    function esc(v) { return `"${String(v || '').replace(/"/g, '""')}"`; }
     function exportResults() {
         if (!analysisResults.length) { showToast('No results to export', 'error'); return; }
-        const csv = [
-            ['Name','Email','Phone','Location','Experience','Match Score','Summary'].join(','),
-            ...analysisResults.map(r => [
-                `"${r.name}"`, r.email || '', r.phone || '', `"${r.location}"`,
-                r.experience_years, r.match_score, `"${(r.summary || '').replace(/"/g, '""')}"`
-            ].join(','))
-        ].join('\n');
+        const headers = [
+            'Name','Email','Phone','Location','Experience (yrs)','Match Score',
+            'Recommendation',
+            'Skills Score','Experience Score','Education Score','Achievements Score','Soft Skills Score',
+            'Skills Present','Skills Missing',
+            'Key Highlights',
+            'Screening Questions',
+            'Custom Screening Feedback',
+            'Summary','Rating Reason',
+            'Drive Link','File Name'
+        ];
+        const rows = analysisResults.map(r => {
+            const rec = r.match_score >= 75 ? 'Proceed' : r.match_score >= 50 ? 'Consider' : 'Pass';
+            const sb  = r.score_breakdown || {};
+            const sq  = (r.screening_questions || []).map(q => `Q: ${q.q} | Why: ${q.why}`).join(' || ');
+            const fb  = (r.extra_requirements_feedback || []).join(' || ');
+            return [
+                esc(r.name), esc(r.email), esc(r.phone), esc(r.location),
+                r.experience_years, r.match_score,
+                rec,
+                sb.skills_score ?? '', sb.experience_score ?? '', sb.education_score ?? '',
+                sb.achievements_score ?? '', sb.culture_score ?? '',
+                esc((r.skills_present || []).join(', ')),
+                esc((r.skills_missing || []).join(', ')),
+                esc((r.highlights || []).join(' | ')),
+                esc(sq),
+                esc(fb),
+                esc(r.summary), esc(r.rating_reason),
+                esc(r.drive_link), esc(r.filename)
+            ].join(',');
+        });
+        const csv = [headers.join(','), ...rows].join('\n');
         const a = Object.assign(document.createElement('a'), {
-            href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
-            download: `resume-analysis-${Date.now()}.csv`
+            href: URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })),
+            download: `pearl-hire-${Date.now()}.csv`
         });
         a.click();
         showToast('Results exported!', 'success');
