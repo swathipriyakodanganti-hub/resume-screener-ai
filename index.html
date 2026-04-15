@@ -2339,6 +2339,7 @@
         <div class="tb-logo">Pearl Hire<span class="tb-logo-tagline">Made with ❤️ by Team SPY</span></div>
         <div class="tb-tabs">
             <div class="tb-tab" onclick="switchPage('setup')" id="page-tab-setup">⚙ Setup</div>
+            <div class="tb-tab" onclick="switchPage('links')" id="page-tab-links">🔗 Links</div>
             <div class="tb-tab active" onclick="switchPage('results')" id="page-tab-results">
                 📊 Results <span class="tb-tab-badge" id="resultBadge" style="display:none;"></span>
             </div>
@@ -2419,7 +2420,7 @@
                             </div>
                             <div class="form-group"><label for="sheetsId">Google Sheets ID</label>
                                 <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
-                                <small class="hint">From: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit</small>
+                                <small class="hint">Or use the <strong>Links</strong> tab to paste the full Google Sheets URL.</small>
                             </div>
                             <div class="form-group"><label for="apiDelay">API Call Delay (seconds)</label>
                                 <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
@@ -2615,6 +2616,41 @@
             <div id="pendingProfilesList" style="margin-top:0.65rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0.4rem;"></div>
         </div>
         </div><!-- /app-page-results -->
+
+        <!-- ─── LINKS PAGE ─── -->
+        <div class="app-page" id="app-page-links">
+            <div class="setup-page-wrap" style="justify-content:center;align-items:flex-start;padding-top:2rem;">
+                <div style="max-width:760px;width:100%;">
+                    <div class="setup-section-card" style="padding:1.5rem 2rem;">
+                        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--accent);margin-bottom:0.3rem;">Linked Sources</div>
+                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;">Store Your Google Sheet Link</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1.1rem;line-height:1.6;">
+                            Paste the full Google Sheets link here. The app will automatically extract and store the Sheet ID used for JD, Locations, and Interviewer emails.
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:1rem;">
+                            <label for="sheetsUrlInput">Google Sheets URL</label>
+                            <div style="display:flex;gap:0.45rem;align-items:center;">
+                                <input type="text" id="sheetsUrlInput" placeholder="https://docs.google.com/spreadsheets/d/.../edit" onchange="saveSheetsLink()" style="flex:1;">
+                                <button class="btn-add-links" onclick="saveSheetsLink()" style="white-space:nowrap;">Save</button>
+                            </div>
+                            <small class="hint">Works with the full Sheet URL. You do not need to paste only the ID.</small>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.75rem;">
+                            <div style="padding:0.85rem 0.95rem;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.02);">
+                                <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;">Stored Sheet ID</div>
+                                <div id="storedSheetIdLabel" style="font-size:0.82rem;color:var(--text-secondary);word-break:break-all;">Not set</div>
+                            </div>
+                            <div style="padding:0.85rem 0.95rem;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,0.02);">
+                                <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;">Used By</div>
+                                <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.55;">JD tab, Locations tab, Emails tab in your Google Sheet.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /app-page-links -->
 
         <!-- ─── SHARE PAGE ─── -->
         <div class="app-page" id="app-page-share">
@@ -2839,6 +2875,7 @@
     let driveApiKey    = localStorage.getItem('driveApiKey') || '';
     let selectedProvider = localStorage.getItem('selectedProvider') || 'groq';
     let sheetsId           = localStorage.getItem('sheetsId') || '';
+    let sheetsUrl          = localStorage.getItem('sheetsUrl') || '';
     let extraRequirements  = localStorage.getItem('extraRequirements') || '';
     let resumeDropOpen = false;
     let fileStatuses   = {};
@@ -2869,6 +2906,7 @@
             loadPositions();
             loadLocations();
         }
+        syncSheetsUi();
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
 
@@ -3108,9 +3146,58 @@ Rules:
         showToast('Google Drive API key saved!', 'success');
     }
 
-    function saveSheetsId() {
-        sheetsId = document.getElementById('sheetsId').value.trim();
+    function extractSheetsId(value) {
+        const raw = (value || '').trim();
+        if (!raw) return '';
+        const urlMatch = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        if (urlMatch) return urlMatch[1];
+        const idMatch = raw.match(/^[a-zA-Z0-9-_]{20,}$/);
+        return idMatch ? idMatch[0] : '';
+    }
+
+    function buildSheetsUrl(id) {
+        return id ? `https://docs.google.com/spreadsheets/d/${id}/edit` : '';
+    }
+
+    function syncSheetsUi() {
+        const sheetsIdInput = document.getElementById('sheetsId');
+        const sheetsUrlInput = document.getElementById('sheetsUrlInput');
+        const storedSheetIdLabel = document.getElementById('storedSheetIdLabel');
+        if (sheetsIdInput) sheetsIdInput.value = sheetsId;
+        if (sheetsUrlInput) sheetsUrlInput.value = sheetsUrl || buildSheetsUrl(sheetsId);
+        if (storedSheetIdLabel) storedSheetIdLabel.textContent = sheetsId || 'Not set';
+    }
+
+    function persistSheetsSource(id, url) {
+        sheetsId = id;
+        sheetsUrl = url || buildSheetsUrl(id);
         localStorage.setItem('sheetsId', sheetsId);
+        localStorage.setItem('sheetsUrl', sheetsUrl);
+        syncSheetsUi();
+    }
+
+    function saveSheetsLink() {
+        const raw = document.getElementById('sheetsUrlInput').value.trim();
+        const extractedId = extractSheetsId(raw);
+        if (!extractedId) {
+            showToast('Paste a valid Google Sheets link or sheet ID', 'error');
+            return;
+        }
+        persistSheetsSource(extractedId, raw.startsWith('http') ? raw : buildSheetsUrl(extractedId));
+        loadPositions();
+        loadLocations();
+        showToast('Google Sheets link saved!', 'success');
+    }
+
+    function saveSheetsId() {
+        const raw = document.getElementById('sheetsId').value.trim();
+        const extractedId = extractSheetsId(raw);
+        if (!extractedId && raw) {
+            showToast('Enter a valid Google Sheets ID', 'error');
+            syncSheetsUi();
+            return;
+        }
+        persistSheetsSource(extractedId, buildSheetsUrl(extractedId));
         loadPositions();
         loadLocations();
     }
