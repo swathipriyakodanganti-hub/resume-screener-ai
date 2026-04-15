@@ -2442,13 +2442,13 @@
                             <div id="groqFields">
                                 <div class="form-group"><label for="groqKey">Groq API Key</label>
                                     <input type="password" id="groqKey" placeholder="gsk_..." onchange="saveGroqKey()">
-                                    <small class="hint">Get free key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM free</small>
+                                    <small class="hint">Get free key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM free. You can paste multiple keys separated by commas; app auto-switches sequentially when one hits limit.</small>
                                 </div>
                             </div>
                             <div id="geminiFields" style="display:none;">
                                 <div class="form-group"><label for="geminiKey">Gemini API Key</label>
                                     <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveGeminiKey()">
-                                    <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM free</small>
+                                    <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM free. Multiple keys (comma-separated) are supported.</small>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -2690,6 +2690,24 @@
                                 <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.55;">JD tab, Locations tab, Emails tab in your Google Sheet.</div>
                             </div>
                         </div>
+
+                        <div style="margin-top:1rem;padding:0.95rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,0.015);">
+                            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.6rem;margin-bottom:0.7rem;">
+                                <div>
+                                    <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">Import Full Sheet Data</div>
+                                    <div style="font-size:0.73rem;color:var(--text-muted);margin-top:0.18rem;">Fetch all tabs, headers, and rows exactly like your sheet structure.</div>
+                                </div>
+                                <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+                                    <button id="fetchSheetDataBtn" class="btn-add-links" onclick="fetchSheetsSnapshot()" style="white-space:nowrap;">Fetch Sheet Data</button>
+                                    <button id="downloadSheetDataBtn" class="btn-add-links" onclick="downloadSheetSnapshotJson()" style="white-space:nowrap;background:rgba(86,211,100,0.1);border-color:rgba(86,211,100,0.35);color:var(--success);">Download JSON</button>
+                                </div>
+                            </div>
+                            <div id="sheetSnapshotMeta" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.55rem;">No sheet data fetched yet.</div>
+                            <div id="sheetSnapshotTabs" style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.55rem;"></div>
+                            <div id="sheetSnapshotTableWrap" style="max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:rgba(0,0,0,0.12);padding:0.4rem;">
+                                <div style="font-size:0.72rem;color:var(--text-muted);padding:0.45rem;">Use Fetch Sheet Data to preview your full spreadsheet structure.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2908,20 +2926,134 @@
 </div>
 
 <script>
+    function parseApiKeys(raw) {
+        if (!raw) return [];
+        const seen = new Set();
+        return String(raw)
+            .split(/[\n,]+/)
+            .map(k => k.trim())
+            .filter(k => {
+                if (!k || seen.has(k)) return false;
+                seen.add(k);
+                return true;
+            });
+    }
+
     // ─── State ───
     let uploadedFiles  = [];
     let driveFiles     = []; // [{ name, driveLink, id }]  — Drive-link mode entries
     let currentJD      = '';
     let analysisResults = [];
-    let geminiApiKey   = localStorage.getItem('geminiApiKey') || '';
-    let groqApiKey     = localStorage.getItem('groqApiKey') || '';
+    let geminiApiKeys  = parseApiKeys(localStorage.getItem('geminiApiKeys') || localStorage.getItem('geminiApiKey') || '');
+    let groqApiKeys    = parseApiKeys(localStorage.getItem('groqApiKeys') || localStorage.getItem('groqApiKey') || '');
+    let geminiKeyIndex = parseInt(localStorage.getItem('geminiKeyIndex') || '0', 10);
+    let groqKeyIndex   = parseInt(localStorage.getItem('groqKeyIndex') || '0', 10);
+    if (!Number.isInteger(geminiKeyIndex) || geminiKeyIndex < 0) geminiKeyIndex = 0;
+    if (!Number.isInteger(groqKeyIndex) || groqKeyIndex < 0) groqKeyIndex = 0;
+    let geminiApiKey   = geminiApiKeys[geminiKeyIndex] || geminiApiKeys[0] || '';
+    let groqApiKey     = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
     let driveApiKey    = localStorage.getItem('driveApiKey') || '';
     let selectedProvider = localStorage.getItem('selectedProvider') || 'groq';
     let sheetsId           = localStorage.getItem('sheetsId') || '';
     let sheetsUrl          = localStorage.getItem('sheetsUrl') || '';
+    let sheetSnapshotData  = null;
     let extraRequirements  = localStorage.getItem('extraRequirements') || '';
     let resumeDropOpen = false;
     let fileStatuses   = {};
+
+    function normalizeProviderKeyState(provider) {
+        if (provider === 'groq') {
+            if (!groqApiKeys.length) {
+                groqKeyIndex = 0;
+                groqApiKey = '';
+                return;
+            }
+            groqKeyIndex = groqKeyIndex % groqApiKeys.length;
+            groqApiKey = groqApiKeys[groqKeyIndex];
+            localStorage.setItem('groqKeyIndex', String(groqKeyIndex));
+        } else {
+            if (!geminiApiKeys.length) {
+                geminiKeyIndex = 0;
+                geminiApiKey = '';
+                return;
+            }
+            geminiKeyIndex = geminiKeyIndex % geminiApiKeys.length;
+            geminiApiKey = geminiApiKeys[geminiKeyIndex];
+            localStorage.setItem('geminiKeyIndex', String(geminiKeyIndex));
+        }
+    }
+
+    function getProviderKeys(provider) {
+        return provider === 'groq' ? groqApiKeys : geminiApiKeys;
+    }
+
+    function getActiveProviderKey(provider) {
+        normalizeProviderKeyState(provider);
+        return provider === 'groq' ? groqApiKey : geminiApiKey;
+    }
+
+    function hasProviderKey(provider) {
+        return !!getActiveProviderKey(provider);
+    }
+
+    function hasAnyApiKey() {
+        return hasProviderKey('groq') || hasProviderKey('gemini');
+    }
+
+    function rotateProviderKey(provider, reason = 'limit') {
+        const keys = getProviderKeys(provider);
+        if (keys.length <= 1) return false;
+
+        if (provider === 'groq') {
+            groqKeyIndex = (groqKeyIndex + 1) % keys.length;
+            groqApiKey = keys[groqKeyIndex];
+            localStorage.setItem('groqKeyIndex', String(groqKeyIndex));
+            if (selectedProvider === 'groq') updateConnStatus(true);
+            showToast(`Switched to Groq key ${groqKeyIndex + 1}/${keys.length} (${reason})`, 'success');
+            return true;
+        }
+
+        geminiKeyIndex = (geminiKeyIndex + 1) % keys.length;
+        geminiApiKey = keys[geminiKeyIndex];
+        localStorage.setItem('geminiKeyIndex', String(geminiKeyIndex));
+        if (selectedProvider === 'gemini') updateConnStatus(true);
+        showToast(`Switched to Gemini key ${geminiKeyIndex + 1}/${keys.length} (${reason})`, 'success');
+        return true;
+    }
+
+    function saveGroqKeys(parsedKeys, showMessage = true) {
+        groqApiKeys = parsedKeys;
+        localStorage.setItem('groqApiKeys', groqApiKeys.join('\n'));
+        localStorage.setItem('groqApiKey', groqApiKeys[0] || ''); // backward compatibility
+        if (groqKeyIndex >= groqApiKeys.length) groqKeyIndex = 0;
+        normalizeProviderKeyState('groq');
+        updateConnStatus(hasProviderKey(selectedProvider));
+        if (showMessage) {
+            showToast(
+                groqApiKeys.length
+                    ? `Saved ${groqApiKeys.length} Groq key${groqApiKeys.length !== 1 ? 's' : ''} (auto-rotation enabled)`
+                    : 'Groq keys cleared',
+                groqApiKeys.length ? 'success' : 'error'
+            );
+        }
+    }
+
+    function saveGeminiKeys(parsedKeys, showMessage = true) {
+        geminiApiKeys = parsedKeys;
+        localStorage.setItem('geminiApiKeys', geminiApiKeys.join('\n'));
+        localStorage.setItem('geminiApiKey', geminiApiKeys[0] || ''); // backward compatibility
+        if (geminiKeyIndex >= geminiApiKeys.length) geminiKeyIndex = 0;
+        normalizeProviderKeyState('gemini');
+        updateConnStatus(hasProviderKey(selectedProvider));
+        if (showMessage) {
+            showToast(
+                geminiApiKeys.length
+                    ? `Saved ${geminiApiKeys.length} Gemini key${geminiApiKeys.length !== 1 ? 's' : ''}`
+                    : 'Gemini keys cleared',
+                geminiApiKeys.length ? 'success' : 'error'
+            );
+        }
+    }
 
     // ─── Init ───
     window.onload = function () {
@@ -2939,10 +3071,10 @@
         // Restore provider selection
         switchProvider(selectedProvider, true);
 
-        if (geminiApiKey) document.getElementById('geminiKey').value = geminiApiKey;
-        if (groqApiKey)   document.getElementById('groqKey').value   = groqApiKey;
+        if (geminiApiKeys.length) document.getElementById('geminiKey').value = geminiApiKeys.join(', ');
+        if (groqApiKeys.length)   document.getElementById('groqKey').value   = groqApiKeys.join(', ');
         if (driveApiKey)  document.getElementById('driveApiKey').value = driveApiKey;
-        updateConnStatus(!!(selectedProvider === 'groq' ? groqApiKey : geminiApiKey));
+        updateConnStatus(hasProviderKey(selectedProvider));
 
         if (sheetsId) {
             document.getElementById('sheetsId').value = sheetsId;
@@ -2989,7 +3121,7 @@
 
         rateLimiter.updateDelay(API_DELAY_MS);
 
-        const key = isGroq ? groqApiKey : geminiApiKey;
+        const key = getActiveProviderKey(isGroq ? 'groq' : 'gemini');
         updateConnStatus(!!key);
         updateRateLimitInfo();
         if (!silent) showToast(`Switched to ${isGroq ? 'Groq ⚡' : 'Gemini ✦'}`, 'success');
@@ -3047,10 +3179,13 @@
 
     // ─── API Keys ───
     function saveGroqKey() {
-        groqApiKey = document.getElementById('groqKey').value.trim();
-        localStorage.setItem('groqApiKey', groqApiKey);
-        updateConnStatus(!!groqApiKey);
-        showToast('Groq API key saved!', 'success');
+        const raw = document.getElementById('groqKey').value.trim();
+        saveGroqKeys(parseApiKeys(raw), true);
+    }
+
+    function saveGeminiKey() {
+        const raw = document.getElementById('geminiKey').value.trim();
+        saveGeminiKeys(parseApiKeys(raw), true);
     }
 
     function saveExtraRequirements() {
@@ -3094,7 +3229,7 @@
     async function getJdRecommendations() {
         const jd = document.getElementById('jdEditBox').value.trim();
         if (!jd) { showToast('Paste or select a Job Description first', 'error'); return; }
-        const activeKey = selectedProvider === 'groq' ? groqApiKey : geminiApiKey;
+        const activeKey = getActiveProviderKey(selectedProvider);
         if (!activeKey) { showToast('Configure your API key first', 'error'); return; }
 
         const btn   = document.getElementById('jdRecBtn');
@@ -3129,14 +3264,14 @@ Rules:
             if (selectedProvider === 'groq') {
                 const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqApiKey}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
                     body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 1200 })
                 });
                 if (!res.ok) throw new Error(`Groq error ${res.status}`);
                 const data = await res.json();
                 raw = data?.choices?.[0]?.message?.content;
             } else {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1200 } })
@@ -3176,13 +3311,6 @@ Rules:
         }
     }
 
-    function saveGeminiKey() {
-        geminiApiKey = document.getElementById('geminiKey').value.trim();
-        localStorage.setItem('geminiApiKey', geminiApiKey);
-        updateConnStatus(!!geminiApiKey);
-        showToast('Gemini API key saved!', 'success');
-    }
-
     function saveDriveApiKey() {
         driveApiKey = document.getElementById('driveApiKey').value.trim();
         localStorage.setItem('driveApiKey', driveApiKey);
@@ -3212,11 +3340,175 @@ Rules:
     }
 
     function persistSheetsSource(id, url) {
+        const prevId = sheetsId;
         sheetsId = id;
         sheetsUrl = url || buildSheetsUrl(id);
         localStorage.setItem('sheetsId', sheetsId);
         localStorage.setItem('sheetsUrl', sheetsUrl);
+        if (prevId !== sheetsId) {
+            sheetSnapshotData = null;
+            clearSheetSnapshotUi();
+        }
         syncSheetsUi();
+    }
+
+    function clearSheetSnapshotUi() {
+        const meta = document.getElementById('sheetSnapshotMeta');
+        const tabs = document.getElementById('sheetSnapshotTabs');
+        const wrap = document.getElementById('sheetSnapshotTableWrap');
+        if (meta) meta.textContent = 'No sheet data fetched yet.';
+        if (tabs) tabs.innerHTML = '';
+        if (wrap) {
+            wrap.innerHTML = '<div style="font-size:0.72rem;color:var(--text-muted);padding:0.45rem;">Use Fetch Sheet Data to preview your full spreadsheet structure.</div>';
+        }
+    }
+
+    function renderSheetSnapshotTab(tabIndex) {
+        if (!sheetSnapshotData || !Array.isArray(sheetSnapshotData.sheets)) return;
+        const sheet = sheetSnapshotData.sheets[tabIndex];
+        if (!sheet) return;
+
+        const tabs = document.getElementById('sheetSnapshotTabs');
+        if (tabs) {
+            tabs.querySelectorAll('[data-sheet-tab]').forEach(el => {
+                const isActive = Number(el.getAttribute('data-sheet-tab')) === tabIndex;
+                el.style.background = isActive ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.04)';
+                el.style.borderColor = isActive ? 'rgba(56,189,248,0.45)' : 'var(--border)';
+                el.style.color = isActive ? '#bfe9ff' : 'var(--text-secondary)';
+            });
+        }
+
+        const meta = document.getElementById('sheetSnapshotMeta');
+        if (meta) meta.textContent = `${sheet.name} • ${sheet.rowCount} rows × ${sheet.columnCount} columns`;
+
+        const wrap = document.getElementById('sheetSnapshotTableWrap');
+        if (!wrap) return;
+
+        if (!sheet.rowCount || !sheet.columnCount) {
+            wrap.innerHTML = '<div style="font-size:0.72rem;color:var(--text-muted);padding:0.45rem;">This tab is empty.</div>';
+            return;
+        }
+
+        const colCount = sheet.columnCount;
+        const headerCells = Array.from({ length: colCount }, (_, i) => {
+            const label = (sheet.headers && sheet.headers[i]) ? sheet.headers[i] : `Column ${i + 1}`;
+            return `<th style="position:sticky;top:0;background:#0f1f2d;color:#dbeafe;border:1px solid rgba(255,255,255,0.08);padding:0.42rem 0.5rem;font-size:0.72rem;text-align:left;white-space:nowrap;">${_escapeHtml(label)}</th>`;
+        }).join('');
+
+        const bodyRows = (sheet.rows || []).map(row => {
+            const rowCells = Array.from({ length: colCount }, (_, i) => {
+                const val = row && row[i] != null ? String(row[i]) : '';
+                return `<td style="border:1px solid rgba(255,255,255,0.08);padding:0.35rem 0.5rem;font-size:0.72rem;color:var(--text-secondary);vertical-align:top;">${_escapeHtml(val)}</td>`;
+            }).join('');
+            return `<tr>${rowCells}</tr>`;
+        }).join('');
+
+        wrap.innerHTML = `
+            <table style="width:max-content;min-width:100%;border-collapse:collapse;">
+                <thead><tr>${headerCells}</tr></thead>
+                <tbody>${bodyRows || `<tr><td colspan="${colCount}" style="padding:0.55rem;color:var(--text-muted);font-size:0.72rem;border:1px solid rgba(255,255,255,0.08);">No data rows (header only).</td></tr>`}</tbody>
+            </table>
+        `;
+    }
+
+    function renderSheetSnapshot(snapshot) {
+        const tabs = document.getElementById('sheetSnapshotTabs');
+        const meta = document.getElementById('sheetSnapshotMeta');
+        if (!tabs || !meta) return;
+
+        const sheetCount = (snapshot.sheets || []).length;
+        if (!sheetCount) {
+            meta.textContent = 'No tabs found in this spreadsheet.';
+            tabs.innerHTML = '';
+            clearSheetSnapshotUi();
+            return;
+        }
+
+        const totalRows = snapshot.sheets.reduce((sum, s) => sum + (s.rowCount || 0), 0);
+        meta.textContent = `${snapshot.spreadsheetName} • ${sheetCount} tab${sheetCount !== 1 ? 's' : ''} • ${totalRows} total rows`;
+
+        tabs.innerHTML = snapshot.sheets.map((sheet, idx) => `
+            <button
+                type="button"
+                data-sheet-tab="${idx}"
+                onclick="renderSheetSnapshotTab(${idx})"
+                style="cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text-secondary);padding:0.32rem 0.6rem;border-radius:999px;font-size:0.7rem;">
+                ${_escapeHtml(sheet.name)}
+            </button>
+        `).join('');
+
+        renderSheetSnapshotTab(0);
+    }
+
+    async function fetchSheetsSnapshot() {
+        if (!sheetsId) {
+            showToast('Save a Google Sheets link or ID first', 'error');
+            return;
+        }
+        if (!appsScriptUrl) {
+            showToast('Save Apps Script URL first (needed to fetch full sheet data)', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('fetchSheetDataBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Loading...';
+        }
+
+        try {
+            const url = appsScriptUrl + '?action=getSheetSnapshot&spreadsheetId=' + encodeURIComponent(sheetsId);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const res = await fetch(url, { method: 'GET', redirect: 'follow', signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (!res.ok) {
+                throw new Error(`Apps Script returned HTTP ${res.status}`);
+            }
+
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error('Apps Script returned non-JSON. Re-deploy latest Code.gs and try again.');
+            }
+
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to fetch sheet data');
+            }
+
+            sheetSnapshotData = data;
+            renderSheetSnapshot(data);
+            showToast('Sheet data fetched successfully', 'success');
+        } catch (err) {
+            const msg = err && err.name === 'AbortError'
+                ? 'Fetching sheet data timed out. Try again.'
+                : (err.message || 'Unable to fetch sheet data');
+            showToast(msg, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Fetch Sheet Data';
+            }
+        }
+    }
+
+    function downloadSheetSnapshotJson() {
+        if (!sheetSnapshotData) {
+            showToast('Fetch sheet data first', 'error');
+            return;
+        }
+        const blob = new Blob([JSON.stringify(sheetSnapshotData, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `sheet_snapshot_${sheetSnapshotData.spreadsheetId || 'data'}.json`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+        }, 0);
     }
 
     function saveSheetsLink() {
@@ -3792,8 +4084,9 @@ Rules:
 
     async function analyzeWithProvider(resumeText, jd, filters) {
         const isGroq = selectedProvider === 'groq';
-        const activeKey = isGroq ? groqApiKey : geminiApiKey;
-        if (!activeKey) throw new Error(`No ${isGroq ? 'Groq' : 'Gemini'} API key configured`);
+        const provider = isGroq ? 'groq' : 'gemini';
+        const keys = getProviderKeys(provider);
+        if (!keys.length) throw new Error(`No ${isGroq ? 'Groq' : 'Gemini'} API key configured`);
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
         if (_stopSignal) throw new Error('STOP_REQUESTED');
 
@@ -3858,82 +4151,111 @@ Return exactly this JSON:
 }`;
 
         let raw;
-        const controller = new AbortController();
-        _activeApiAbortController = controller;
+        const triedIndexes = new Set();
 
-        if (isGroq) {
-            // ─── Groq (OpenAI-compatible) ───
-            let res;
-            try {
-                res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${groqApiKey}`
-                    },
-                    signal: controller.signal,
-                    body: JSON.stringify({
-                        model: 'llama-3.3-70b-versatile',
-                        messages: [{ role: 'user', content: prompt }],
-                        temperature: 0.2,
-                        max_tokens: 1400
-                    })
-                });
-            } catch (err) {
-                if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
-                throw new Error('Network error reaching Groq API');
+        while (triedIndexes.size < keys.length) {
+            const keyIndex = provider === 'groq' ? groqKeyIndex : geminiKeyIndex;
+            if (triedIndexes.has(keyIndex)) break;
+            triedIndexes.add(keyIndex);
+            const activeKey = getActiveProviderKey(provider);
+
+            const controller = new AbortController();
+            _activeApiAbortController = controller;
+
+            if (isGroq) {
+                // ─── Groq (OpenAI-compatible) ───
+                let res;
+                try {
+                    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${activeKey}`
+                        },
+                        signal: controller.signal,
+                        body: JSON.stringify({
+                            model: 'llama-3.3-70b-versatile',
+                            messages: [{ role: 'user', content: prompt }],
+                            temperature: 0.2,
+                            max_tokens: 1400
+                        })
+                    });
+                } catch (err) {
+                    if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
+                    throw new Error('Network error reaching Groq API');
+                }
+
+                if (!res.ok) {
+                    let errMsg = `HTTP ${res.status}`;
+                    try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
+                    if (res.status === 401) {
+                        if (rotateProviderKey('groq', 'invalid key')) continue;
+                        throw new Error('Groq API key invalid — check console.groq.com');
+                    }
+                    if (res.status === 429) {
+                        if (rotateProviderKey('groq', 'rate limit')) continue;
+                        throw new Error('RATE_LIMIT:Groq rate limit hit — all configured Groq keys are exhausted');
+                    }
+                    throw new Error(`Groq error: ${errMsg}`);
+                }
+
+                const data = await res.json();
+                raw = data?.choices?.[0]?.message?.content;
+                if (!raw) throw new Error('Groq returned empty response');
+                break;
+
+            } else {
+                // ─── Gemini ───
+                let res;
+                try {
+                    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        signal: controller.signal,
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.2, maxOutputTokens: 1400 }
+                        })
+                    });
+                } catch (err) {
+                    if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
+                    throw new Error('Network error reaching Gemini API');
+                }
+
+                if (!res.ok) {
+                    let errMsg = `HTTP ${res.status}`;
+                    try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
+                    if (res.status === 400 || res.status === 403) {
+                        if (rotateProviderKey('gemini', 'invalid key')) continue;
+                        throw new Error('API key invalid or lacks permission');
+                    }
+                    if (res.status === 429) {
+                        if (rotateProviderKey('gemini', 'rate limit')) continue;
+                        throw new Error('RATE_LIMIT:Gemini rate limit hit — all configured Gemini keys are exhausted');
+                    }
+                    throw new Error(`Gemini error: ${errMsg}`);
+                }
+
+                const data = await res.json();
+                if (data.promptFeedback?.blockReason) throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
+                if (!data.candidates?.length) {
+                    const reason = data?.error?.message || '';
+                    if (/quota|rate/i.test(reason)) {
+                        if (rotateProviderKey('gemini', 'quota')) continue;
+                        throw new Error(`RATE_LIMIT:Gemini quota exceeded — ${reason}`);
+                    }
+                    throw new Error('Gemini returned no candidates — check quota/key');
+                }
+                const cand = data.candidates[0];
+                if (cand.finishReason === 'SAFETY') throw new Error('Response blocked by Gemini safety filters');
+                raw = cand?.content?.parts?.[0]?.text;
+                if (!raw) throw new Error(`No text in Gemini response (finishReason: ${cand.finishReason || 'unknown'})`);
+                break;
             }
+        }
 
-            if (!res.ok) {
-                let errMsg = `HTTP ${res.status}`;
-                try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
-                if (res.status === 401) throw new Error('Groq API key invalid — check console.groq.com');
-                if (res.status === 429) throw new Error(`RATE_LIMIT:Groq rate limit hit — wait a moment or switch to a fresh key`);
-                throw new Error(`Groq error: ${errMsg}`);
-            }
-
-            const data = await res.json();
-            raw = data?.choices?.[0]?.message?.content;
-            if (!raw) throw new Error('Groq returned empty response');
-
-        } else {
-            // ─── Gemini ───
-            let res;
-            try {
-                res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    signal: controller.signal,
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.2, maxOutputTokens: 1400 }
-                    })
-                });
-            } catch (err) {
-                if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
-                throw new Error('Network error reaching Gemini API');
-            }
-
-            if (!res.ok) {
-                let errMsg = `HTTP ${res.status}`;
-                try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
-                if (res.status === 400) throw new Error('Invalid request — check your API key');
-                if (res.status === 403) throw new Error('API key invalid or lacks permission');
-                if (res.status === 429) throw new Error(`RATE_LIMIT:Gemini rate limit hit — wait a moment or switch to a fresh key`);
-                throw new Error(`Gemini error: ${errMsg}`);
-            }
-
-            const data = await res.json();
-            if (data.promptFeedback?.blockReason) throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
-            if (!data.candidates?.length) {
-                const reason = data?.error?.message || '';
-                if (/quota|rate/i.test(reason)) throw new Error(`RATE_LIMIT:Gemini quota exceeded — ${reason}`);
-                throw new Error('Gemini returned no candidates — check quota/key');
-            }
-            const cand = data.candidates[0];
-            if (cand.finishReason === 'SAFETY') throw new Error('Response blocked by Gemini safety filters');
-            raw = cand?.content?.parts?.[0]?.text;
-            if (!raw) throw new Error(`No text in Gemini response (finishReason: ${cand.finishReason || 'unknown'})`);
+        if (!raw) {
+            throw new Error(`RATE_LIMIT:${isGroq ? 'Groq' : 'Gemini'} keys exhausted — add a fresh key and resume`);
         }
 
         try {
@@ -4002,20 +4324,20 @@ Return exactly this JSON:
         // Sync latest key values from inputs in case onchange hasn't fired yet
         const _groqIn = document.getElementById('groqKey');
         const _gemIn  = document.getElementById('geminiKey');
-        if (_groqIn?.value.trim())  groqApiKey   = _groqIn.value.trim();
-        if (_gemIn?.value.trim())   geminiApiKey = _gemIn.value.trim();
-        if (!geminiApiKey && !groqApiKey) { showToast('Configure your API key first', 'error'); return; }
-        if (selectedProvider === 'groq'   && !groqApiKey)   { showToast('Configure your Groq API key first', 'error'); return; }
-        if (selectedProvider === 'gemini' && !geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
+        if (_groqIn?.value.trim()) saveGroqKeys(parseApiKeys(_groqIn.value), false);
+        if (_gemIn?.value.trim())  saveGeminiKeys(parseApiKeys(_gemIn.value), false);
+        if (!hasAnyApiKey()) { showToast('Configure your API key first', 'error'); return; }
+        if (selectedProvider === 'groq'   && !hasProviderKey('groq'))   { showToast('Configure your Groq API key first', 'error'); return; }
+        if (selectedProvider === 'gemini' && !hasProviderKey('gemini')) { showToast('Configure your Gemini API key first', 'error'); return; }
         document.getElementById('resumeBanner').style.display = 'none';
         renderPendingProfilesPanel();
         await _runAnalysisLoop(_pendingUploadedFiles.splice(0), _pendingDriveFiles.splice(0), _savedFilters, _savedTotal, _savedDone, true);
     }
 
     async function analyzeResumes() {
-        if (!geminiApiKey && !groqApiKey) { showToast('Configure your API key first', 'error'); return; }
-        if (selectedProvider === 'groq' && !groqApiKey) { showToast('Configure your Groq API key first', 'error'); return; }
-        if (selectedProvider === 'gemini' && !geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
+        if (!hasAnyApiKey()) { showToast('Configure your API key first', 'error'); return; }
+        if (selectedProvider === 'groq' && !hasProviderKey('groq')) { showToast('Configure your Groq API key first', 'error'); return; }
+        if (selectedProvider === 'gemini' && !hasProviderKey('gemini')) { showToast('Configure your Gemini API key first', 'error'); return; }
         if (!uploadedFiles.length && !driveFiles.length) { showToast('Upload a resume or paste a Drive link first', 'error'); return; }
         const jdEditBox = document.getElementById('jdEditBox');
         if (jdEditBox && jdEditBox.value.trim()) currentJD = jdEditBox.value.trim();
@@ -4235,7 +4557,7 @@ Return exactly this JSON:
         if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating…'; }
 
         const isGroq = selectedProvider === 'groq';
-        const activeKey = isGroq ? groqApiKey : geminiApiKey;
+        const activeKey = getActiveProviderKey(isGroq ? 'groq' : 'gemini');
         if (!activeKey) { showToast('Configure your API key first', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '🎤 Generate Questions'; } return; }
 
         const prompt = `You are a senior recruiter. Generate exactly 5 personalised screening interview questions for this candidate applying for this role.
@@ -4265,13 +4587,13 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             if (isGroq) {
                 const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqApiKey}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
                     body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 1400 })
                 });
                 if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
                 raw = (await res.json())?.choices?.[0]?.message?.content;
             } else {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1400 } })

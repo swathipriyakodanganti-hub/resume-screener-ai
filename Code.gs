@@ -214,6 +214,51 @@ function doGet(e) {
     }
   }
 
+  // ── Fetch complete spreadsheet snapshot (all tabs, rows, columns) ──
+  if (action === 'getSheetSnapshot') {
+    try {
+      const spreadsheetId = (e.parameter.spreadsheetId || e.parameter.sheetId || '').trim();
+      if (!spreadsheetId) throw new Error('Missing spreadsheetId parameter');
+
+      const ss = SpreadsheetApp.openById(spreadsheetId);
+      const sheets = ss.getSheets().map(sheet => {
+        const rowCount = sheet.getLastRow();
+        const columnCount = sheet.getLastColumn();
+
+        if (!rowCount || !columnCount) {
+          return {
+            name: sheet.getName(),
+            rowCount: 0,
+            columnCount: 0,
+            headers: [],
+            rows: []
+          };
+        }
+
+        const values = sheet.getRange(1, 1, rowCount, columnCount).getDisplayValues();
+        return {
+          name: sheet.getName(),
+          rowCount: rowCount,
+          columnCount: columnCount,
+          headers: values[0] || [],
+          rows: values.slice(1)
+        };
+      });
+
+      return jsonResponse({
+        ok: true,
+        spreadsheetId: ss.getId(),
+        spreadsheetName: ss.getName(),
+        sheets: sheets,
+        fetchedAt: new Date().toISOString()
+      });
+    } catch (err) {
+      Logger.log('❌ getSheetSnapshot error: ' + err.toString());
+      Logger.log('Stack: ' + err.stack);
+      return jsonResponse({ ok: false, error: err.message || String(err) });
+    }
+  }
+
   // ── Serve interviewer feedback form ──
   if (action === 'feedback') {
     try {
