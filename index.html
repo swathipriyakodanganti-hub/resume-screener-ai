@@ -2371,7 +2371,7 @@
     <!-- Resume banner shown after stop or API limit -->
     <div id="resumeBanner" style="display:none;background:rgba(227,179,65,0.1);border:1px solid rgba(227,179,65,0.35);border-radius:8px;padding:0.6rem 1rem;margin:0.5rem 1rem;font-size:0.78rem;color:#e3b341;align-items:center;gap:0.75rem;flex-wrap:wrap;">
         <span id="resumeBannerMsg">⏸ Analysis paused.</span>
-        <button onclick="resumeAnalysis()" style="padding:3px 12px;background:rgba(227,179,65,0.2);color:#e3b341;border:1px solid rgba(227,179,65,0.5);border-radius:5px;cursor:pointer;font-size:0.75rem;font-weight:700;">▶ Resume</button>
+        <button id="resumeAnalysisBtn" onclick="resumeAnalysis()" style="padding:3px 12px;background:rgba(227,179,65,0.2);color:#e3b341;border:1px solid rgba(227,179,65,0.5);border-radius:5px;cursor:pointer;font-size:0.75rem;font-weight:700;">🔁 Re-analyze Pending</button>
         <button onclick="dismissResumeBanner()" style="padding:3px 8px;background:none;color:#8b949e;border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;font-size:0.72rem;">✕ Discard remaining</button>
     </div>
 
@@ -2603,6 +2603,16 @@
                 </div>
             </div>
 
+        </div>
+        <div id="pendingProfilesPanel" style="display:none;margin:0.85rem 1rem 0.4rem;padding:0.85rem 1rem;background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.28);border-radius:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;flex-wrap:wrap;">
+                <div>
+                    <div id="pendingProfilesTitle" style="font-size:0.8rem;font-weight:700;color:#ffb4af;">Not analyzed profiles</div>
+                    <div id="pendingProfilesSub" style="font-size:0.72rem;color:#f5a19c;opacity:0.9;margin-top:0.12rem;">These profiles were skipped due to stop or token/API limit.</div>
+                </div>
+                <button onclick="resumeAnalysis()" style="padding:4px 12px;background:rgba(248,81,73,0.18);color:#ffd6d3;border:1px solid rgba(248,81,73,0.45);border-radius:6px;cursor:pointer;font-size:0.74rem;font-weight:700;">🔁 Re-analyze pending</button>
+            </div>
+            <div id="pendingProfilesList" style="margin-top:0.65rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0.4rem;"></div>
         </div>
         </div><!-- /app-page-results -->
 
@@ -3375,6 +3385,58 @@ Rules:
         return str.length > len ? str.slice(0, len - 1) + '…' : str;
     }
 
+    function _escapeHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function _getPendingEntries() {
+        const uploaded = _pendingUploadedFiles.map(f => ({
+            label: f.name,
+            kind: 'Uploaded'
+        }));
+        const drive = _pendingDriveFiles.map(d => ({
+            label: d.name || d.driveLink || 'Drive profile',
+            kind: 'Drive'
+        }));
+        return [...uploaded, ...drive];
+    }
+
+    function renderPendingProfilesPanel(reasonLabel = '') {
+        const panel = document.getElementById('pendingProfilesPanel');
+        const title = document.getElementById('pendingProfilesTitle');
+        const sub   = document.getElementById('pendingProfilesSub');
+        const list  = document.getElementById('pendingProfilesList');
+        if (!panel || !title || !sub || !list) return;
+
+        const pending = _getPendingEntries();
+        if (!pending.length) {
+            panel.style.display = 'none';
+            list.innerHTML = '';
+            return;
+        }
+
+        panel.style.display = 'block';
+        title.textContent = `Not analyzed profiles (${pending.length})`;
+        sub.textContent = reasonLabel
+            ? `Reason: ${reasonLabel}. Add/update API key if needed, then click Re-analyze pending.`
+            : 'These profiles are pending. Add/update API key if needed, then click Re-analyze pending.';
+
+        list.innerHTML = pending.map((p, idx) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:0.45rem;padding:0.45rem 0.55rem;border:1px solid rgba(248,81,73,0.22);background:rgba(248,81,73,0.05);border-radius:7px;min-width:0;">
+                <div style="display:flex;align-items:center;gap:0.4rem;min-width:0;">
+                    <span style="font-size:0.66rem;color:#ff9f98;">${idx + 1}.</span>
+                    <span style="font-size:0.72rem;color:#ffd8d4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_escapeHtml(p.label)}">${_escapeHtml(truncate(p.label, 40))}</span>
+                </div>
+                <span style="font-size:0.62rem;color:#ffb4af;border:1px solid rgba(248,81,73,0.28);padding:1px 6px;border-radius:999px;flex-shrink:0;">${p.kind}</span>
+            </div>
+        `).join('');
+    }
+
     function removeResume(index, e) {
         e.stopPropagation();
         const fname = uploadedFiles[index]?.name;
@@ -3524,6 +3586,23 @@ Rules:
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    function sleepInterruptible(ms) {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                clearInterval(poll);
+                resolve();
+            }, ms);
+
+            const poll = setInterval(() => {
+                if (_stopSignal) {
+                    clearTimeout(timer);
+                    clearInterval(poll);
+                    reject(new Error('STOP_REQUESTED'));
+                }
+            }, 120);
+        });
+    }
     
     // Rate Limiter Class - Enforces delays BEFORE API calls
     class RateLimiter {
@@ -3540,7 +3619,7 @@ Rules:
             if (timeSinceLastCall < this.minDelayMs) {
                 const waitTime = this.minDelayMs - timeSinceLastCall;
                 console.log(`⏳ Rate limiter: waiting ${(waitTime/1000).toFixed(1)}s before next call`);
-                await sleep(waitTime);
+                await sleepInterruptible(waitTime);
             }
             
             this.lastCallTime = Date.now();
@@ -3570,7 +3649,7 @@ Rules:
                 if (err.message.includes('Rate limit') || err.message.includes('429')) {
                     const backoffMs = Math.min(2000 * Math.pow(2, attempt), 15000); // 2s, 4s, 8s, max 15s
                     console.log(`🔄 Rate limit hit! Retry ${attempt}/${maxRetries} after ${(backoffMs/1000).toFixed(1)}s`);
-                    await sleep(backoffMs);
+                    await sleepInterruptible(backoffMs);
                     continue;
                 }
                 
@@ -3586,8 +3665,10 @@ Rules:
         const activeKey = isGroq ? groqApiKey : geminiApiKey;
         if (!activeKey) throw new Error(`No ${isGroq ? 'Groq' : 'Gemini'} API key configured`);
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
+        if (_stopSignal) throw new Error('STOP_REQUESTED');
 
         await rateLimiter.waitForSlot();
+        if (_stopSignal) throw new Error('STOP_REQUESTED');
 
         const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description using the WEIGHTED SCORING RUBRIC below. Return ONLY valid JSON (no markdown fences, no extra text).
 
@@ -3647,6 +3728,8 @@ Return exactly this JSON:
 }`;
 
         let raw;
+        const controller = new AbortController();
+        _activeApiAbortController = controller;
 
         if (isGroq) {
             // ─── Groq (OpenAI-compatible) ───
@@ -3658,6 +3741,7 @@ Return exactly this JSON:
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${groqApiKey}`
                     },
+                    signal: controller.signal,
                     body: JSON.stringify({
                         model: 'llama-3.3-70b-versatile',
                         messages: [{ role: 'user', content: prompt }],
@@ -3665,7 +3749,10 @@ Return exactly this JSON:
                         max_tokens: 1400
                     })
                 });
-            } catch { throw new Error('Network error reaching Groq API'); }
+            } catch (err) {
+                if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
+                throw new Error('Network error reaching Groq API');
+            }
 
             if (!res.ok) {
                 let errMsg = `HTTP ${res.status}`;
@@ -3686,12 +3773,16 @@ Return exactly this JSON:
                 res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    signal: controller.signal,
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
                         generationConfig: { temperature: 0.2, maxOutputTokens: 1400 }
                     })
                 });
-            } catch { throw new Error('Network error reaching Gemini API'); }
+            } catch (err) {
+                if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
+                throw new Error('Network error reaching Gemini API');
+            }
 
             if (!res.ok) {
                 let errMsg = `HTTP ${res.status}`;
@@ -3715,12 +3806,19 @@ Return exactly this JSON:
             if (!raw) throw new Error(`No text in Gemini response (finishReason: ${cand.finishReason || 'unknown'})`);
         }
 
-        // ─── Parse JSON from either provider ───
-        const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-        const match = cleaned.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('Could not find JSON in AI response');
-        try { return JSON.parse(match[0]); }
-        catch { throw new Error('Malformed JSON from AI response'); }
+        try {
+            // ─── Parse JSON from either provider ───
+            const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+            const match = cleaned.match(/\{[\s\S]*\}/);
+            if (!match) throw new Error('Could not find JSON in AI response');
+            return JSON.parse(match[0]);
+        } catch {
+            throw new Error('Malformed JSON from AI response');
+        } finally {
+            if (_activeApiAbortController === controller) {
+                _activeApiAbortController = null;
+            }
+        }
     }
 
     // ─── Analyze — Real-time rendering ───
@@ -3735,9 +3833,17 @@ Return exactly this JSON:
     let _savedFilters  = null;
     let _savedTotal    = 0;
     let _savedDone     = 0;
+    let _activeApiAbortController = null;
+
+    function isStopRequestedError(err) {
+        return err?.message === 'STOP_REQUESTED' || err?.name === 'AbortError';
+    }
 
     function stopAnalysis() {
         _stopSignal = true;
+        if (_activeApiAbortController) {
+            try { _activeApiAbortController.abort(); } catch {}
+        }
         const stopBtn = document.getElementById('stopAnalysisBtn');
         const stopFab = document.getElementById('stopAnalysisFab');
         if (stopBtn) { stopBtn.textContent = '⏹ Stopping…'; stopBtn.disabled = true; }
@@ -3748,11 +3854,14 @@ Return exactly this JSON:
         _pendingUploadedFiles = [];
         _pendingDriveFiles    = [];
         document.getElementById('resumeBanner').style.display = 'none';
+        renderPendingProfilesPanel();
     }
 
     function _showResumeBanner(msg) {
         const b = document.getElementById('resumeBanner');
         document.getElementById('resumeBannerMsg').textContent = msg;
+        const resumeBtn = document.getElementById('resumeAnalysisBtn');
+        if (resumeBtn) resumeBtn.textContent = '🔁 Re-analyze Pending';
         b.style.display = 'flex';
     }
 
@@ -3769,6 +3878,7 @@ Return exactly this JSON:
         if (selectedProvider === 'groq'   && !groqApiKey)   { showToast('Configure your Groq API key first', 'error'); return; }
         if (selectedProvider === 'gemini' && !geminiApiKey) { showToast('Configure your Gemini API key first', 'error'); return; }
         document.getElementById('resumeBanner').style.display = 'none';
+        renderPendingProfilesPanel();
         await _runAnalysisLoop(_pendingUploadedFiles.splice(0), _pendingDriveFiles.splice(0), _savedFilters, _savedTotal, _savedDone, true);
     }
 
@@ -3798,6 +3908,7 @@ Return exactly this JSON:
         _pendingUploadedFiles = [];
         _pendingDriveFiles    = [];
         document.getElementById('resumeBanner').style.display = 'none';
+        renderPendingProfilesPanel();
         const badge = document.getElementById('resultBadge');
         badge.style.display = 'none';
         clearAllSelections();
@@ -3854,9 +3965,13 @@ Return exactly this JSON:
                 _pendingUploadedFiles = [...uploadQueue];
                 _pendingDriveFiles    = [...driveQueue];
                 _showResumeBanner(reason);
+                renderPendingProfilesPanel(wasLimit ? 'Token/API limit reached' : 'Stopped manually');
                 pt.textContent = wasLimit ? 'API limit reached ⚠️' : 'Stopped ⏹';
                 setTimeout(() => pw.classList.remove('visible'), 1500);
             } else {
+                _pendingUploadedFiles = [];
+                _pendingDriveFiles    = [];
+                renderPendingProfilesPanel();
                 analysisResults.sort((a, b) => b.match_score - a.match_score);
                 renderMainPanels();
                 badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
@@ -3903,6 +4018,13 @@ Return exactly this JSON:
                 badge.textContent   = `${analysisResults.length}`;
 
             } catch (err) {
+                if (isStopRequestedError(err)) {
+                    fileStatuses[file.name] = 'pending';
+                    uploadQueue.unshift(file);
+                    renderResumeDropdown();
+                    _finish(true, false);
+                    return;
+                }
                 if (err.message?.startsWith('RATE_LIMIT:')) {
                     fileStatuses[file.name] = 'pending';
                     uploadQueue.unshift(file);
@@ -3946,6 +4068,13 @@ Return exactly this JSON:
                 badge.textContent   = `${analysisResults.length}`;
 
             } catch (err) {
+                if (isStopRequestedError(err)) {
+                    fileStatuses[driveEntry.name] = 'pending';
+                    driveQueue.unshift(driveEntry);
+                    renderResumeDropdown();
+                    _finish(true, false);
+                    return;
+                }
                 if (err.message?.startsWith('RATE_LIMIT:')) {
                     fileStatuses[driveEntry.name] = 'pending';
                     driveQueue.unshift(driveEntry);
