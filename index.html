@@ -2381,8 +2381,8 @@
     <div class="topbar">
         <div class="tb-logo">Pearl Hire<span class="tb-logo-tagline">Made with ❤️ by Team SPY</span></div>
         <div class="tb-tabs">
-            <div class="tb-tab" onclick="switchPage('setup')" id="page-tab-setup">⚙ Setup</div>
             <div class="tb-tab" onclick="switchPage('links')" id="page-tab-links">🔗 Links</div>
+            <div class="tb-tab" onclick="switchPage('setup')" id="page-tab-setup">⚙ Setup</div>
             <div class="tb-tab active" onclick="switchPage('results')" id="page-tab-results">
                 📊 Results <span class="tb-tab-badge" id="resultBadge" style="display:none;"></span>
             </div>
@@ -2468,6 +2468,25 @@
                             <div class="form-group"><label for="apiDelay">API Call Delay (seconds)</label>
                                 <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
                                 <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
+                            </div>
+                            <div class="form-group"><label>API Token Limits (optional)</label>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.45rem;">
+                                    <div>
+                                        <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="Groq token budget" onchange="saveTokenBudget('groq')">
+                                        <small class="hint">Groq budget for remaining calc</small>
+                                    </div>
+                                    <div>
+                                        <input type="number" id="geminiTokenLimit" min="0" step="1" placeholder="Gemini token budget" onchange="saveTokenBudget('gemini')">
+                                        <small class="hint">Gemini budget for remaining calc</small>
+                                    </div>
+                                </div>
+                                <small class="hint">Used tokens are read from API responses; remaining = budget - used.</small>
+                            </div>
+                            <div style="border:1px solid var(--border);border-radius:9px;padding:0.55rem 0.65rem;background:rgba(255,255,255,0.02);">
+                                <div id="tokenUsageInfo" style="font-size:0.73rem;color:var(--text-secondary);line-height:1.45;">Token usage will appear after API calls.</div>
+                                <div style="display:flex;justify-content:flex-end;margin-top:0.45rem;">
+                                    <button class="btn-add-links" onclick="resetTokenUsage(selectedProvider)" style="padding:0.25rem 0.55rem;font-size:0.68rem;">Reset Active Usage</button>
+                                </div>
                             </div>
                         </div></div>
                     </div>
@@ -2939,6 +2958,22 @@
             });
     }
 
+    function _parseStoredJson(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : fallback;
+        } catch {
+            return fallback;
+        }
+    }
+
+    function _numOrZero(v) {
+        const n = Number(v);
+        return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+    }
+
     // ─── State ───
     let uploadedFiles  = [];
     let driveFiles     = []; // [{ name, driveLink, id }]  — Drive-link mode entries
@@ -2957,9 +2992,80 @@
     let sheetsId           = localStorage.getItem('sheetsId') || '';
     let sheetsUrl          = localStorage.getItem('sheetsUrl') || '';
     let sheetSnapshotData  = null;
+    let tokenUsage = _parseStoredJson('tokenUsage', {
+        groq: { prompt: 0, completion: 0, total: 0 },
+        gemini: { prompt: 0, completion: 0, total: 0 }
+    });
+    let tokenBudgets = _parseStoredJson('tokenBudgets', { groq: 0, gemini: 0 });
     let extraRequirements  = localStorage.getItem('extraRequirements') || '';
     let resumeDropOpen = false;
     let fileStatuses   = {};
+
+    function ensureUsageShape(provider) {
+        if (!tokenUsage[provider]) tokenUsage[provider] = { prompt: 0, completion: 0, total: 0 };
+        tokenUsage[provider].prompt = _numOrZero(tokenUsage[provider].prompt);
+        tokenUsage[provider].completion = _numOrZero(tokenUsage[provider].completion);
+        tokenUsage[provider].total = _numOrZero(tokenUsage[provider].total);
+    }
+
+    function formatNum(n) {
+        return _numOrZero(n).toLocaleString('en-US');
+    }
+
+    function updateTokenUsageInfo() {
+        ensureUsageShape('groq');
+        ensureUsageShape('gemini');
+        const info = document.getElementById('tokenUsageInfo');
+        if (!info) return;
+
+        const p = selectedProvider === 'gemini' ? 'gemini' : 'groq';
+        const label = p === 'groq' ? 'Groq' : 'Gemini';
+        const used = tokenUsage[p].total;
+        const prompt = tokenUsage[p].prompt;
+        const completion = tokenUsage[p].completion;
+        const budget = _numOrZero(tokenBudgets[p]);
+        const remaining = budget ? Math.max(0, budget - used) : null;
+        const keyCount = p === 'groq' ? groqApiKeys.length : geminiApiKeys.length;
+
+        info.innerHTML = `
+            <div><strong>${label} token usage</strong> · Keys: ${keyCount} · Used: <strong>${formatNum(used)}</strong></div>
+            <div style="color:var(--text-muted);margin-top:0.2rem;">Prompt: ${formatNum(prompt)} · Completion: ${formatNum(completion)}</div>
+            <div style="color:var(--text-muted);margin-top:0.2rem;">Budget: <strong>${budget ? formatNum(budget) : 'Not set'}</strong>${budget ? ` · Remaining: <strong>${formatNum(remaining)}</strong>` : ''}</div>
+        `;
+    }
+
+    function saveTokenBudget(provider) {
+        const inputId = provider === 'groq' ? 'groqTokenLimit' : 'geminiTokenLimit';
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        tokenBudgets[provider] = _numOrZero(input.value);
+        localStorage.setItem('tokenBudgets', JSON.stringify(tokenBudgets));
+        updateTokenUsageInfo();
+        showToast(`${provider === 'groq' ? 'Groq' : 'Gemini'} token budget ${tokenBudgets[provider] ? 'saved' : 'cleared'}`, tokenBudgets[provider] ? 'success' : 'error');
+    }
+
+    function resetTokenUsage(provider) {
+        if (provider !== 'groq' && provider !== 'gemini') return;
+        tokenUsage[provider] = { prompt: 0, completion: 0, total: 0 };
+        localStorage.setItem('tokenUsage', JSON.stringify(tokenUsage));
+        updateTokenUsageInfo();
+        showToast(`${provider === 'groq' ? 'Groq' : 'Gemini'} token usage reset`, 'success');
+    }
+
+    function recordTokenUsage(provider, usageMeta = {}) {
+        ensureUsageShape(provider);
+        const promptTokens = _numOrZero(usageMeta.promptTokens);
+        const completionTokens = _numOrZero(usageMeta.completionTokens);
+        let totalTokens = _numOrZero(usageMeta.totalTokens);
+        if (!totalTokens) totalTokens = promptTokens + completionTokens;
+        if (!totalTokens) return;
+
+        tokenUsage[provider].prompt += promptTokens;
+        tokenUsage[provider].completion += completionTokens;
+        tokenUsage[provider].total += totalTokens;
+        localStorage.setItem('tokenUsage', JSON.stringify(tokenUsage));
+        updateTokenUsageInfo();
+    }
 
     function normalizeProviderKeyState(provider) {
         if (provider === 'groq') {
@@ -3036,6 +3142,7 @@
                 groqApiKeys.length ? 'success' : 'error'
             );
         }
+        updateTokenUsageInfo();
     }
 
     function saveGeminiKeys(parsedKeys, showMessage = true) {
@@ -3053,6 +3160,7 @@
                 geminiApiKeys.length ? 'success' : 'error'
             );
         }
+        updateTokenUsageInfo();
     }
 
     // ─── Init ───
@@ -3073,6 +3181,10 @@
 
         if (geminiApiKeys.length) document.getElementById('geminiKey').value = geminiApiKeys.join(', ');
         if (groqApiKeys.length)   document.getElementById('groqKey').value   = groqApiKeys.join(', ');
+        const _groqBudgetIn = document.getElementById('groqTokenLimit');
+        const _gemBudgetIn = document.getElementById('geminiTokenLimit');
+        if (_groqBudgetIn) _groqBudgetIn.value = _numOrZero(tokenBudgets.groq) || '';
+        if (_gemBudgetIn) _gemBudgetIn.value = _numOrZero(tokenBudgets.gemini) || '';
         if (driveApiKey)  document.getElementById('driveApiKey').value = driveApiKey;
         updateConnStatus(hasProviderKey(selectedProvider));
 
@@ -3084,6 +3196,7 @@
         syncSheetsUi();
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
+        updateTokenUsageInfo();
 
         const savedExtraReqs = localStorage.getItem('extraRequirements') || '';
         if (savedExtraReqs) document.getElementById('extraReqsInput').value = savedExtraReqs;
@@ -3124,6 +3237,7 @@
         const key = getActiveProviderKey(isGroq ? 'groq' : 'gemini');
         updateConnStatus(!!key);
         updateRateLimitInfo();
+        updateTokenUsageInfo();
         if (!silent) showToast(`Switched to ${isGroq ? 'Groq ⚡' : 'Gemini ✦'}`, 'success');
     }
 
@@ -3269,6 +3383,11 @@ Rules:
                 });
                 if (!res.ok) throw new Error(`Groq error ${res.status}`);
                 const data = await res.json();
+                recordTokenUsage('groq', {
+                    promptTokens: data?.usage?.prompt_tokens,
+                    completionTokens: data?.usage?.completion_tokens,
+                    totalTokens: data?.usage?.total_tokens
+                });
                 raw = data?.choices?.[0]?.message?.content;
             } else {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
@@ -3278,6 +3397,11 @@ Rules:
                 });
                 if (!res.ok) throw new Error(`Gemini error ${res.status}`);
                 const data = await res.json();
+                recordTokenUsage('gemini', {
+                    promptTokens: data?.usageMetadata?.promptTokenCount,
+                    completionTokens: data?.usageMetadata?.candidatesTokenCount,
+                    totalTokens: data?.usageMetadata?.totalTokenCount
+                });
                 raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
             }
 
@@ -4201,6 +4325,11 @@ Return exactly this JSON:
                 }
 
                 const data = await res.json();
+                recordTokenUsage('groq', {
+                    promptTokens: data?.usage?.prompt_tokens,
+                    completionTokens: data?.usage?.completion_tokens,
+                    totalTokens: data?.usage?.total_tokens
+                });
                 raw = data?.choices?.[0]?.message?.content;
                 if (!raw) throw new Error('Groq returned empty response');
                 break;
@@ -4238,6 +4367,11 @@ Return exactly this JSON:
                 }
 
                 const data = await res.json();
+                recordTokenUsage('gemini', {
+                    promptTokens: data?.usageMetadata?.promptTokenCount,
+                    completionTokens: data?.usageMetadata?.candidatesTokenCount,
+                    totalTokens: data?.usageMetadata?.totalTokenCount
+                });
                 if (data.promptFeedback?.blockReason) throw new Error(`Gemini blocked: ${data.promptFeedback.blockReason}`);
                 if (!data.candidates?.length) {
                     const reason = data?.error?.message || '';
@@ -4592,7 +4726,13 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 1400 })
                 });
                 if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
-                raw = (await res.json())?.choices?.[0]?.message?.content;
+                const data = await res.json();
+                recordTokenUsage('groq', {
+                    promptTokens: data?.usage?.prompt_tokens,
+                    completionTokens: data?.usage?.completion_tokens,
+                    totalTokens: data?.usage?.total_tokens
+                });
+                raw = data?.choices?.[0]?.message?.content;
             } else {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
                     method: 'POST',
@@ -4600,7 +4740,13 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1400 } })
                 });
                 if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
-                raw = (await res.json())?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const data = await res.json();
+                recordTokenUsage('gemini', {
+                    promptTokens: data?.usageMetadata?.promptTokenCount,
+                    completionTokens: data?.usageMetadata?.candidatesTokenCount,
+                    totalTokens: data?.usageMetadata?.totalTokenCount
+                });
+                raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
             }
             if (!raw) throw new Error('Empty response from AI');
             const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
@@ -5539,6 +5685,29 @@ main.addEventListener('scroll',()=>{
 
     // ─── Export CSV ───
     function esc(v) { return `"${String(v || '').replace(/"/g, '""')}"`; }
+    function _safeFilePart(str, fallback = 'screening-report') {
+        const cleaned = String(str || '')
+            .trim()
+            .replace(/[^a-zA-Z0-9\s-_]/g, '')
+            .replace(/\s+/g, '-');
+        return cleaned || fallback;
+    }
+
+    function _buildScreeningExportFilename() {
+        const posSel = document.getElementById('positionSelect');
+        const selectedText = posSel?.selectedOptions?.[0]?.textContent?.trim() || '';
+        const positionName = selectedText && !/^--\s*select position\s*--$/i.test(selectedText)
+            ? selectedText
+            : 'screening-report';
+
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = now.toLocaleString('en-US', { month: 'short' });
+        const year = now.getFullYear();
+
+        return `${_safeFilePart(positionName)}-${day}-${month}-${year}.csv`;
+    }
+
     function exportResults() {
         if (!analysisResults.length) { showToast('No results to export', 'error'); return; }
         const headers = [
@@ -5575,7 +5744,7 @@ main.addEventListener('scroll',()=>{
         const csv = [headers.join(','), ...rows].join('\n');
         const a = Object.assign(document.createElement('a'), {
             href: URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })),
-            download: `pearl-hire-${Date.now()}.csv`
+            download: _buildScreeningExportFilename()
         });
         a.click();
         showToast('Results exported!', 'success');
