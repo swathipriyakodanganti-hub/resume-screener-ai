@@ -4217,62 +4217,26 @@ Rules:
         await rateLimiter.waitForSlot();
         if (_stopSignal) throw new Error('STOP_REQUESTED');
 
-        const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description using the WEIGHTED SCORING RUBRIC below. Return ONLY valid JSON (no markdown fences, no extra text).
+        const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description. Return ONLY valid JSON (no markdown, no extra text).
 
-IMPORTANT — SKILLS EVALUATION RULE:
-A technology or tool only counts as a demonstrated skill if it appears in the candidate's WORK EXPERIENCE or JOB RESPONSIBILITIES section (i.e., used in a real role, project, or task described in their employment history).
-Technologies listed ONLY in a standalone "Skills", "Technical Skills", or "Competencies" section — with no supporting evidence in job responsibilities or project descriptions — must be treated as UNVERIFIED and should NOT be counted toward skills_score, skills_present, or key_skills.
-This distinction is critical: we need people who have actually worked with the tech, not just listed it.
+SKILLS RULE: A skill only counts if used in WORK EXPERIENCE/RESPONSIBILITIES — not just listed in a Skills/Competencies section. Penalize skills listed only without job context.
 
-Job Description:
-${jd}
+JD: ${jd}
 
-Filters: Experience ${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal*12)+'mo' : filters.minExpDecimal.toFixed(1)+'yrs') : '0'}–${filters.maxExpDecimal !== null ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal*12)+'mo' : filters.maxExpDecimal.toFixed(1)+'yrs') : 'unlimited'}, Location: ${filters.location || 'any'}
-${extraRequirements.trim() ? `
-Extra Screening Instructions (recruiter-defined — evaluate and report each one in extra_requirements_feedback):
-${extraRequirements.trim()}
-` : ''}
-Resume:
-${resumeText.slice(0, 7500)}
+Filters: Exp ${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal*12)+'mo' : filters.minExpDecimal.toFixed(1)+'yrs') : '0'}–${filters.maxExpDecimal !== null ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal*12)+'mo' : filters.maxExpDecimal.toFixed(1)+'yrs') : 'any'}, Location: ${filters.location || 'any'}${extraRequirements.trim() ? `\nExtra screening (evaluate each): ${extraRequirements.trim()}` : ''}
 
-SCORING RUBRIC — score each category 0–100, then compute match_score as the weighted sum:
-  • skills_score      (weight 40%): How well do the candidate's DEMONSTRATED skills (from work experience/responsibilities only) match the JD requirements?
-      100 = all required JD skills actively used in past roles + bonus skills; 75 = most required skills demonstrated in experience; 50 = ~half demonstrated; 25 = few demonstrated; 0 = none demonstrated in experience.
-      PENALIZE heavily if skills only appear in a skills list with no job-context evidence.
-  • experience_score  (weight 25%): Does total years & relevance of experience fit the JD?
-      100 = exceeds requirements with directly relevant experience; 75 = meets requirements; 50 = slightly under or tangential; 25 = significantly under; 0 = no relevant experience
-  • education_score   (weight 15%): Does the education background match JD requirements (degree level, field)?
-      100 = exceeds (e.g. advanced degree in exact field); 75 = meets exactly; 50 = related field or level; 25 = some relevant coursework; 0 = no match or not stated
-  • achievements_score(weight 10%): Quality of measurable achievements, impact, and results in the resume.
-      100 = multiple strong quantified achievements directly relevant; 75 = some quantified achievements; 50 = achievements present but not quantified; 25 = minimal; 0 = none
-  • culture_score     (weight 10%): Soft skills, communication, leadership, teamwork signals relevant to the JD.
-      100 = strong explicit evidence of all key soft skills; 75 = good signals; 50 = some signals; 25 = weak; 0 = none
+Resume: ${resumeText.slice(0, 5000)}
 
-match_score = round(skills_score*0.40 + experience_score*0.25 + education_score*0.15 + achievements_score*0.10 + culture_score*0.10)
+SCORING (each 0–100):
+• skills_score (40%): demonstrated skills from work exp matching JD
+• experience_score (25%): years & relevance vs JD
+• education_score (15%): degree/field vs JD
+• achievements_score (10%): quantified results
+• culture_score (10%): soft skills/leadership signals
+match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
 
-Return exactly this JSON:
-{
-  "name": "full name or Unknown",
-  "email": "email or null",
-  "phone": "phone or null",
-  "experience_years": <number>,
-  "location": "city or Remote",
-  "match_score": <integer 0-100, computed from weighted rubric above>,
-  "score_breakdown": {
-    "skills_score": <integer 0-100>,
-    "experience_score": <integer 0-100>,
-    "education_score": <integer 0-100>,
-    "achievements_score": <integer 0-100>,
-    "culture_score": <integer 0-100>
-  },
-  "key_skills": ["up to 6 skills extracted from the candidate's work experience/job responsibilities — not from a skills list"],
-  "skills_present": ["JD-required skills the candidate has DEMONSTRATED in their work experience"],
-  "skills_missing": ["JD-required skills absent from the candidate's work experience (even if listed in a skills section)"],
-  "highlights": ["2-3 standout achievements"],
-  "rating_reason": "2-3 sentences explaining the overall score — reference specific sub-score drivers and note if skills appear only in a skills list vs actual job responsibilities",
-  "summary": "one-sentence profile",
-  "extra_requirements_feedback": ["if extra screening instructions were provided, list each issue or finding for every instruction — be specific (e.g. 'Grammar: found 3 spelling errors in the summary section'). If no issues found for an instruction, write 'No issues found'. If no extra instructions were given, return an empty array."]
-}`;
+Return exactly:
+{"name":"","email":null,"phone":null,"experience_years":0,"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
 
         let raw;
         let controller = null;
@@ -4302,7 +4266,7 @@ Return exactly this JSON:
                             model: 'llama-3.3-70b-versatile',
                             messages: [{ role: 'user', content: prompt }],
                             temperature: 0.2,
-                            max_tokens: 1400
+                            max_tokens: 900
                         })
                     });
                 } catch (err) {
@@ -4318,6 +4282,15 @@ Return exactly this JSON:
                         throw new Error('Groq API key invalid — check console.groq.com');
                     }
                     if (res.status === 429) {
+                        // Honor retry-after header if short — wait on same key instead of burning next key
+                        const retryAfterSec = parseInt(res.headers.get('retry-after') || '0', 10);
+                        if (retryAfterSec > 0 && retryAfterSec <= 65 && !triedIndexes.has(String(keyIndex) + '_waited')) {
+                            triedIndexes.add(String(keyIndex) + '_waited');
+                            showToast(`Groq key ${groqKeyIndex+1} rate limited — waiting ${retryAfterSec}s…`, 'warning');
+                            await sleepInterruptible(retryAfterSec * 1000 + 500);
+                            triedIndexes.delete(keyIndex); // allow retry on same key
+                            continue;
+                        }
                         if (rotateProviderKey('groq', 'rate limit')) continue;
                         throw new Error('RATE_LIMIT:Groq rate limit hit — all configured Groq keys are exhausted');
                     }
@@ -6418,19 +6391,15 @@ main.addEventListener('scroll',()=>{
 
         if (_shareAppsScriptUrl) {
             // ── Primary: save to Google Sheets via Apps Script ──
-            // Use fetch with no-cors + text/plain — simple CORS request (no preflight),
-            // body arrives in Apps Script as e.postData.contents
+            // Use the hidden-iframe form-post approach (same as email sending) so the
+            // payload arrives in Apps Script as e.parameter.payload — fetch no-cors
+            // is unreliable because Google's infrastructure often drops the raw body.
             try {
-                await fetch(_shareAppsScriptUrl, {
-                    method:  'POST',
-                    mode:    'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body:    JSON.stringify({
-                        action:   'saveInlineFeedback',
-                        reviewer: name,
-                        position,
-                        decisions
-                    })
+                await postToAppsScript(_shareAppsScriptUrl, {
+                    action:   'saveInlineFeedback',
+                    reviewer: name,
+                    position,
+                    decisions
                 });
                 showToast(`✅ Feedback saved! Thank you, ${name}`, 'success');
                 document.getElementById('shareFeedbackBar').classList.remove('visible');
