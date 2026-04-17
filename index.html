@@ -6757,13 +6757,13 @@ main.addEventListener('scroll',()=>{
                 </div>
                 <!-- Row 2: Meta pills -->
                 <div class="share-hero-row2">
-                    <span class="share-hero-pill">📍 ${r.location || '—'}</span>
-                    <span class="share-hero-pill">💼 ${_fmtExp(r.experience_years)}</span>
-                    ${r.email  ? `<span class="share-hero-pill accent">📧 ${r.email}</span>` : ''}
-                    ${r.phone  ? `<span class="share-hero-pill accent">📞 ${r.phone}</span>` : ''}
-                    ${r.current_ctc   ? `<span class="share-hero-pill green">💰 ${r.current_ctc}</span>` : ''}
-                    ${r.expected_ctc  ? `<span class="share-hero-pill amber">🎯 ${r.expected_ctc}</span>` : ''}
-                    ${r.notice_period ? `<span class="share-hero-pill accent">📅 ${r.notice_period}</span>` : ''}
+                    <span class="share-hero-pill">📍 Loc: ${r.location || '—'}</span>
+                    <span class="share-hero-pill">💼 Exp: ${_fmtExp(r.experience_years)}</span>
+                    ${r.email  ? `<span class="share-hero-pill accent">📧 Email: ${r.email}</span>` : ''}
+                    ${r.phone  ? `<span class="share-hero-pill accent">📞 Phone: ${r.phone}</span>` : ''}
+                    ${r.current_ctc   ? `<span class="share-hero-pill green">💰 Current CTC: ${r.current_ctc}</span>` : ''}
+                    ${r.expected_ctc  ? `<span class="share-hero-pill amber">🎯 Expected CTC: ${r.expected_ctc}</span>` : ''}
+                    ${r.notice_period ? `<span class="share-hero-pill accent">📅 Notice Period: ${r.notice_period}</span>` : ''}
                 </div>
                 <!-- Row 3: Actions -->
                 <div class="share-detail-actions">
