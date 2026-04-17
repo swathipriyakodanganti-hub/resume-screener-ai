@@ -4416,7 +4416,7 @@ Resume: ${resumeText.slice(0, 5000)}
 
 SCORING (each 0–100):
 • skills_score (40%): demonstrated skills from work exp matching JD
-• experience_score (25%): years & relevance vs JD
+• experience_score (25%): parse each role's start/end dates (month + year), sum total months of RELEVANT experience, compare vs JD required; set experience_years = total_months÷12 rounded to 2 decimal places (e.g. 2.25 = 2 yrs 3 mo, 0.5 = 6 mo); 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant
 • education_score (15%): degree/field vs JD
 • achievements_score (10%): quantified results
 • culture_score (10%): soft skills/leadership signals
@@ -4870,7 +4870,7 @@ ${currentJD}
 
 Candidate Profile:
 Name: ${r.name}
-Experience: ${r.experience_years} years
+Experience: ${_fmtExp(r.experience_years)}
 Skills Present: ${(r.skills_present || []).join(', ')}
 Skills Missing: ${(r.skills_missing || []).join(', ')}
 Highlights: ${(r.highlights || []).join('; ')}
@@ -4984,7 +4984,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>
                 <div class="main-cand-info">
                     <div class="main-cand-name">${r.name}</div>
-                    <div class="main-cand-meta">📍 ${r.location || '—'} · 💼 ${r.experience_years} yrs</div>
+                    <div class="main-cand-meta">📍 ${r.location || '—'} · 💼 ${_fmtExp(r.experience_years)}</div>
                 </div>
                 <div class="main-cand-score ${scoreClass(r.match_score)}">${r.match_score}%</div>
                 <div class="main-cand-rank">${rankLabel}</div>
@@ -5020,7 +5020,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             <div class="share-detail-hero" style="padding:1rem 1.25rem;">
                 <div class="share-detail-info">
                     <div class="share-detail-name" style="font-size:0.95rem;">${r.name}</div>
-                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
+                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
                     <div class="share-detail-actions">
                         <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.73rem;padding:3px 10px;">${recTxt}</div>
                         <label class="share-checkbox-wrap" onclick="event.stopPropagation()" title="Add to shortlist" style="margin-left:0.25rem;">
@@ -5043,8 +5043,8 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                         <div class="sc-lbl">Match</div>
                     </div>
                     <div class="share-cand-stat">
-                        <span class="sc-val">${r.experience_years}</span>
-                        <div class="sc-lbl">Yrs Exp</div>
+                        <span class="sc-val">${_fmtExp(r.experience_years)}</span>
+                        <div class="sc-lbl">Exp</div>
                     </div>
                     <div class="share-cand-stat">
                         <span class="sc-val" style="color:var(--success);">${have.length}</span>
@@ -5269,7 +5269,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     <div style="display:flex;align-items:center;flex:1;min-width:0;">
                         <div class="candidate-info">
                             <div class="candidate-name">${r.name}</div>
-                            <div class="candidate-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs</div>
+                            <div class="candidate-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}</div>
                         </div>
                     </div>
                     <div class="score-badge ${scoreClass(r.match_score)}">${r.match_score}%</div>
@@ -5370,7 +5370,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         // Header
         document.getElementById('overlayAvatar').textContent = initials(r.name);
         document.getElementById('overlayName').textContent   = r.name;
-        document.getElementById('overlayMeta').textContent   = `📍 ${r.location || '—'}  ·  💼 ${r.experience_years} yrs`;
+        document.getElementById('overlayMeta').textContent   = `📍 ${r.location || '—'}  ·  💼 ${_fmtExp(r.experience_years)}`;
 
         const ring = document.getElementById('overlayScoreRing');
         ring.className = `overlay-score-ring ${ringClass(r.match_score)}`;
@@ -5395,8 +5395,8 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                         </div>
                     </div>
                     <div class="overlay-stat-box">
-                        <span class="stat-val">${r.experience_years}</span>
-                        <div class="stat-lbl">Years Exp</div>
+                        <span class="stat-val">${_fmtExp(r.experience_years)}</span>
+                        <div class="stat-lbl">Exp</div>
                     </div>
                     <div class="overlay-stat-box">
                         <span class="stat-val" style="color:var(--success);">${skillsHave.length}</span>
@@ -5673,7 +5673,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     <div class="card-rank">${rank}</div>
                     <div class="card-info">
                         <div class="card-name">${r.name}</div>
-                        <div class="card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
+                        <div class="card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
                     </div>
                     <div class="card-score-wrap">
                         <div class="card-score" style="color:${recColor};">${r.match_score}%</div>
@@ -5858,6 +5858,18 @@ main.addEventListener('scroll',()=>{
 
     // ─── Export CSV ───
     function esc(v) { return `"${String(v || '').replace(/"/g, '""')}"`; }
+
+    // Format decimal years as "X yrs Y mo" (e.g. 2.25 → "2 yrs 3 mo", 0.5 → "6 mo")
+    function _fmtExp(yrs) {
+        if (!yrs) return '0 mo';
+        const totalM = Math.round(parseFloat(yrs) * 12);
+        const y = Math.floor(totalM / 12);
+        const m = totalM % 12;
+        if (y === 0) return `${m} mo`;
+        if (m === 0) return `${y} yr${y !== 1 ? 's' : ''}`;
+        return `${y} yr${y !== 1 ? 's' : ''} ${m} mo`;
+    }
+
     function _safeFilePart(str, fallback = 'screening-report') {
         const cleaned = String(str || '')
             .trim()
@@ -6675,7 +6687,7 @@ main.addEventListener('scroll',()=>{
             <div class="share-cand-item-rank">${rankLabel}</div>
             <div class="share-cand-item-info">
                 <div class="share-cand-item-name">${r.name}</div>
-                <div class="share-cand-item-meta">💼 ${r.experience_years} yrs &nbsp;·&nbsp; 📍 ${r.location || '—'}</div>
+                <div class="share-cand-item-meta">💼 ${_fmtExp(r.experience_years)} &nbsp;·&nbsp; 📍 ${r.location || '—'}</div>
             </div>
             <div class="share-cand-item-score ${scoreCls}">${r.match_score}%</div>
             <div class="share-cand-decision-dot" id="share-dec-dot-${idx}"></div>
@@ -6721,7 +6733,7 @@ main.addEventListener('scroll',()=>{
             <div class="share-detail-hero">
                 <div class="share-detail-info">
                     <div class="share-detail-name">${r.name}</div>
-                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
+                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
                     ${(r.current_ctc || r.expected_ctc || r.notice_period) ? `<div class="share-detail-meta" style="margin-top:0.2rem;">${r.current_ctc ? '💰 Curr: <strong>'+r.current_ctc+'</strong>' : ''}${r.current_ctc && (r.expected_ctc || r.notice_period) ? ' &nbsp;·&nbsp; ' : ''}${r.expected_ctc ? '🎯 Exp: <strong>'+r.expected_ctc+'</strong>' : ''}${r.expected_ctc && r.notice_period ? ' &nbsp;·&nbsp; ' : ''}${!r.expected_ctc && r.current_ctc && r.notice_period ? ' &nbsp;·&nbsp; ' : ''}${r.notice_period ? '📅 Notice: <strong>'+r.notice_period+'</strong>' : ''}</div>` : ''}
                     <div class="share-detail-actions">
                         <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.72rem;padding:3px 10px;">${recTxt}</div>
@@ -6743,7 +6755,7 @@ main.addEventListener('scroll',()=>{
                     <div class="share-pg-section-title">📊 Overview</div>
                     <div class="share-stat-grid">
                         <div class="share-stat-box"><span class="share-stat-val ${scoreCls}">${r.match_score}%</span><div class="share-stat-lbl">Match Score</div></div>
-                        <div class="share-stat-box"><span class="share-stat-val">${r.experience_years}</span><div class="share-stat-lbl">Years Exp</div></div>
+                        <div class="share-stat-box"><span class="share-stat-val">${_fmtExp(r.experience_years)}</span><div class="share-stat-lbl">Exp</div></div>
                         <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${have.length}</span><div class="share-stat-lbl">Skills Match</div></div>
                         <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${missing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
                         ${r.current_ctc  ? `<div class="share-stat-box"><span class="share-stat-val" style="font-size:0.78rem;">${r.current_ctc}</span><div class="share-stat-lbl">Current CTC</div></div>` : ''}
@@ -7135,7 +7147,7 @@ main.addEventListener('scroll',()=>{
             <div class="bulk-card-header">
                 <div class="bulk-card-info">
                     <div class="bulk-card-name">${r.name}</div>
-                    <div class="bulk-card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
+                    <div class="bulk-card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
                 </div>
                 <div class="bulk-card-score ${scoreCls}">${r.match_score}%</div>
                 <div class="bulk-rank-badge ${rankCls}">${rankLabel}</div>
@@ -7153,8 +7165,8 @@ main.addEventListener('scroll',()=>{
                         <div class="sc-lbl">Match</div>
                     </div>
                     <div class="share-cand-stat">
-                        <span class="sc-val">${r.experience_years}</span>
-                        <div class="sc-lbl">Yrs Exp</div>
+                        <span class="sc-val">${_fmtExp(r.experience_years)}</span>
+                        <div class="sc-lbl">Exp</div>
                     </div>
                     <div class="share-cand-stat">
                         <span class="sc-val" style="color:var(--success);">${have.length}</span>
