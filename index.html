@@ -2477,18 +2477,22 @@
                                 <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
                                 <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
                             </div>
-                            <div class="form-group"><label>API Token Limits (optional)</label>
+                            <div class="form-group">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+                                    <label style="margin:0;">API Token Budget <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional)</span></label>
+                                    <button class="btn-add-links" onclick="setDefaultTokenBudgets()" style="padding:0.2rem 0.55rem;font-size:0.68rem;white-space:nowrap;">Use Free-Tier Defaults</button>
+                                </div>
                                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.45rem;">
                                     <div>
-                                        <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="Groq token budget" onchange="saveTokenBudget('groq')">
-                                        <small class="hint">Groq budget for remaining calc</small>
+                                        <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="e.g. 6000 (free tier/min)" onchange="saveTokenBudget('groq')">
+                                        <small class="hint">Groq free tier: <strong>6,000 tokens/min</strong> · ~30 resumes per analysis run</small>
                                     </div>
                                     <div>
-                                        <input type="number" id="geminiTokenLimit" min="0" step="1" placeholder="Gemini token budget" onchange="saveTokenBudget('gemini')">
-                                        <small class="hint">Gemini budget for remaining calc</small>
+                                        <input type="number" id="geminiTokenLimit" min="0" step="1" placeholder="e.g. 1000000 (free tier/min)" onchange="saveTokenBudget('gemini')">
+                                        <small class="hint">Gemini free tier: <strong>1,000,000 tokens/min</strong> · very generous</small>
                                     </div>
                                 </div>
-                                <small class="hint">Used tokens are read from API responses; remaining = budget - used.</small>
+                                <small class="hint">Tokens used per resume ≈ 2,000. "Remaining" = your budget minus tokens used this session. Click <em>Reset Active Usage</em> to start fresh each session.</small>
                             </div>
                             <div style="border:1px solid var(--border);border-radius:9px;padding:0.55rem 0.65rem;background:rgba(255,255,255,0.02);">
                                 <div id="tokenUsageInfo" style="font-size:0.73rem;color:var(--text-secondary);line-height:1.45;">Token usage will appear after API calls.</div>
@@ -3052,6 +3056,19 @@
         localStorage.setItem('tokenBudgets', JSON.stringify(tokenBudgets));
         updateTokenUsageInfo();
         showToast(`${provider === 'groq' ? 'Groq' : 'Gemini'} token budget ${tokenBudgets[provider] ? 'saved' : 'cleared'}`, tokenBudgets[provider] ? 'success' : 'error');
+    }
+
+    // Free-tier defaults: Groq = 6,000 TPM, Gemini = 1,000,000 TPM
+    function setDefaultTokenBudgets() {
+        tokenBudgets.groq   = 6000;
+        tokenBudgets.gemini = 1000000;
+        localStorage.setItem('tokenBudgets', JSON.stringify(tokenBudgets));
+        const g = document.getElementById('groqTokenLimit');
+        const m = document.getElementById('geminiTokenLimit');
+        if (g) g.value = 6000;
+        if (m) m.value = 1000000;
+        updateTokenUsageInfo();
+        showToast('Free-tier token budgets applied (Groq: 6,000 · Gemini: 1,000,000)', 'success');
     }
 
     function resetTokenUsage(provider) {
