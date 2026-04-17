@@ -2465,6 +2465,14 @@
                                 <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
                                 <small class="hint">Or use the <strong>Links</strong> tab to paste the full Google Sheets URL.</small>
                             </div>
+                            <div class="form-group">
+                                <label for="linkedSheetUrlInput">🔗 Candidate Data Sheet <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional)</span></label>
+                                <div style="display:flex;gap:0.4rem;align-items:center;">
+                                    <input type="text" id="linkedSheetUrlInput" placeholder="Google Sheets URL or ID with CTC / Notice Period data" style="flex:1;" onchange="saveLinkedSheetUrl()">
+                                    <button class="btn-add-links" onclick="saveLinkedSheetUrl()" style="white-space:nowrap;">Save &amp; Load</button>
+                                </div>
+                                <small class="hint">Sheet must have columns: <strong>Email</strong> or <strong>Phone</strong> (to match candidates) + <strong>Current CTC</strong>, <strong>Expected CTC</strong>, <strong>Notice Period</strong>. Values will appear in results and share pages.</small>
+                            </div>
                             <div class="form-group"><label for="apiDelay">API Call Delay (seconds)</label>
                                 <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
                                 <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
@@ -2992,6 +3000,8 @@
     let sheetsId           = localStorage.getItem('sheetsId') || '';
     let sheetsUrl          = localStorage.getItem('sheetsUrl') || '';
     let sheetSnapshotData  = null;
+    let linkedSheetUrl     = localStorage.getItem('linkedSheetUrl') || '';
+    let _linkedSheetMap    = {}; // normalized email/phone → { current_ctc, expected_ctc, notice_period }
     let tokenUsage = _parseStoredJson('tokenUsage', {
         groq: { prompt: 0, completion: 0, total: 0 },
         gemini: { prompt: 0, completion: 0, total: 0 }
@@ -3194,6 +3204,11 @@
             loadLocations();
         }
         syncSheetsUi();
+        if (linkedSheetUrl) {
+            const li = document.getElementById('linkedSheetUrlInput');
+            if (li) li.value = linkedSheetUrl;
+            fetchLinkedSheetData();
+        }
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
         updateTokenUsageInfo();
@@ -3448,6 +3463,73 @@ Rules:
         if (urlMatch) return urlMatch[1];
         const idMatch = raw.match(/^[a-zA-Z0-9-_]{20,}$/);
         return idMatch ? idMatch[0] : '';
+    }
+
+    // ─── Linked Candidate Data Sheet ───────────────────────────────
+    function saveLinkedSheetUrl() {
+        linkedSheetUrl = (document.getElementById('linkedSheetUrlInput')?.value || '').trim();
+        localStorage.setItem('linkedSheetUrl', linkedSheetUrl);
+        if (linkedSheetUrl) fetchLinkedSheetData();
+        else showToast('Linked sheet cleared', 'success');
+    }
+
+    function _normPhone(p) {
+        const d = (p || '').replace(/\D/g, '');
+        return d.length >= 7 ? d.slice(-10) : '';
+    }
+    function _normEmail(e) { return (e || '').trim().toLowerCase(); }
+
+    function _enrichCandidate(r) {
+        if (!r || !Object.keys(_linkedSheetMap).length) return;
+        const byEmail = r.email ? _linkedSheetMap[_normEmail(r.email)] : null;
+        const byPhone = r.phone ? _linkedSheetMap[_normPhone(r.phone)] : null;
+        const match   = byEmail || byPhone;
+        if (!match) return;
+        if (match.current_ctc  !== undefined) r.current_ctc  = match.current_ctc;
+        if (match.expected_ctc !== undefined) r.expected_ctc = match.expected_ctc;
+        if (match.notice_period!== undefined) r.notice_period= match.notice_period;
+    }
+
+    async function fetchLinkedSheetData() {
+        if (!linkedSheetUrl) return;
+        if (!appsScriptUrl) { showToast('Save Apps Script URL first — needed to read the linked sheet', 'error'); return; }
+        const sheetId = extractSheetsId(linkedSheetUrl);
+        if (!sheetId) { showToast('Invalid Google Sheets URL or ID for linked sheet', 'error'); return; }
+        try {
+            const url = appsScriptUrl + '?action=getSheetSnapshot&spreadsheetId=' + encodeURIComponent(sheetId);
+            const res = await fetch(url);
+            const data = await res.json();
+            if (!data.ok) throw new Error(data.error || 'Sheet fetch failed');
+
+            _linkedSheetMap = {};
+            for (const sheet of (data.sheets || [])) {
+                const headers = (sheet.headers || []).map(h => (h || '').toLowerCase().trim());
+                const emailIdx  = headers.findIndex(h => /^e[\s_-]?mail/.test(h) || h === 'email');
+                const phoneIdx  = headers.findIndex(h => /phone|mobile|contact/.test(h));
+                const curIdx    = headers.findIndex(h => /current.*(ctc|salary|package)|(ctc|salary).*(current|cur)/.test(h));
+                const expIdx    = headers.findIndex(h => /expected.*(ctc|salary|package)|(ctc|salary).*(expected|exp)/.test(h));
+                const noticeIdx = headers.findIndex(h => /notice/.test(h));
+                if ((emailIdx === -1 && phoneIdx === -1) || (curIdx === -1 && expIdx === -1 && noticeIdx === -1)) continue;
+                for (const row of (sheet.rows || [])) {
+                    const email = emailIdx >= 0 ? (row[emailIdx] || '').trim() : '';
+                    const phone = phoneIdx >= 0 ? (row[phoneIdx] || '').trim() : '';
+                    const record = {
+                        current_ctc:   curIdx    >= 0 ? (row[curIdx]    || '') : undefined,
+                        expected_ctc:  expIdx    >= 0 ? (row[expIdx]    || '') : undefined,
+                        notice_period: noticeIdx >= 0 ? (row[noticeIdx] || '') : undefined
+                    };
+                    if (email) _linkedSheetMap[_normEmail(email)] = record;
+                    const np = _normPhone(phone);
+                    if (np)   _linkedSheetMap[np] = record;
+                }
+            }
+            // Enrich any already-analysed results
+            analysisResults.forEach(r => _enrichCandidate(r));
+            if (analysisResults.length) renderMainPanels();
+            showToast(`✅ Linked sheet loaded — ${Object.keys(_linkedSheetMap).length} records mapped`, 'success');
+        } catch(err) {
+            showToast('Linked sheet error: ' + err.message, 'error');
+        }
     }
 
     function buildSheetsUrl(id) {
@@ -4569,6 +4651,7 @@ Return exactly:
                 result.filename  = file.name;
                 result.file_type = ext;
                 try { result.resume_pdf_b64 = await fileToBase64(file); } catch {}
+                _enrichCandidate(result);
 
                 fileStatuses[file.name] = 'done';
                 analysisResults.push(result);
@@ -4619,6 +4702,7 @@ Return exactly:
                 result.filename        = driveEntry.name;
                 result.drive_link      = driveEntry.driveLink;
                 result.resume_pdf_b64  = pdfBase64;
+                _enrichCandidate(result);
 
                 fileStatuses[driveEntry.name] = 'done';
                 analysisResults.push(result);
@@ -4951,12 +5035,15 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     </div>
                 </div>` : ''}
 
-                ${(r.email || r.phone) ? `
+                ${(r.email || r.phone || r.current_ctc || r.expected_ctc || r.notice_period) ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title">📬 Contact</div>
                     <div class="overlay-contact-grid">
-                        ${r.email ? `<div class="overlay-contact-item">📧 ${r.email}</div>` : ''}
-                        ${r.phone ? `<div class="overlay-contact-item">📞 ${r.phone}</div>` : ''}
+                        ${r.email  ? `<div class="overlay-contact-item">📧 ${r.email}</div>` : ''}
+                        ${r.phone  ? `<div class="overlay-contact-item">📞 ${r.phone}</div>` : ''}
+                        ${r.current_ctc   ? `<div class="overlay-contact-item">💰 Current CTC: <strong>${r.current_ctc}</strong></div>` : ''}
+                        ${r.expected_ctc  ? `<div class="overlay-contact-item">🎯 Expected CTC: <strong>${r.expected_ctc}</strong></div>` : ''}
+                        ${r.notice_period ? `<div class="overlay-contact-item">📅 Notice Period: <strong>${r.notice_period}</strong></div>` : ''}
                     </div>
                 </div>` : ''}
 
@@ -5083,6 +5170,9 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <div class="skill-tags">
                     ${skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
                     ${extraSkills > 0 ? `<span class="more-tag">+${extraSkills} more</span>` : ''}
+                    ${r.current_ctc   ? `<span class="skill-tag" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25);color:var(--success);">💰 ${r.current_ctc}</span>` : ''}
+                    ${r.expected_ctc  ? `<span class="skill-tag" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.25);color:var(--amber);">🎯 ${r.expected_ctc}</span>` : ''}
+                    ${r.notice_period ? `<span class="skill-tag" style="background:rgba(0,220,255,0.07);border-color:rgba(0,220,255,0.2);color:var(--accent);">📅 ${r.notice_period}</span>` : ''}
                 </div>
             </div>
 
@@ -5686,6 +5776,7 @@ main.addEventListener('scroll',()=>{
         const headers = [
             'Name','Email','Phone','Location','Experience (yrs)','Match Score',
             'Recommendation',
+            'Current CTC','Expected CTC','Notice Period',
             'Skills Score','Experience Score','Education Score','Achievements Score','Soft Skills Score',
             'Skills Present','Skills Missing',
             'Key Highlights',
@@ -5703,6 +5794,7 @@ main.addEventListener('scroll',()=>{
                 esc(r.name), esc(r.email), esc(r.phone), esc(r.location),
                 r.experience_years, r.match_score,
                 rec,
+                esc(r.current_ctc), esc(r.expected_ctc), esc(r.notice_period),
                 sb.skills_score ?? '', sb.experience_score ?? '', sb.education_score ?? '',
                 sb.achievements_score ?? '', sb.culture_score ?? '',
                 esc((r.skills_present || []).join(', ')),
@@ -6520,6 +6612,7 @@ main.addEventListener('scroll',()=>{
                 <div class="share-detail-info">
                     <div class="share-detail-name">${r.name}</div>
                     <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${r.experience_years} yrs exp${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
+                    ${(r.current_ctc || r.expected_ctc || r.notice_period) ? `<div class="share-detail-meta" style="margin-top:0.2rem;">${r.current_ctc ? '💰 Curr: <strong>'+r.current_ctc+'</strong>' : ''}${r.current_ctc && (r.expected_ctc || r.notice_period) ? ' &nbsp;·&nbsp; ' : ''}${r.expected_ctc ? '🎯 Exp: <strong>'+r.expected_ctc+'</strong>' : ''}${r.expected_ctc && r.notice_period ? ' &nbsp;·&nbsp; ' : ''}${!r.expected_ctc && r.current_ctc && r.notice_period ? ' &nbsp;·&nbsp; ' : ''}${r.notice_period ? '📅 Notice: <strong>'+r.notice_period+'</strong>' : ''}</div>` : ''}
                     <div class="share-detail-actions">
                         <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.72rem;padding:3px 10px;">${recTxt}</div>
                         ${mobileResumeBtn}
@@ -6543,6 +6636,9 @@ main.addEventListener('scroll',()=>{
                         <div class="share-stat-box"><span class="share-stat-val">${r.experience_years}</span><div class="share-stat-lbl">Years Exp</div></div>
                         <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${have.length}</span><div class="share-stat-lbl">Skills Match</div></div>
                         <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${missing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
+                        ${r.current_ctc  ? `<div class="share-stat-box"><span class="share-stat-val" style="font-size:0.78rem;">${r.current_ctc}</span><div class="share-stat-lbl">Current CTC</div></div>` : ''}
+                        ${r.expected_ctc ? `<div class="share-stat-box"><span class="share-stat-val" style="font-size:0.78rem;">${r.expected_ctc}</span><div class="share-stat-lbl">Expected CTC</div></div>` : ''}
+                        ${r.notice_period? `<div class="share-stat-box"><span class="share-stat-val" style="font-size:0.78rem;">${r.notice_period}</span><div class="share-stat-lbl">Notice Period</div></div>` : ''}
                     </div>
                 </div>
                 ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
