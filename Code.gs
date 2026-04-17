@@ -347,32 +347,7 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
   const avgScore = count ? Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count) : 0;
   const topScore = count ? candidates[0].match_score : 0;
 
-  const candidateRows = candidates.map((c, i) => {
-    const sc  = c.match_score >= 75 ? '#1D9E75' : c.match_score >= 50 ? '#BA7517' : '#A32D2D';
-    const sb  = c.match_score >= 75 ? '#E1F5EE' : c.match_score >= 50 ? '#FAEEDA' : '#FCEBEB';
-    const lbl = c.match_score >= 75 ? 'Recommended' : c.match_score >= 50 ? 'Consider' : 'Not Recommended';
-    return `
-      <tr>
-        <td style="padding:10px 20px;border-bottom:1px solid #e2e8f0;">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="vertical-align:middle;padding-right:10px;">
-                <div style="font-size:11px;font-weight:700;color:#94a3b8;">#${i+1}</div>
-              </td>
-              <td style="vertical-align:middle;">
-                <div style="font-size:14px;font-weight:700;color:#1a1a2e;">${c.name}</div>
-                <div style="font-size:11px;color:#64748b;margin-top:2px;">${lbl}</div>
-              </td>
-              <td align="right" style="vertical-align:middle;">
-                <div style="display:inline-block;background:${sb};border-radius:16px;padding:4px 12px;">
-                  <span style="font-size:15px;font-weight:700;color:${sc};">${c.match_score}%</span>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>`;
-  }).join('');
+
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -414,19 +389,13 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
               Here is a shortlist of <strong>${count} candidate${count > 1 ? 's' : ''}</strong> screened for <strong>${position}</strong>.
               Click the button below to view all profiles with detailed information and resumes.
             </p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:20px;">
-              <tr><td style="padding:12px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Ranked by AI Match Score</div>
-              </td></tr>
-              ${candidateRows}
-              <tr><td style="padding:20px;background:#f8fafc;text-align:center;">
-                <a href="${shareLink}" target="_blank"
-                   style="display:inline-block;padding:14px 32px;background:#0C447C;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 12px rgba(12,68,124,0.3);">
-                  View All Candidates &amp; Resumes &rarr;
-                </a>
-                <div style="margin-top:10px;font-size:11px;color:#94a3b8;">Click to access detailed profiles, resumes and give your feedback</div>
-              </td></tr>
-            </table>
+            <div style="text-align:center;margin-bottom:20px;">
+              <a href="${shareLink}" target="_blank"
+                 style="display:inline-block;padding:14px 32px;background:#0C447C;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 12px rgba(12,68,124,0.3);">
+                View All Candidates &amp; Resumes &rarr;
+              </a>
+              <div style="margin-top:10px;font-size:11px;color:#94a3b8;">Click to access detailed profiles, resumes and give your feedback</div>
+            </div>
           </td>
         </tr>
         <tr>

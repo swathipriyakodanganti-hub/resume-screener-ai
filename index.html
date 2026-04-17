@@ -859,7 +859,11 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             animation: cardIn 0.5s ease-out backwards;
             position: relative;
+            border-left-width: 3px;
         }
+        .result-card.stripe-high { border-left-color: var(--success); }
+        .result-card.stripe-mid  { border-left-color: var(--amber); }
+        .result-card.stripe-low  { border-left-color: var(--danger); }
 
         .result-card::before {
             content: '';
@@ -1979,8 +1983,25 @@
             padding: 1rem 1.5rem;
             background: linear-gradient(135deg, rgba(0,128,255,0.08) 0%, rgba(0,220,255,0.03) 100%);
             border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+            border-left-width: 3px;
+            border-left-style: solid;
+            border-left-color: var(--border);
         }
+        .share-detail-hero.stripe-high { border-left-color: var(--success); }
+        .share-detail-hero.stripe-mid  { border-left-color: var(--amber); }
+        .share-detail-hero.stripe-low  { border-left-color: var(--danger); }
+        .share-hero-row1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.55rem; }
+        .share-hero-row2 { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.65rem; }
+        .share-hero-pill {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 2px 9px; border-radius: 20px;
+            font-size: 0.69rem; font-weight: 500;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            color: var(--text-secondary);
+        }
+        .share-hero-pill.accent { background: rgba(56,139,253,0.08); border-color: rgba(56,139,253,0.2); color: #79c0ff; }
+        .share-hero-pill.green  { background: rgba(86,211,100,0.07); border-color: rgba(86,211,100,0.2); color: var(--success); }
+        .share-hero-pill.amber  { background: rgba(227,179,65,0.08); border-color: rgba(227,179,65,0.22); color: var(--amber); }
         .share-detail-avatar {
             width: 44px; height: 44px; border-radius: 12px;
             background: linear-gradient(135deg, var(--accent-dark), #004080);
@@ -5017,21 +5038,34 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
 
         detailEl.innerHTML = `
             <!-- Hero -->
-            <div class="share-detail-hero" style="padding:1rem 1.25rem;">
-                <div class="share-detail-info">
-                    <div class="share-detail-name" style="font-size:0.95rem;">${r.name}</div>
-                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
-                    <div class="share-detail-actions">
-                        <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.73rem;padding:3px 10px;">${recTxt}</div>
-                        <label class="share-checkbox-wrap" onclick="event.stopPropagation()" title="Add to shortlist" style="margin-left:0.25rem;">
-                            <input type="checkbox" id="main-shortlist-cb-${idx}" ${_selectedCards.has(idx) ? 'checked' : ''} onchange="toggleShareBtn(${idx}, this.checked); syncShortlistCheckboxes(${idx}, this.checked, 'detail')">
-                            <span class="share-checkbox-label">Shortlist</span>
-                        </label>
+            <div class="share-detail-hero stripe-${r.match_score >= 75 ? 'high' : r.match_score >= 50 ? 'mid' : 'low'}" style="padding:1rem 1.25rem;">
+                <!-- Row 1: Name + rec pill left / score ring right -->
+                <div class="share-hero-row1">
+                    <div style="flex:1;min-width:0;">
+                        <div class="share-detail-name" style="font-size:0.95rem;">${r.name}</div>
+                        <div style="margin-top:4px;"><span class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.64rem;padding:2px 8px;">${recTxt}</span></div>
+                    </div>
+                    <div class="share-detail-score-ring ${ringClass(r.match_score)}">
+                        <span style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;" class="${scoreClass(r.match_score)}">${r.match_score}%</span>
+                        <span style="font-size:0.52rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Match</span>
                     </div>
                 </div>
-                <div class="share-detail-score-ring ${ringClass(r.match_score)}" style="width:52px;height:52px;border-radius:50%;border:2.5px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                    <span style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;" class="${scoreClass(r.match_score)}">${r.match_score}%</span>
-                    <span style="font-size:0.52rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Match</span>
+                <!-- Row 2: Meta pills -->
+                <div class="share-hero-row2">
+                    <span class="share-hero-pill">📍 ${r.location || '—'}</span>
+                    <span class="share-hero-pill">💼 ${_fmtExp(r.experience_years)}</span>
+                    ${r.email  ? `<span class="share-hero-pill accent">📧 ${r.email}</span>` : ''}
+                    ${r.phone  ? `<span class="share-hero-pill accent">📞 ${r.phone}</span>` : ''}
+                    ${r.current_ctc   ? `<span class="share-hero-pill green">💰 ${r.current_ctc}</span>` : ''}
+                    ${r.expected_ctc  ? `<span class="share-hero-pill amber">🎯 ${r.expected_ctc}</span>` : ''}
+                    ${r.notice_period ? `<span class="share-hero-pill accent">📅 ${r.notice_period}</span>` : ''}
+                </div>
+                <!-- Row 3: Shortlist action -->
+                <div class="share-detail-actions">
+                    <label class="share-checkbox-wrap" onclick="event.stopPropagation()" title="Add to shortlist" style="margin-left:0;">
+                        <input type="checkbox" id="main-shortlist-cb-${idx}" ${_selectedCards.has(idx) ? 'checked' : ''} onchange="toggleShareBtn(${idx}, this.checked); syncShortlistCheckboxes(${idx}, this.checked, 'detail')">
+                        <span class="share-checkbox-label">Shortlist</span>
+                    </label>
                 </div>
             </div>
 
@@ -5261,28 +5295,39 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const extraSkills = (r.key_skills || []).length - skills.length;
         const present     = r.skills_present || [];
         const missing     = r.skills_missing || [];
+        const stripeClass = r.match_score >= 75 ? 'stripe-high' : r.match_score >= 50 ? 'stripe-mid' : 'stripe-low';
+        const recCls      = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
+        const recTxt      = r.match_score >= 75 ? '✅ Recommended' : r.match_score >= 50 ? '🔶 Consider' : '❌ Pass';
 
         return `
-        <div class="result-card" id="card-${i}" style="animation-delay:${i * 0.06}s">
+        <div class="result-card ${stripeClass}" id="card-${i}" style="animation-delay:${i * 0.06}s">
             <div class="card-top">
+                <!-- Row 1: Name + rec pill left / score right -->
                 <div class="card-header-row">
-                    <div style="display:flex;align-items:center;flex:1;min-width:0;">
-                        <div class="candidate-info">
-                            <div class="candidate-name">${r.name}</div>
-                            <div class="candidate-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}</div>
-                        </div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="candidate-name">${r.name}</div>
+                        <div style="margin-top:4px;"><span class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.64rem;padding:2px 8px;">${recTxt}</span></div>
                     </div>
-                    <div class="score-badge ${scoreClass(r.match_score)}">${r.match_score}%</div>
+                    <div class="score-badge ${scoreClass(r.match_score)}" style="margin-left:0.75rem;">${r.match_score}%</div>
                 </div>
+                <!-- Row 2: Meta pills -->
+                <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin:0.6rem 0 0.65rem;">
+                    <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:500;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text-secondary);">📍 ${r.location || '—'}</span>
+                    <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:500;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text-secondary);">💼 ${_fmtExp(r.experience_years)}</span>
+                    ${r.email ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:500;background:rgba(56,139,253,0.08);border:1px solid rgba(56,139,253,0.2);color:#79c0ff;">📧 ${r.email}</span>` : ''}
+                    ${r.phone ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:500;background:rgba(56,139,253,0.08);border:1px solid rgba(56,139,253,0.2);color:#79c0ff;">📞 ${r.phone}</span>` : ''}
+                    ${r.current_ctc   ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:500;background:rgba(86,211,100,0.07);border:1px solid rgba(86,211,100,0.2);color:var(--success);">💰 ${r.current_ctc}</span>` : ''}
+                    ${r.expected_ctc  ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:500;background:rgba(227,179,65,0.08);border:1px solid rgba(227,179,65,0.22);color:var(--amber);">🎯 ${r.expected_ctc}</span>` : ''}
+                    ${r.notice_period ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:500;background:rgba(0,220,255,0.07);border:1px solid rgba(0,220,255,0.18);color:var(--accent);">📅 ${r.notice_period}</span>` : ''}
+                </div>
+                <!-- Score bar -->
                 <div class="score-bar">
                     <div class="score-fill ${fillClass(r.match_score)}" style="width:${r.match_score}%"></div>
                 </div>
+                <!-- Skill tags -->
                 <div class="skill-tags">
                     ${skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
                     ${extraSkills > 0 ? `<span class="more-tag">+${extraSkills} more</span>` : ''}
-                    ${r.current_ctc   ? `<span class="skill-tag" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25);color:var(--success);">💰 ${r.current_ctc}</span>` : ''}
-                    ${r.expected_ctc  ? `<span class="skill-tag" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.25);color:var(--amber);">🎯 ${r.expected_ctc}</span>` : ''}
-                    ${r.notice_period ? `<span class="skill-tag" style="background:rgba(0,220,255,0.07);border-color:rgba(0,220,255,0.2);color:var(--accent);">📅 ${r.notice_period}</span>` : ''}
                 </div>
             </div>
 
@@ -6107,37 +6152,14 @@ main.addEventListener('scroll',()=>{
     async function saveToFirebase(data) {
         const id  = generateShortId();
 
-        // Save each candidate's PDF separately to avoid Firebase 10MB node limit
-        let candidatesToStore = data.candidates;
-        if (Array.isArray(data.candidates)) {
-            candidatesToStore = await Promise.all(data.candidates.map(async (c) => {
-                if (c.resume_pdf_b64) {
-                    const pdfId  = generateShortId();
-                    const pdfUrl = `${firebaseDbUrl}/pdfs/${pdfId}.json`;
-                    try {
-                        const pdfRes = await fetch(pdfUrl, {
-                            method:  'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body:    JSON.stringify({ data: c.resume_pdf_b64, _created: Date.now() })
-                        });
-                        if (pdfRes.ok) {
-                            // Store reference ID instead of raw base64 in the main share node
-                            const { resume_pdf_b64, ...rest } = c;
-                            return { ...rest, pdf_ref: pdfId };
-                        }
-                    } catch(e) {
-                        console.warn('PDF separate save failed, embedding inline:', e);
-                    }
-                }
-                return c;
-            }));
-        }
-
+        // Store resume_pdf_b64 inline so the share page can always read it
+        // without requiring a separate /pdfs/ Firebase path (which may have
+        // different security rules and cause silent read failures for recipients).
         const url = `${firebaseDbUrl}/shares/${id}.json`;
         const res = await fetch(url, {
             method:  'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ ...data, candidates: candidatesToStore, _created: Date.now() })
+            body:    JSON.stringify({ ...data, _created: Date.now() })
         });
         if (!res.ok) throw new Error(`Firebase write failed: ${res.status}`);
         return id;
@@ -6154,25 +6176,6 @@ main.addEventListener('scroll',()=>{
         let candidates = data.candidates;
         if (candidates && !Array.isArray(candidates)) {
             candidates = Object.keys(candidates).sort((a,b) => +a - +b).map(k => candidates[k]);
-        }
-
-        // Resolve any pdf_ref back to actual base64
-        if (Array.isArray(candidates)) {
-            candidates = await Promise.all(candidates.map(async (c) => {
-                if (c.pdf_ref) {
-                    try {
-                        const pdfRes = await fetch(`${base}/pdfs/${c.pdf_ref}.json`);
-                        if (pdfRes.ok) {
-                            const pdfData = await pdfRes.json();
-                            const { pdf_ref, ...rest } = c;
-                            return { ...rest, resume_pdf_b64: pdfData.data };
-                        }
-                    } catch(e) {
-                        console.warn('Could not load PDF ref:', e);
-                    }
-                }
-                return c;
-            }));
         }
 
         return { ...data, candidates };
@@ -6323,9 +6326,19 @@ main.addEventListener('scroll',()=>{
         const candidates = analysisResults.filter(r => selFilenames.includes(r.filename || r.name));
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
 
-        // For URL mode: always strip the PDF binary (too large for a URL)
-        // For Firebase mode: keep the PDF so interviewers can view the actual resume
-        const candidatesForUrl      = candidates.map(({ resume_pdf_b64, ...rest }) => rest);
+        // For URL mode: strip resume_pdf_b64 only when a drive_link exists (Drive serves the resume).
+        // Uploaded-file candidates have no drive_link, so we must keep their base64 — it's the
+        // only way to display the resume on the share page without Firebase.
+        // For Firebase mode: always keep all data (Firebase handles large payloads separately).
+        const candidatesForUrl = candidates.map(c => {
+            if (c.drive_link) {
+                // Drive-sourced: drive_link is enough; drop the large base64
+                const { resume_pdf_b64, ...rest } = c;
+                return rest;
+            }
+            // Uploaded-file: no drive_link, keep resume_pdf_b64 so the share page can render it
+            return c;
+        });
         const candidatesForFirebase = candidates; // includes resume_pdf_b64
 
         const baseUrl = window.location.origin + window.location.pathname;
@@ -6341,7 +6354,7 @@ main.addEventListener('scroll',()=>{
                 shareLink = `${baseUrl}?view=${encoded}`;
             }
         } else {
-            // No Firebase — strip PDFs to keep URL manageable
+            // No Firebase — encode candidates directly (Drive-sourced PDFs already stripped above)
             const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesForUrl });
             shareLink = `${baseUrl}?view=${encoded}`;
         }
@@ -6730,39 +6743,39 @@ main.addEventListener('scroll',()=>{
                 : '');
 
         document.getElementById('sharePgHero').innerHTML = `
-            <div class="share-detail-hero">
-                <div class="share-detail-info">
-                    <div class="share-detail-name">${r.name}</div>
-                    <div class="share-detail-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
-                    ${(r.current_ctc || r.expected_ctc || r.notice_period) ? `<div class="share-detail-meta" style="margin-top:0.2rem;">${r.current_ctc ? '💰 Curr: <strong>'+r.current_ctc+'</strong>' : ''}${r.current_ctc && (r.expected_ctc || r.notice_period) ? ' &nbsp;·&nbsp; ' : ''}${r.expected_ctc ? '🎯 Exp: <strong>'+r.expected_ctc+'</strong>' : ''}${r.expected_ctc && r.notice_period ? ' &nbsp;·&nbsp; ' : ''}${!r.expected_ctc && r.current_ctc && r.notice_period ? ' &nbsp;·&nbsp; ' : ''}${r.notice_period ? '📅 Notice: <strong>'+r.notice_period+'</strong>' : ''}</div>` : ''}
-                    <div class="share-detail-actions">
-                        <div class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.72rem;padding:3px 10px;">${recTxt}</div>
-                        ${mobileResumeBtn}
+            <div class="share-detail-hero stripe-${r.match_score >= 75 ? 'high' : r.match_score >= 50 ? 'mid' : 'low'}">
+                <!-- Row 1: Name + rec pill left / score ring right -->
+                <div class="share-hero-row1">
+                    <div style="flex:1;min-width:0;">
+                        <div class="share-detail-name">${r.name}</div>
+                        <div style="margin-top:4px;"><span class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.65rem;padding:2px 9px;">${recTxt}</span></div>
                     </div>
-                    <div class="share-decision-row" id="shareDecisionRow">
-                        ${_buildDecisionBtns(idx)}
+                    <div class="share-detail-score-ring ${ringCls}">
+                        <span class="share-detail-score-num ${scoreCls}">${r.match_score}%</span>
+                        <span class="share-detail-score-lbl">Match</span>
                     </div>
                 </div>
-                <div class="share-detail-score-ring ${ringCls}">
-                    <span class="share-detail-score-num ${scoreCls}">${r.match_score}%</span>
-                    <span class="share-detail-score-lbl">Match</span>
+                <!-- Row 2: Meta pills -->
+                <div class="share-hero-row2">
+                    <span class="share-hero-pill">📍 ${r.location || '—'}</span>
+                    <span class="share-hero-pill">💼 ${_fmtExp(r.experience_years)}</span>
+                    ${r.email  ? `<span class="share-hero-pill accent">📧 ${r.email}</span>` : ''}
+                    ${r.phone  ? `<span class="share-hero-pill accent">📞 ${r.phone}</span>` : ''}
+                    ${r.current_ctc   ? `<span class="share-hero-pill green">💰 ${r.current_ctc}</span>` : ''}
+                    ${r.expected_ctc  ? `<span class="share-hero-pill amber">🎯 ${r.expected_ctc}</span>` : ''}
+                    ${r.notice_period ? `<span class="share-hero-pill accent">📅 ${r.notice_period}</span>` : ''}
+                </div>
+                <!-- Row 3: Actions -->
+                <div class="share-detail-actions">
+                    ${mobileResumeBtn}
+                </div>
+                <div class="share-decision-row" id="shareDecisionRow">
+                    ${_buildDecisionBtns(idx)}
                 </div>
             </div>`;
 
         document.getElementById('sharePgBody').innerHTML = `
             <div class="share-detail-body">
-                <div class="share-pg-section">
-                    <div class="share-pg-section-title">📊 Overview</div>
-                    <div class="share-stat-grid">
-                        <div class="share-stat-box"><span class="share-stat-val ${scoreCls}">${r.match_score}%</span><div class="share-stat-lbl">Match Score</div></div>
-                        <div class="share-stat-box"><span class="share-stat-val">${_fmtExp(r.experience_years)}</span><div class="share-stat-lbl">Exp</div></div>
-                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--success);">${have.length}</span><div class="share-stat-lbl">Skills Match</div></div>
-                        <div class="share-stat-box"><span class="share-stat-val" style="color:var(--danger);">${missing.length}</span><div class="share-stat-lbl">Skills Gap</div></div>
-                        ${r.current_ctc  ? `<div class="share-stat-box"><span class="share-stat-val" style="font-size:0.78rem;">${r.current_ctc}</span><div class="share-stat-lbl">Current CTC</div></div>` : ''}
-                        ${r.expected_ctc ? `<div class="share-stat-box"><span class="share-stat-val" style="font-size:0.78rem;">${r.expected_ctc}</span><div class="share-stat-lbl">Expected CTC</div></div>` : ''}
-                        ${r.notice_period? `<div class="share-stat-box"><span class="share-stat-val" style="font-size:0.78rem;">${r.notice_period}</span><div class="share-stat-lbl">Notice Period</div></div>` : ''}
-                    </div>
-                </div>
                 ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
                 ${r.score_breakdown ? `
                 <div class="share-pg-section">
@@ -6843,6 +6856,51 @@ main.addEventListener('scroll',()=>{
 
         if (_viewerObjectUrl) { URL.revokeObjectURL(_viewerObjectUrl); _viewerObjectUrl = null; }
 
+        // Helper: try rendering from base64 when Drive preview fails
+        const renderSidebarFromBase64 = async (fileId) => {
+            if (!r.resume_pdf_b64) {
+                showSidebarDriveFallback(fileId);
+                return;
+            }
+            const isDocx = r.file_type === 'docx' || (r.filename && r.filename.toLowerCase().endsWith('.docx'));
+            try {
+                const byteChars = atob(r.resume_pdf_b64);
+                const byteArr   = new Uint8Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+                let objectUrl;
+                if (isDocx) {
+                    const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+                        *, *::before, *::after { box-sizing: border-box; }
+                        html, body { margin:0; padding:0; background:#fff !important; color:#1a1a1a !important; font-family:'Segoe UI',Arial,sans-serif; font-size:14px; line-height:1.7; }
+                        body { padding:2.5rem 3rem; max-width:860px; margin:0 auto; }
+                        h1,h2,h3,h4,h5,h6 { color:#111 !important; margin:1.2em 0 0.4em; font-weight:700; }
+                        p { margin:0.4em 0; color:#1a1a1a !important; }
+                        a { color:#0066cc; } ul,ol { padding-left:1.5rem; margin:0.5em 0; }
+                        li { margin:0.25em 0; color:#1a1a1a !important; }
+                        strong,b { color:#111 !important; }
+                        hr { border:none; border-top:1px solid #ddd; margin:1.25rem 0; }
+                    </style></head><body>${result.value}</body></html>`;
+                    const htmlBlob = new Blob([html], { type: 'text/html' });
+                    objectUrl = URL.createObjectURL(htmlBlob);
+                } else {
+                    const blob = new Blob([byteArr], { type: 'application/pdf' });
+                    objectUrl = URL.createObjectURL(blob);
+                }
+                if (_viewerObjectUrl) URL.revokeObjectURL(_viewerObjectUrl);
+                _viewerObjectUrl = objectUrl;
+                frame.src = _viewerObjectUrl;
+                frame.style.display = 'block';
+                emptyState.style.display = 'none';
+                console.log('✓ Sidebar resume rendered from base64 (Drive fallback)');
+            } catch(e) {
+                console.error('Sidebar base64 fallback error:', e);
+                showSidebarDriveFallback(fileId);
+            }
+        };
+
         // 1. Google Drive link (primary path when data came from Firebase)
         if (r.drive_link) {
             const fileIdMatch = r.drive_link.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
@@ -6855,8 +6913,8 @@ main.addEventListener('scroll',()=>{
                 frame.onload = null;
                 
                 let loadTimeout = setTimeout(() => {
-                    console.warn('Drive preview timed out in sidebar');
-                    showSidebarDriveFallback(fileId);
+                    console.warn('Drive preview timed out in sidebar — trying base64 fallback');
+                    renderSidebarFromBase64(fileId);
                 }, 8000);
                 
                 frame.onload = () => {
@@ -6866,8 +6924,8 @@ main.addEventListener('scroll',()=>{
                 
                 frame.onerror = () => {
                     clearTimeout(loadTimeout);
-                    console.warn('Drive preview failed in sidebar');
-                    showSidebarDriveFallback(fileId);
+                    console.warn('Drive preview failed in sidebar — trying base64 fallback');
+                    renderSidebarFromBase64(fileId);
                 };
                 
                 frame.src = embedUrl;
@@ -6876,7 +6934,7 @@ main.addEventListener('scroll',()=>{
                 
             } else {
                 console.error('Could not extract file ID from:', r.drive_link);
-                showSidebarDriveFallback(null, r.drive_link);
+                renderSidebarFromBase64(null);
             }
 
         // 2. Base64 file (PDF or DOCX)
@@ -6984,6 +7042,38 @@ main.addEventListener('scroll',()=>{
 
         // 1. Google Drive link (primary path when data came from Firebase — no pdf_b64)
         if (r && r.drive_link) {
+            // Helper: try base64 first before showing Drive fallback
+            const renderModalFromBase64 = async (fileId) => {
+                if (!r.resume_pdf_b64) { showDriveFallback(fileId); return; }
+                const isDocxFb = r.file_type === 'docx' || (r.filename && r.filename.toLowerCase().endsWith('.docx'));
+                try {
+                    const byteChars = atob(r.resume_pdf_b64);
+                    const byteArr   = new Uint8Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+                    let objectUrl;
+                    if (isDocxFb) {
+                        const blob = new Blob([byteArr], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const result = await mammoth.convertToHtml({ arrayBuffer });
+                        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>html,body{margin:0;padding:0;background:#fff;color:#1a1a1a;font-family:'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.7}body{padding:2.5rem 3rem;max-width:860px;margin:0 auto}h1,h2,h3,h4,h5,h6{color:#111;margin:1.2em 0 0.4em;font-weight:700}p{margin:0.4em 0}a{color:#0066cc}ul,ol{padding-left:1.5rem}li{margin:0.25em 0}strong,b{color:#111}hr{border:none;border-top:1px solid #ddd;margin:1.25rem 0}</style></head><body>${result.value}</body></html>`;
+                        const htmlBlob = new Blob([html], { type: 'text/html' });
+                        objectUrl = URL.createObjectURL(htmlBlob);
+                    } else {
+                        const blob = new Blob([byteArr], { type: 'application/pdf' });
+                        objectUrl = URL.createObjectURL(blob);
+                    }
+                    if (_viewerObjectUrl) URL.revokeObjectURL(_viewerObjectUrl);
+                    _viewerObjectUrl = objectUrl;
+                    frame.src = _viewerObjectUrl;
+                    frame.style.display = 'block';
+                    noPreview.style.display = 'none';
+                    console.log('✓ Modal resume rendered from base64 (Drive fallback)');
+                } catch(e) {
+                    console.error('Modal base64 fallback error:', e);
+                    showDriveFallback(fileId);
+                }
+            };
+
             // Extract file ID from Google Drive URL and use official viewer API
             // Supports formats: /d/{ID}/, /file/d/{ID}/, /open?id={ID}
             const fileIdMatch = r.drive_link.match(/\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/);
@@ -6998,8 +7088,8 @@ main.addEventListener('scroll',()=>{
                 
                 // Set up timeout to detect if iframe fails to load
                 let loadTimeout = setTimeout(() => {
-                    console.warn('Drive preview timed out, showing fallback');
-                    showDriveFallback(fileId);
+                    console.warn('Drive preview timed out, trying base64 fallback');
+                    renderModalFromBase64(fileId);
                 }, 8000);
                 
                 // Success handler
@@ -7011,8 +7101,8 @@ main.addEventListener('scroll',()=>{
                 // Error handler (may not always trigger due to iframe security)
                 frame.onerror = () => {
                     clearTimeout(loadTimeout);
-                    console.warn('Drive preview failed to load');
-                    showDriveFallback(fileId);
+                    console.warn('Drive preview failed to load, trying base64 fallback');
+                    renderModalFromBase64(fileId);
                 };
                 
                 frame.src = embedUrl;
@@ -7020,9 +7110,9 @@ main.addEventListener('scroll',()=>{
                 noPreview.style.display = 'none';
                 
             } else {
-                // Fallback: if we can't extract ID, show error
+                // Fallback: if we can't extract ID, try base64
                 console.error('Could not extract file ID from:', r.drive_link);
-                showDriveFallback(null, r.drive_link);
+                await renderModalFromBase64(null);
             }
 
         // 2. Base64 file (PDF or DOCX)

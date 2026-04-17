@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hero Design 3 — Two-Row Layout</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0d1117; color: #f0f6fc; padding: 2rem; }
+
+  :root {
+    --accent: #388bfd; --success: #56d364; --amber: #e3b341; --danger: #f85149;
+    --bg-card: #161b22; --border: #21262d; --text-primary: #f0f6fc;
+    --text-secondary: #c9d1d9; --text-muted: #8b949e;
+  }
+
+  h2 { font-family: 'Outfit', sans-serif; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+  .preview-label { font-family: 'Outfit', sans-serif; font-size: 0.65rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.6rem; opacity: 0.7; }
+  .section { max-width: 900px; margin-bottom: 3rem; }
+  .row { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 280px; max-width: 420px; }
+
+  /* ─── MAIN PAGE CARD ─── */
+  .result-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .card-top { padding: 1rem 1.1rem 0.875rem; }
+
+  /* ROW 1: name left, score right */
+  .card-row1 {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+  .candidate-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+  .rec-pill {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 0.65rem; font-weight: 600;
+    margin-top: 4px;
+  }
+  .rec-pill.proceed { background: rgba(86,211,100,0.1); color: var(--success); border: 1px solid rgba(86,211,100,0.25); }
+  .rec-pill.consider { background: rgba(227,179,65,0.1); color: var(--amber); border: 1px solid rgba(227,179,65,0.25); }
+  .score-badge {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem; font-weight: 700;
+    flex-shrink: 0; line-height: 1;
+  }
+  .score-badge.high { color: var(--success); }
+  .score-badge.mid  { color: var(--amber); }
+
+  /* ROW 2: meta pills */
+  .card-row2 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.7rem;
+  }
+  .meta-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 0.68rem; font-weight: 500;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+  }
+  .meta-pill.accent { background: rgba(56,139,253,0.08); border-color: rgba(56,139,253,0.2); color: #79c0ff; }
+  .meta-pill.green  { background: rgba(86,211,100,0.07); border-color: rgba(86,211,100,0.2); color: #56d364; }
+  .meta-pill.amber  { background: rgba(227,179,65,0.08); border-color: rgba(227,179,65,0.22); color: #e3b341; }
+
+  /* ROW 3: score bar */
+  .score-bar { width: 100%; height: 3px; background: rgba(0,220,255,0.1); border-radius: 2px; margin-bottom: 0.75rem; overflow: hidden; }
+  .score-fill-high { height: 100%; background: var(--success); border-radius: 2px; }
+  .score-fill-mid  { height: 100%; background: var(--amber); border-radius: 2px; }
+
+  /* ROW 4: skill tags */
+  .skill-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .skill-tag { padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; background: rgba(0,220,255,0.1); border: 1px solid rgba(0,220,255,0.2); color: #90d8f0; }
+
+  /* actions */
+  .card-actions { display: flex; align-items: center; gap: 0; border-top: 1px solid var(--border); }
+  .card-action-btn { flex: 1; padding: 0.55rem 0; font-size: 0.74rem; font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .card-divider { width: 1px; height: 28px; background: var(--border); }
+
+
+  /* ─── SHARE PAGE HERO ─── */
+  .share-hero {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .share-hero-inner {
+    padding: 1.1rem 1.25rem 1rem;
+    background: linear-gradient(135deg, rgba(0,128,255,0.07) 0%, rgba(0,220,255,0.02) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ROW 1: name left, score ring right */
+  .sh-row1 {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+  .sh-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--text-primary); line-height: 1.2;
+  }
+  .sh-rec-pill {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 0.65rem; font-weight: 600;
+    margin-top: 4px;
+    background: rgba(227,179,65,0.1); color: var(--amber);
+    border: 1px solid rgba(227,179,65,0.25);
+  }
+  .sh-score-ring {
+    flex-shrink: 0; width: 56px; height: 56px;
+    border-radius: 50%; border: 2.5px solid var(--amber);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .sh-score-num { font-family:'Outfit',sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--amber); line-height: 1; }
+  .sh-score-lbl { font-size: 0.48rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* ROW 2: meta pills */
+  .sh-row2 { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem; }
+
+  /* ROW 3: actions */
+  .sh-row3 { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .sh-btn-proceed { padding: 4px 14px; border-radius: 8px; font-size: 0.74rem; font-weight: 600; background: rgba(86,211,100,0.1); border: 1px solid rgba(86,211,100,0.25); color: var(--success); cursor: pointer; font-family: 'Inter', sans-serif; }
+  .sh-btn-pass    { padding: 4px 14px; border-radius: 8px; font-size: 0.74rem; font-weight: 600; background: rgba(248,81,73,0.1);  border: 1px solid rgba(248,81,73,0.25);  color: var(--danger);  cursor: pointer; font-family: 'Inter', sans-serif; }
+
+  .share-hero-body { padding: 0.875rem 1.25rem; }
+  .sh-body-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; margin-bottom: 0.6rem; }
+  .sh-body-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h2>Design 3 — Two-Row: Name + Score / Meta Pills Below</h2>
+
+<div class="section">
+  <div class="row">
+
+    <!-- MAIN PAGE CARD -->
+    <div class="col">
+      <div class="preview-label">Main Page Card</div>
+      <div class="result-card">
+        <div class="card-top">
+
+          <!-- Row 1: Name + Score -->
+          <div class="card-row1">
+            <div>
+              <div class="candidate-name">Anudeep Mummaneni</div>
+              <div class="rec-pill consider">🔶 Consider Further Review</div>
+            </div>
+            <div class="score-badge mid">74%</div>
+          </div>
+
+          <!-- Row 2: Meta Pills -->
+          <div class="card-row2">
+            <span class="meta-pill">📍 Hyderabad</span>
+            <span class="meta-pill">💼 1 yr 2 mo</span>
+            <span class="meta-pill accent">📧 anudeep3555@gmail.com</span>
+            <span class="meta-pill green">💰 ₹4.2 LPA</span>
+            <span class="meta-pill amber">📅 30 days</span>
+          </div>
+
+          <!-- Score Bar -->
+          <div class="score-bar"><div class="score-fill-mid" style="width:74%"></div></div>
+
+          <!-- Skill Tags -->
+          <div class="skill-tags">
+            <span class="skill-tag">React</span>
+            <span class="skill-tag">Node.js</span>
+            <span class="skill-tag">MongoDB</span>
+            <span class="skill-tag">AWS</span>
+            <span class="skill-tag" style="background:rgba(0,128,255,0.08);border-color:rgba(56,139,253,0.25);color:#79c0ff;">+8 more</span>
+          </div>
+
+        </div>
+        <div class="card-actions">
+          <button class="card-action-btn">☐ Shortlist</button>
+          <div class="card-divider"></div>
+          <button class="card-action-btn" style="color:var(--accent);">View Analysis ▾</button>
+          <div class="card-divider"></div>
+          <button class="card-action-btn">👁 View</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARE PAGE HERO -->
+    <div class="col">
+      <div class="preview-label">Share Page Hero</div>
+      <div class="share-hero">
+        <div class="share-hero-inner">
+
+          <!-- Row 1: Name + Score Ring -->
+          <div class="sh-row1">
+            <div>
+              <div class="sh-name">Anudeep Mummaneni</div>
+              <div class="sh-rec-pill">🔶 Consider Further Review</div>
+            </div>
+            <div class="sh-score-ring">
+              <span class="sh-score-num" style="color:var(--amber)">74%</span>
+              <span class="sh-score-lbl">Match</span>
+            </div>
+          </div>
+
+          <!-- Row 2: Meta Pills -->
+          <div class="sh-row2">
+            <span class="meta-pill">📍 Hyderabad</span>
+            <span class="meta-pill">💼 1 yr 2 mo</span>
+            <span class="meta-pill accent">📧 anudeep3555@gmail.com</span>
+            <span class="meta-pill accent">📞 +91 98765 43210</span>
+            <span class="meta-pill green">💰 ₹4.2 LPA</span>
+            <span class="meta-pill amber">📅 30 days notice</span>
+          </div>
+
+          <!-- Row 3: Actions -->
+          <div class="sh-row3">
+            <button class="sh-btn-proceed">✅ Proceed</button>
+            <button class="sh-btn-pass">❌ Pass</button>
+          </div>
+
+        </div>
+        <div class="share-hero-body">
+          <div class="sh-body-label">🎯 Score Reasoning</div>
+          <div class="sh-body-text">Candidate has relevant experience in full stack development with Node.js and React.js, and has demonstrated skills in building secure and scalable applications. However, lacks experience in some required areas like Express.js and Sequelize ORM.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Second example — high scorer -->
+<div class="section">
+  <div class="row">
+    <div class="col">
+      <div class="preview-label">Main Page Card — High Score</div>
+      <div class="result-card">
+        <div class="card-top">
+          <div class="card-row1">
+            <div>
+              <div class="candidate-name">Gujjari Dhanush</div>
+              <div class="rec-pill proceed">✅ Recommended — Move Forward</div>
+            </div>
+            <div class="score-badge high">91%</div>
+          </div>
+          <div class="card-row2">
+            <span class="meta-pill">📍 Hyderabad</span>
+            <span class="meta-pill">💼 3 yrs 5 mo</span>
+            <span class="meta-pill accent">📧 gujjari.d@gmail.com</span>
+            <span class="meta-pill accent">📞 +91 91779 81614</span>
+            <span class="meta-pill green">💰 ₹8 LPA</span>
+          </div>
+          <div class="score-bar"><div class="score-fill-high" style="width:91%"></div></div>
+          <div class="skill-tags">
+            <span class="skill-tag">React</span>
+            <span class="skill-tag">Node.js</span>
+            <span class="skill-tag">TypeScript</span>
+            <span class="skill-tag">PostgreSQL</span>
+            <span class="skill-tag" style="background:rgba(0,128,255,0.08);border-color:rgba(56,139,253,0.25);color:#79c0ff;">+12 more</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="card-action-btn">☑ Shortlisted</button>
+          <div class="card-divider"></div>
+          <button class="card-action-btn" style="color:var(--accent);">View Analysis ▾</button>
+          <div class="card-divider"></div>
+          <button class="card-action-btn">👁 View</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="preview-label">Share Page Hero — High Score</div>
+      <div class="share-hero">
+        <div class="share-hero-inner">
+          <div class="sh-row1">
+            <div>
+              <div class="sh-name">Gujjari Dhanush</div>
+              <div class="sh-rec-pill" style="background:rgba(86,211,100,0.1);color:var(--success);border-color:rgba(86,211,100,0.25);">✅ Recommended — Move Forward</div>
+            </div>
+            <div class="sh-score-ring" style="border-color:var(--success);box-shadow:0 0 10px rgba(86,211,100,0.2);">
+              <span class="sh-score-num" style="color:var(--success)">91%</span>
+              <span class="sh-score-lbl">Match</span>
+            </div>
+          </div>
+          <div class="sh-row2">
+            <span class="meta-pill">📍 Hyderabad</span>
+            <span class="meta-pill">💼 3 yrs 5 mo</span>
+            <span class="meta-pill accent">📧 gujjari.d@gmail.com</span>
+            <span class="meta-pill accent">📞 +91 91779 81614</span>
+            <span class="meta-pill green">💰 ₹8 LPA</span>
+          </div>
+          <div class="sh-row3">
+            <button class="sh-btn-proceed">✅ Proceed</button>
+            <button class="sh-btn-pass">❌ Pass</button>
+          </div>
+        </div>
+        <div class="share-hero-body">
+          <div class="sh-body-label">🎯 Score Reasoning</div>
+          <div class="sh-body-text">Strong full-stack profile with deep React and Node.js expertise. Database and DevOps skills are a good match for the role requirements. Communication and leadership signals in resume are positive.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
