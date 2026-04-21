@@ -1215,13 +1215,22 @@
         .main-content::-webkit-scrollbar { width: 5px; }
         .main-content::-webkit-scrollbar-thumb { background: rgba(0,220,255,0.12); border-radius: 4px; }
 
-        /* ─── LEFT RESUME VIEWER PANEL (HIDDEN - now using permanent sidebar) ─── */
+        /* ─── RESUME VIEWER MODAL (used on mobile share page — sidebar hidden on mobile) ─── */
         .resume-viewer-backdrop {
-            display: none !important;
+            display: none;
+            position: fixed; inset: 0; z-index: 1100;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
         }
+        .resume-viewer-backdrop.open { display: block; }
+
         .resume-viewer-panel {
-            display: none !important;
+            display: none;
+            position: fixed; inset: 0; z-index: 1101;
+            flex-direction: column;
+            background: #0a0e1a;
+            overflow: hidden;
         }
+        .resume-viewer-panel.open { display: flex; }
 
         .viewer-header {
             padding: 1rem 1.25rem;
@@ -2843,6 +2852,26 @@
                     <button class="btn-sm-save" onclick="saveFirebaseDbUrl()">Save</button>
                 </div>
                 <small class="hint" style="margin-top:0.4rem;display:block;">Paste your Firebase Realtime Database URL. Set rules to allow read/write. Candidate data is stored with a short ID — URL stays tiny.</small>
+            </div>
+            <!-- Share Mode -->
+            <div class="interviewers-section-title" style="margin-top:0.9rem;">
+                <span>Share Mode</span>
+            </div>
+            <div style="display:flex;gap:0.5rem;margin-bottom:0.85rem;">
+                <label id="smlbl-full" onclick="setShareMode('full')" style="flex:1;cursor:pointer;border:1.5px solid var(--accent);border-radius:8px;padding:0.55rem 0.75rem;background:rgba(56,139,253,0.10);display:flex;align-items:flex-start;gap:0.5rem;transition:border 0.18s,background 0.18s;">
+                    <input type="radio" name="shareMode" value="full" checked style="margin-top:3px;accent-color:var(--accent);pointer-events:none;">
+                    <div>
+                        <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);">📋 Full</div>
+                        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">Everything — scores, breakdown, summary, highlights, skills & resume.</div>
+                    </div>
+                </label>
+                <label id="smlbl-lite" onclick="setShareMode('lite')" style="flex:1;cursor:pointer;border:1.5px solid var(--border);border-radius:8px;padding:0.55rem 0.75rem;background:transparent;display:flex;align-items:flex-start;gap:0.5rem;transition:border 0.18s,background 0.18s;">
+                    <input type="radio" name="shareMode" value="lite" style="margin-top:3px;accent-color:var(--accent);pointer-events:none;">
+                    <div>
+                        <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);">⚡ Lite</div>
+                        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">Score reasoning + Skills vs JD only. No breakdown, summary or highlights.</div>
+                    </div>
+                </label>
             </div>
             <!-- Interviewer list -->
             <div class="interviewers-section-title">
@@ -6325,6 +6354,7 @@ main.addEventListener('scroll',()=>{
         }).filter(Boolean);
         const candidates = analysisResults.filter(r => selFilenames.includes(r.filename || r.name));
         const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
+        const shareMode  = document.querySelector('input[name="shareMode"]:checked')?.value || 'full';
 
         // For URL mode: strip resume_pdf_b64 only when a drive_link exists (Drive serves the resume).
         // Uploaded-file candidates have no drive_link, so we must keep their base64 — it's the
@@ -6346,16 +6376,16 @@ main.addEventListener('scroll',()=>{
 
         if (firebaseDbUrl) {
             try {
-                const sid = await saveToFirebase({ _bulk: true, _position: position, candidates: candidatesForFirebase });
+                const sid = await saveToFirebase({ _bulk: true, _position: position, _shareMode: shareMode, candidates: candidatesForFirebase });
                 shareLink = `${baseUrl}?sid=${sid}&db=${encodeURIComponent(firebaseDbUrl)}`;
             } catch (fbErr) {
                 console.warn('Firebase save failed, falling back to URL encoding:', fbErr);
-                const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesForUrl });
+                const encoded = encodeCandidateData({ _bulk: true, _position: position, _shareMode: shareMode, candidates: candidatesForUrl });
                 shareLink = `${baseUrl}?view=${encoded}`;
             }
         } else {
             // No Firebase — encode candidates directly (Drive-sourced PDFs already stripped above)
-            const encoded = encodeCandidateData({ _bulk: true, _position: position, candidates: candidatesForUrl });
+            const encoded = encodeCandidateData({ _bulk: true, _position: position, _shareMode: shareMode, candidates: candidatesForUrl });
             shareLink = `${baseUrl}?view=${encoded}`;
         }
         // Embed Apps Script URL so the reviewer's share page can submit feedback to Sheets
@@ -6471,7 +6501,7 @@ main.addEventListener('scroll',()=>{
                 .then(data => {
                     document.getElementById('sharePgHero').innerHTML = '';
                     if (data._bulk && Array.isArray(data.candidates)) {
-                        renderBulkSharePage(data.candidates, data._position || '');
+                        renderBulkSharePage(data.candidates, data._position || '', data._shareMode || 'full');
                     } else {
                         _renderSingleSharePage(data);
                     }
@@ -6491,7 +6521,7 @@ main.addEventListener('scroll',()=>{
 
             // ── BULK mode: array of candidates ──
             if (data._bulk && Array.isArray(data.candidates)) {
-                renderBulkSharePage(data.candidates, data._position || '');
+                renderBulkSharePage(data.candidates, data._position || '', data._shareMode || 'full');
                 return;
             }
 
@@ -6543,6 +6573,15 @@ main.addEventListener('scroll',()=>{
     let _shareSid           = null;
     let _shareDbForFb       = null;
     let _shareAppsScriptUrl = null;
+    let _sharePageMode      = 'full'; // 'full' | 'lite' — set from shared data on share page
+
+    function setShareMode(mode) {
+        document.querySelector(`input[name="shareMode"][value="${mode}"]`).checked = true;
+        const active   = 'flex:1;cursor:pointer;border:1.5px solid var(--accent);border-radius:8px;padding:0.55rem 0.75rem;background:rgba(56,139,253,0.10);display:flex;align-items:flex-start;gap:0.5rem;transition:border 0.18s,background 0.18s;';
+        const inactive = 'flex:1;cursor:pointer;border:1.5px solid var(--border);border-radius:8px;padding:0.55rem 0.75rem;background:transparent;display:flex;align-items:flex-start;gap:0.5rem;transition:border 0.18s,background 0.18s;';
+        document.getElementById('smlbl-full').style.cssText = mode === 'full' ? active : inactive;
+        document.getElementById('smlbl-lite').style.cssText = mode === 'lite' ? active : inactive;
+    }
 
     // ─── Build Proceed/Pass buttons HTML for a candidate ───
     function _buildDecisionBtns(idx) {
@@ -6655,9 +6694,10 @@ main.addEventListener('scroll',()=>{
     }
 
 
-    function renderBulkSharePage(candidates, position) {
+    function renderBulkSharePage(candidates, position, shareMode) {
         candidates.sort((a, b) => b.match_score - a.match_score);
         _shareCandidates = candidates;
+        _sharePageMode   = shareMode || 'full';
 
         const count    = candidates.length;
         const avgScore = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count);
@@ -6777,7 +6817,7 @@ main.addEventListener('scroll',()=>{
         document.getElementById('sharePgBody').innerHTML = `
             <div class="share-detail-body">
                 ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
-                ${r.score_breakdown ? `
+                ${_sharePageMode === 'full' && r.score_breakdown ? `
                 <div class="share-pg-section">
                     <div class="share-pg-section-title">📐 Score Breakdown</div>
                     <div class="score-breakdown-list">
@@ -6795,9 +6835,9 @@ main.addEventListener('scroll',()=>{
                         }).join('')}
                     </div>
                 </div>` : ''}
-                ${r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
-                ${r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
-                ${allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
+                ${_sharePageMode === 'full' && r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
+                ${_sharePageMode === 'full' && r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
+                ${_sharePageMode === 'full' && allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
                 ${(have.length || missing.length) ? `
                 <div class="share-pg-section">
                     <div class="share-pg-section-title">✅ Skills vs JD</div>

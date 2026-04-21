@@ -523,7 +523,9 @@ Talent Acquisition Team`;
 function logShare(candidateName, position, shareLink, recipients) {
   try {
     const ss    = SpreadsheetApp.openById(SHEET_ID);
-    let   sheet = ss.getSheetByName('Candidate Profile Share');
+
+    // ── Original log tab ──
+    let sheet = ss.getSheetByName('Candidate Profile Share');
     if (!sheet) {
       sheet = ss.insertSheet('Candidate Profile Share');
       sheet.appendRow(['Timestamp', 'Candidate Name', 'Position', 'Recipients', 'Share Link']);
@@ -536,6 +538,30 @@ function logShare(candidateName, position, shareLink, recipients) {
       recipients.map(r => `${r.name} <${r.email}>`).join(', '),
       shareLink
     ]);
+
+    // ── New "Candies links" tab — with batch number per position ──
+    let linksSheet = ss.getSheetByName('Candies links');
+    if (!linksSheet) {
+      linksSheet = ss.insertSheet('Candies links');
+      linksSheet.appendRow(['Batch No.', 'Timestamp', 'Position', 'Candidate(s)', 'Shared With', 'Share Link']);
+      linksSheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      linksSheet.setColumnWidth(6, 400);
+    }
+
+    // Calculate batch number for this position (count existing rows for same position + 1)
+    const allData  = linksSheet.getDataRange().getValues();
+    const posRows  = allData.slice(1).filter(row => row[2] === position);
+    const batchNo  = posRows.length + 1;
+
+    linksSheet.appendRow([
+      batchNo,
+      new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      position,
+      candidateName,
+      recipients.map(r => `${r.name} <${r.email}>`).join(', '),
+      shareLink
+    ]);
+
   } catch (err) {
     Logger.log('logShare warning (non-fatal): ' + err.message);
   }
