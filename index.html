@@ -663,6 +663,28 @@
         }
         .main-cand-item:hover { background: rgba(0,220,255,0.06); border-color: rgba(0,220,255,0.18); }
         .main-cand-item.active { background: rgba(0,220,255,0.1); border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0,220,255,0.1); }
+        /* ── Shortlisted / Proceed → spinning purple glow border ── */
+        @keyframes spin-purple-border { to { transform: rotate(1turn); } }
+        .main-cand-item.shortlisted-glow,
+        .share-cand-item.shortlisted-glow {
+            background: rgba(139,92,246,0.07) !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            overflow: hidden;
+        }
+        .main-cand-item.shortlisted-glow::before,
+        .share-cand-item.shortlisted-glow::before {
+            content:''; position:absolute; inset:-150%;
+            background: conic-gradient(from 0deg, transparent 0deg, #7c3aed 40deg, #c084fc 70deg, transparent 100deg);
+            animation: spin-purple-border 2.4s linear infinite; z-index:0;
+        }
+        .main-cand-item.shortlisted-glow::after,
+        .share-cand-item.shortlisted-glow::after {
+            content:''; position:absolute; inset:1.5px;
+            background: #161b22; border-radius:8px; z-index:1;
+        }
+        .main-cand-item.shortlisted-glow > *,
+        .share-cand-item.shortlisted-glow > * { position:relative; z-index:2; }
         .main-cand-avatar {
             width: 30px; height: 30px; border-radius: 8px;
             background: linear-gradient(135deg, var(--accent-dark), #004080);
@@ -1590,7 +1612,7 @@
             flex-shrink: 0; margin-left: auto; align-self: center;
             display: none;
         }
-        .share-cand-decision-dot.proceed { display: block; background: #3fb850; box-shadow: 0 0 5px rgba(63,184,80,0.55); }
+        .share-cand-decision-dot.proceed { display: none; } /* glow border replaces green dot */
         .share-cand-decision-dot.pass    { display: block; background: #f07070; box-shadow: 0 0 5px rgba(240,112,112,0.55); }
 
         /* Feedback floating bar */
@@ -4462,18 +4484,18 @@ JD: ${jd}
 
 Filters: Exp ${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal*12)+'mo' : filters.minExpDecimal.toFixed(1)+'yrs') : '0'}–${filters.maxExpDecimal !== null ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal*12)+'mo' : filters.maxExpDecimal.toFixed(1)+'yrs') : 'any'}, Location: ${filters.location || 'any'}${extraRequirements.trim() ? `\nExtra screening (evaluate each): ${extraRequirements.trim()}` : ''}
 
-Resume: ${resumeText.slice(0, 5000)}
+Resume: ${resumeText.slice(0, 15000)}
 
 SCORING (each 0–100):
 • skills_score (40%): demonstrated skills from work exp matching JD
-• experience_score (25%): parse each role's start/end dates (month + year), sum total months of RELEVANT experience, compare vs JD required; set experience_years = total_months÷12 rounded to 2 decimal places (e.g. 2.25 = 2 yrs 3 mo, 0.5 = 6 mo); 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant
+• experience_score (25%): Look specifically for a Work Experience / Employment History section. For EACH role, extract the start month+year and end month+year (treat "Present"/"Current" as today) and classify the role as either PROFESSIONAL or INTERNSHIP (internship = title/type explicitly mentions "Intern", "Internship", "Trainee", or "Industrial Training"). Calculate duration in months for each role. Sum ONLY the PROFESSIONAL role months, divide by 12 — this is experience_years (round to 2 decimal places). Also sum total INTERNSHIP months separately — this is internship_months (integer, 0 if none). Do NOT count internship duration in experience_years. Do NOT infer from summary/objective lines. If no dated professional roles found, set experience_years=0. Compare experience_years vs JD required: 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant
 • education_score (15%): degree/field vs JD
 • achievements_score (10%): quantified results
 • culture_score (10%): soft skills/leadership signals
 match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
 
 Return exactly:
-{"name":"","email":null,"phone":null,"experience_years":0,"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
+{"name":"","email":null,"phone":null,"experience_years":0,"internship_months":0,"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
 
         let raw;
         let controller = null;
@@ -4503,7 +4525,7 @@ Return exactly:
                             model: 'llama-3.3-70b-versatile',
                             messages: [{ role: 'user', content: prompt }],
                             temperature: 0.2,
-                            max_tokens: 900
+                            max_tokens: 1500
                         })
                     });
                 } catch (err) {
@@ -5028,7 +5050,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
             const isShortlisted = _selectedCards.has(i);
             return `
-            <div class="main-cand-item${_selectedMainIdx === i ? ' active' : ''}" onclick="selectMainCandidate(${i})" id="main-cand-item-${i}" style="border-color:${isShortlisted ? 'rgba(64,200,255,0.5)' : ''}">
+            <div class="main-cand-item${_selectedMainIdx === i ? ' active' : ''}${isShortlisted ? ' shortlisted-glow' : ''}" onclick="selectMainCandidate(${i})" id="main-cand-item-${i}">
                 <div class="main-cand-shortlist" onclick="event.stopPropagation()" title="Shortlist">
                     <input type="checkbox" id="sidebar-shortlist-cb-${i}" ${isShortlisted ? 'checked' : ''} onchange="toggleShareBtn(${i}, this.checked); syncShortlistCheckboxes(${i}, this.checked)">
                 </div>
@@ -6060,9 +6082,9 @@ main.addEventListener('scroll',()=>{
         } else {
             _selectedCards.delete(idx);
         }
-        // Highlight sidebar item
+        // Highlight sidebar item with glow when shortlisted
         const item = document.getElementById(`main-cand-item-${idx}`);
-        if (item) item.style.borderColor = checked ? 'rgba(64,200,255,0.5)' : '';
+        if (item) item.classList.toggle('shortlisted-glow', checked);
 
         updateFloatingBar();
     }
@@ -6607,12 +6629,14 @@ main.addEventListener('scroll',()=>{
             const row = document.getElementById('shareDecisionRow');
             if (row) row.innerHTML = _buildDecisionBtns(idx);
         }
-        // Update dot on sidebar item
+        // Update dot (pass only) + glow border (proceed)
         const dot = document.getElementById(`share-dec-dot-${idx}`);
         if (dot) {
             const d = _shareFeedback[idx];
             dot.className = `share-cand-decision-dot${d ? ' ' + d : ''}`;
         }
+        const card = document.getElementById(`share-item-${idx}`);
+        if (card) card.classList.toggle('shortlisted-glow', _shareFeedback[idx] === 'proceed');
         updateShareFeedbackBar();
     }
 
@@ -6799,6 +6823,7 @@ main.addEventListener('scroll',()=>{
                 <div class="share-hero-row2">
                     <span class="share-hero-pill">📍 Loc: ${r.location || '—'}</span>
                     <span class="share-hero-pill">💼 Exp: ${_fmtExp(r.experience_years)}</span>
+                    ${r.internship_months > 0 ? `<span class="share-hero-pill" style="background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.3);color:#a78bfa;">🎓 Intern: ${r.internship_months}mo</span>` : ''}
                     ${r.email  ? `<span class="share-hero-pill accent">📧 Email: ${r.email}</span>` : ''}
                     ${r.phone  ? `<span class="share-hero-pill accent">📞 Phone: ${r.phone}</span>` : ''}
                     ${r.current_ctc   ? `<span class="share-hero-pill green">💰 Current CTC: ${r.current_ctc}</span>` : ''}
