@@ -4476,7 +4476,9 @@ Rules:
         await rateLimiter.waitForSlot();
         if (_stopSignal) throw new Error('STOP_REQUESTED');
 
+        const _todayLabel = (() => { const d = new Date(); return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }); })();
         const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description. Return ONLY valid JSON (no markdown, no extra text).
+Today's date: ${_todayLabel}. Use this exact date when a role says "Present" or "Current".
 
 SKILLS RULE: A skill only counts if used in WORK EXPERIENCE/RESPONSIBILITIES — not just listed in a Skills/Competencies section. Penalize skills listed only without job context.
 
@@ -4488,7 +4490,14 @@ Resume: ${resumeText.slice(0, 15000)}
 
 SCORING (each 0–100):
 • skills_score (40%): demonstrated skills from work exp matching JD
-• experience_score (25%): Look specifically for a Work Experience / Employment History section. For EACH role, extract the start month+year and end month+year (treat "Present"/"Current" as today) and classify the role as either PROFESSIONAL or INTERNSHIP (internship = title/type explicitly mentions "Intern", "Internship", "Trainee", or "Industrial Training"). Calculate duration in months for each role. Sum ONLY the PROFESSIONAL role months, divide by 12 — this is experience_years (round to 2 decimal places). Also sum total INTERNSHIP months separately — this is internship_months (integer, 0 if none). Do NOT count internship duration in experience_years. Do NOT infer from summary/objective lines. If no dated professional roles found, set experience_years=0. Compare experience_years vs JD required: 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant
+• experience_score (25%): Find the Work Experience / Employment History section. For EACH role:
+  1. Extract start month+year and end month+year. If end says "Present", "Current", or is blank, use today's month+year (${_todayLabel}).
+  2. Calculate months = (endYear - startYear)*12 + (endMonth - startMonth). Example: Jan 2024 → ${_todayLabel} = correct number of months from Jan 2024 to now.
+  3. Classify role: INTERNSHIP if title/type explicitly says "Intern", "Internship", "Trainee", or "Industrial Training". Otherwise PROFESSIONAL.
+  4. Sum ONLY PROFESSIONAL months → divide by 12 → experience_years (round to 2 decimal places).
+  5. Sum ONLY INTERNSHIP months → internship_months (integer, 0 if none).
+  6. DO NOT infer experience from summary/objective lines. If no dated professional roles found, set experience_years=0.
+  Compare experience_years vs JD required: 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant
 • education_score (15%): degree/field vs JD
 • achievements_score (10%): quantified results
 • culture_score (10%): soft skills/leadership signals
