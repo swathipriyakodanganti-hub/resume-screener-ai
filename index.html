@@ -1146,8 +1146,8 @@
 
         /* Toast */
         .toast {
-            position: fixed; bottom: 1.75rem; left: 50%;
-            transform: translateX(-50%) translateY(80px);
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.92);
             background: rgba(4, 8, 18, 0.96);
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -1155,13 +1155,13 @@
             box-shadow: 0 8px 32px var(--shadow);
             z-index: 9999;
             opacity: 0;
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 0.85rem;
             white-space: nowrap;
             backdrop-filter: blur(12px);
         }
 
-        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         .toast.success { border-color: rgba(52, 211, 153, 0.5); color: var(--success); }
         .toast.error { border-color: rgba(248, 113, 113, 0.4); color: var(--danger); }
 
@@ -3681,7 +3681,7 @@ Rules:
             // Enrich any already-analysed results
             analysisResults.forEach(r => _enrichCandidate(r));
             if (analysisResults.length) renderMainPanels();
-            showToast(`✅ Linked sheet loaded — ${Object.keys(_linkedSheetMap).length} records mapped`, 'success');
+            showToast(`✅ Linked sheet loaded`, 'success');
         } catch(err) {
             showToast('Linked sheet error: ' + err.message, 'error');
         }

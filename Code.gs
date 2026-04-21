@@ -250,7 +250,7 @@ function doGet(e) {
         spreadsheetId: ss.getId(),
         spreadsheetName: ss.getName(),
         sheets: sheets,
-        fetchedAt: new Date().toISOString()
+        fetchedAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       });
     } catch (err) {
       Logger.log('❌ getSheetSnapshot error: ' + err.toString());
@@ -275,7 +275,7 @@ function doGet(e) {
     // ── Health check endpoint ──
   return jsonResponse({ 
     status: '✅ Pearl Hire — Apps Script is running.',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
     version: '2.1'
   });
 }
@@ -343,6 +343,7 @@ function doPost(e) {
 // Bulk email HTML
 // ───────────────────────────────────────────────────────────────
 function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
+  candidates = candidates || [];
   const count    = candidates.length;
   const avgScore = count ? Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count) : 0;
   const topScore = count ? candidates[0].match_score : 0;
@@ -532,7 +533,7 @@ function logShare(candidateName, position, shareLink, recipients) {
       sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
     }
     sheet.appendRow([
-      new Date().toISOString(),
+      new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
       candidateName,
       position,
       recipients.map(r => `${r.name} <${r.email}>`).join(', '),
@@ -739,7 +740,7 @@ function handleFeedbackSubmit(e) {
       // Color the header row
       sheet.getRange(1, 1, 1, 8).setBackground('#0C447C').setFontColor('#ffffff');
     }
-    const ts = new Date().toISOString();
+    const ts = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     for (let i = 0; i < count; i++) {
       sheet.appendRow([
         ts,
@@ -846,7 +847,7 @@ function handleInlineFeedback(data) {
         .build();
       sheet.setConditionalFormatRules([proceedRule, passRule]);
     }
-    const ts = new Date().toISOString();
+    const ts = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     for (const candidateName in decisions) {
       sheet.appendRow([ts, position, reviewer, candidateName, decisions[candidateName]]);
     }
