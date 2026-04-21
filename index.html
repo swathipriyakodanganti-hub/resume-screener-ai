@@ -6076,11 +6076,18 @@ main.addEventListener('scroll',()=>{
         } else {
             // Select all
             _selectedCards.clear();
-            allIdxs.forEach(i => _selectedCards.add(i));
-            document.querySelectorAll('.share-checkbox-wrap input[type="checkbox"]').forEach((cb, i) => {
-                cb.checked = true;
+            allIdxs.forEach(i => {
+                _selectedCards.add(i);
+                // Card checkbox + highlight
+                const cb = document.getElementById(`main-shortlist-cb-${i}`);
+                if (cb) cb.checked = true;
                 const card = document.getElementById(`card-${i}`);
                 if (card) card.classList.add('shortlisted');
+                // Sidebar checkbox + glow
+                const sidebarCb = document.getElementById(`sidebar-shortlist-cb-${i}`);
+                if (sidebarCb) sidebarCb.checked = true;
+                const sidebarItem = document.getElementById(`main-cand-item-${i}`);
+                if (sidebarItem) sidebarItem.classList.add('shortlisted-glow');
             });
             updateFloatingBar();
         }
@@ -6154,8 +6161,16 @@ main.addEventListener('scroll',()=>{
     // ─── Clear all checkbox selections ───
     function clearAllSelections() {
         _selectedCards.clear();
+        // Card checkboxes + highlights
         document.querySelectorAll('.share-checkbox-wrap input[type="checkbox"]').forEach(cb => cb.checked = false);
-        document.querySelectorAll('.main-cand-item').forEach(el => el.style.borderColor = '');
+        document.querySelectorAll('.result-card').forEach(el => el.classList.remove('shortlisted'));
+        // Sidebar checkboxes + glow
+        document.querySelectorAll('.main-cand-item').forEach(el => {
+            el.classList.remove('shortlisted-glow');
+            el.style.borderColor = '';
+        });
+        document.querySelectorAll('[id^="sidebar-shortlist-cb-"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('[id^="main-shortlist-cb-"]').forEach(cb => cb.checked = false);
         updateFloatingBar();
     }
 
