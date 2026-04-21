@@ -4490,23 +4490,18 @@ Resume: ${resumeText.slice(0, 15000)}
 
 SCORING (each 0–100):
 • skills_score (40%): demonstrated skills from work exp matching JD
-• experience_score (25%): Find the Work Experience / Employment History section. For EACH role:
-  1. Extract the EXACT start month+year and end month+year as written in the resume.
-     - If end is explicitly "Present", "Current", "Till date", "ongoing", or is completely absent → use ${_todayLabel} as end.
-     - If end is ANY real month+year (e.g. "September 2025", "Dec 2023") → use THAT date exactly. Do NOT replace it with today's date.
-  2. Calculate months = (endYear - startYear)*12 + (endMonth - startMonth). Use the month number (Jan=1, Feb=2 … Dec=12).
-  3. Classify: INTERNSHIP if title explicitly says "Intern", "Internship", "Trainee", or "Industrial Training". Otherwise PROFESSIONAL.
-  4. Sum ONLY PROFESSIONAL months → divide by 12 → experience_years (round to 2 decimal places).
-  5. Sum ONLY INTERNSHIP months → internship_months (integer, 0 if none).
-  6. DO NOT infer from summary/objective lines. If no dated professional roles found, set experience_years=0.
-  Compare experience_years vs JD required: 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant
+• experience_score (25%): Find the Work Experience / Employment History section. For EACH role listed:
+  1. Extract: role title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if title explicitly says Intern/Internship/Trainee/Industrial Training).
+  2. Return these raw dates in the "roles" array — do NOT compute durations yourself.
+  3. For experience_score: estimate if total professional time meets JD requirement. 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant.
+  NOTE: experience_years and internship_months will be calculated by the system — set them to 0 in your response.
 • education_score (15%): degree/field vs JD
 • achievements_score (10%): quantified results
 • culture_score (10%): soft skills/leadership signals
 match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
 
 Return exactly:
-{"name":"","email":null,"phone":null,"experience_years":0,"internship_months":0,"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
+{"name":"","email":null,"phone":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
 
         let raw;
         let controller = null;
@@ -4646,7 +4641,53 @@ Return exactly:
             const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
             const match = cleaned.match(/\{[\s\S]*\}/);
             if (!match) throw new Error('Could not find JSON in AI response');
-            return JSON.parse(match[0]);
+            const parsed = JSON.parse(match[0]);
+
+            // ─── Compute experience from roles in JS (AI is unreliable at date math) ───
+            if (Array.isArray(parsed.roles) && parsed.roles.length > 0) {
+                const now = new Date();
+                const parseRoleDate = (str) => {
+                    if (!str) return null;
+                    const s = str.trim().toLowerCase();
+                    if (!s || s === 'present' || s === 'current' || s === 'till date' || s === 'ongoing') {
+                        return { y: now.getFullYear(), m: now.getMonth() + 1 };
+                    }
+                    // Try YYYY-MM
+                    let mg = s.match(/^(\d{4})[\/\-](\d{1,2})$/);
+                    if (mg) return { y: parseInt(mg[1]), m: parseInt(mg[2]) };
+                    // Try MM/YYYY or MM-YYYY
+                    mg = s.match(/^(\d{1,2})[\/\-](\d{4})$/);
+                    if (mg) return { y: parseInt(mg[2]), m: parseInt(mg[1]) };
+                    // Try "Mon YYYY" e.g. "Jun 2023", "June 2023"
+                    const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+                    mg = s.match(/([a-z]+)[\s\-\/]+(\d{4})/);
+                    if (mg) { const mon = months[mg[1].substring(0,3)]; if (mon) return { y: parseInt(mg[2]), m: mon }; }
+                    // Try "YYYY Mon" e.g. "2023 Jun"
+                    mg = s.match(/(\d{4})[\s\-\/]+([a-z]+)/);
+                    if (mg) { const mon = months[mg[2].substring(0,3)]; if (mon) return { y: parseInt(mg[1]), m: mon }; }
+                    // Just a year
+                    mg = s.match(/^(\d{4})$/);
+                    if (mg) return { y: parseInt(mg[1]), m: 1 };
+                    return null;
+                };
+                let profMonths = 0, internMonths = 0;
+                for (const role of parsed.roles) {
+                    const st = parseRoleDate(role.start);
+                    const en = parseRoleDate(role.end);
+                    if (!st || !en) continue;
+                    const dur = (en.y - st.y) * 12 + (en.m - st.m);
+                    if (dur <= 0) continue;
+                    if ((role.type || '').toLowerCase() === 'internship') {
+                        internMonths += dur;
+                    } else {
+                        profMonths += dur;
+                    }
+                }
+                parsed.experience_years  = Math.round((profMonths / 12) * 100) / 100;
+                parsed.internship_months = internMonths;
+            }
+
+            return parsed;
         } catch {
             throw new Error('Malformed JSON from AI response');
         } finally {
