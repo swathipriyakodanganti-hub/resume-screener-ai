@@ -2438,7 +2438,6 @@
             <div class="tb-tab active" onclick="switchPage('results')" id="page-tab-results">
                 📊 Results <span class="tb-tab-badge" id="resultBadge" style="display:none;"></span>
             </div>
-            <div class="tb-tab" onclick="switchPage('share')" id="page-tab-share">📤 Share</div>
             <div class="tb-tab" onclick="switchPage('settings')" id="page-tab-settings">🔧 Settings</div>
         </div>
         <div class="tb-right">
@@ -2744,23 +2743,6 @@
                 </div>
             </div>
         </div><!-- /app-page-links -->
-
-        <!-- ─── SHARE PAGE ─── -->
-        <div class="app-page" id="app-page-share">
-            <div class="setup-page-wrap" style="justify-content:center;align-items:flex-start;padding-top:2rem;">
-                <div style="max-width:600px;width:100%;">
-                    <div class="setup-section-card" style="padding:1.5rem 2rem;">
-                        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--accent);margin-bottom:0.3rem;">Share Results</div>
-                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;">Send Shortlist to Interviewer</div>
-                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6;">
-                            Select candidates on the Results tab → click <strong style="color:var(--text-secondary);">Shortlist</strong> on each → then open the Share Modal to send profiles via Gmail through Apps Script.<br><br>
-                            Interviewers are loaded from the <strong style="color:var(--text-secondary);">"Emails" tab</strong> in your connected Google Sheet (Name col A, Email col B).
-                        </div>
-                        <button class="btn-analyze" onclick="openBulkShareModal()" style="max-width:280px;">📤 Open Share Modal</button>
-                    </div>
-                </div>
-            </div>
-        </div><!-- /app-page-share -->
 
         <!-- ─── SETTINGS PAGE ─── -->
         <div class="app-page" id="app-page-settings">
