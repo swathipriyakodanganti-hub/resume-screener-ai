@@ -2439,6 +2439,7 @@
                 📊 Results <span class="tb-tab-badge" id="resultBadge" style="display:none;"></span>
             </div>
             <div class="tb-tab" onclick="switchPage('share')" id="page-tab-share">📤 Share</div>
+            <div class="tb-tab" onclick="switchPage('settings')" id="page-tab-settings">🔧 Settings</div>
         </div>
         <div class="tb-right">
             <span class="conn-badge" id="connBadge"><span class="conn-dot"></span>Not connected</span>
@@ -2477,84 +2478,8 @@
         <div class="app-page" id="app-page-setup">
             <div class="setup-page-wrap">
 
-                <!-- LEFT COL: API Config + Upload -->
+                <!-- LEFT COL: Upload -->
                 <div class="setup-col">
-                    <div class="setup-section-card">
-                        <div class="s-section-header" onclick="toggleSideSection('api')">
-                            <div class="s-section-left"><span class="s-section-icon">🔑</span><span class="s-section-title">API Config</span></div>
-                            <span class="s-toggle open" id="apiToggle">▼</span>
-                        </div>
-                        <div class="s-content open" id="apiContent"><div class="s-content-inner">
-                            <div class="form-group"><label>AI Provider</label>
-                                <div class="provider-toggle">
-                                    <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">⚡ Groq <span class="provider-badge">Fast · Free</span></button>
-                                    <button class="provider-btn" id="btnGemini" onclick="switchProvider('gemini')">✦ Gemini <span class="provider-badge">Google</span></button>
-                                </div>
-                            </div>
-                            <div id="groqFields">
-                                <div class="form-group"><label for="groqKey">Groq API Key</label>
-                                    <input type="password" id="groqKey" placeholder="gsk_..." onchange="saveGroqKey()">
-                                    <small class="hint">Get free key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM free. You can paste multiple keys separated by commas; app auto-switches sequentially when one hits limit.</small>
-                                </div>
-                            </div>
-                            <div id="geminiFields" style="display:none;">
-                                <div class="form-group"><label for="geminiKey">Gemini API Key</label>
-                                    <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveGeminiKey()">
-                                    <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM free. Multiple keys (comma-separated) are supported.</small>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="appsScriptUrlInput">⚙️ Apps Script Web App URL <span style="font-weight:400;color:var(--success);font-size:0.68rem;">★ Required for folder links</span></label>
-                                <div style="display:flex;gap:0.4rem;align-items:center;">
-                                    <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveAppsScriptUrl()" style="flex:1;">
-                                    <button class="btn-add-links" onclick="saveAppsScriptUrl()" style="white-space:nowrap;">Save</button>
-                                    <button class="btn-add-links" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(86,211,100,0.1);border-color:rgba(86,211,100,0.3);color:var(--success);white-space:nowrap;">Test</button>
-                                </div>
-                                <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
-                                <small class="hint">Deploy your <strong>Code.gs</strong> as a Web App and paste the URL here. Enables full folder listing.</small>
-                            </div>
-                            <div class="form-group"><label for="sheetsId">Google Sheets ID</label>
-                                <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
-                                <small class="hint">Or use the <strong>Links</strong> tab to paste the full Google Sheets URL.</small>
-                            </div>
-                            <div class="form-group">
-                                <label for="linkedSheetUrlInput">🔗 Candidate Data Sheet <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional)</span></label>
-                                <div style="display:flex;gap:0.4rem;align-items:center;">
-                                    <input type="text" id="linkedSheetUrlInput" placeholder="Google Sheets URL or ID with CTC / Notice Period data" style="flex:1;" onchange="saveLinkedSheetUrl()">
-                                    <button class="btn-add-links" onclick="saveLinkedSheetUrl()" style="white-space:nowrap;">Save &amp; Load</button>
-                                </div>
-                                <small class="hint">Sheet must have columns: <strong>Email</strong> or <strong>Phone</strong> (to match candidates) + <strong>Current CTC</strong>, <strong>Expected CTC</strong>, <strong>Notice Period</strong>. Values will appear in results and share pages.</small>
-                            </div>
-                            <div class="form-group"><label for="apiDelay">API Call Delay (seconds)</label>
-                                <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
-                                <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
-                            </div>
-                            <div class="form-group">
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-                                    <label style="margin:0;">API Token Budget <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional)</span></label>
-                                    <button class="btn-add-links" onclick="setDefaultTokenBudgets()" style="padding:0.2rem 0.55rem;font-size:0.68rem;white-space:nowrap;">Use Free-Tier Defaults</button>
-                                </div>
-                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.45rem;">
-                                    <div>
-                                        <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="e.g. 6000 (free tier/min)" onchange="saveTokenBudget('groq')">
-                                        <small class="hint">Groq free tier: <strong>6,000 tokens/min</strong> · ~30 resumes per analysis run</small>
-                                    </div>
-                                    <div>
-                                        <input type="number" id="geminiTokenLimit" min="0" step="1" placeholder="e.g. 1000000 (free tier/min)" onchange="saveTokenBudget('gemini')">
-                                        <small class="hint">Gemini free tier: <strong>1,000,000 tokens/min</strong> · very generous</small>
-                                    </div>
-                                </div>
-                                <small class="hint">Tokens used per resume ≈ 2,000. "Remaining" = your budget minus tokens used this session. Click <em>Reset Active Usage</em> to start fresh each session.</small>
-                            </div>
-                            <div style="border:1px solid var(--border);border-radius:9px;padding:0.55rem 0.65rem;background:rgba(255,255,255,0.02);">
-                                <div id="tokenUsageInfo" style="font-size:0.73rem;color:var(--text-secondary);line-height:1.45;">Token usage will appear after API calls.</div>
-                                <div style="display:flex;justify-content:flex-end;margin-top:0.45rem;">
-                                    <button class="btn-add-links" onclick="resetTokenUsage(selectedProvider)" style="padding:0.25rem 0.55rem;font-size:0.68rem;">Reset Active Usage</button>
-                                </div>
-                            </div>
-                        </div></div>
-                    </div>
-
                     <div class="setup-section-card">
                         <div class="s-section-header" onclick="toggleSideSection('upload')">
                             <div class="s-section-left"><span class="s-section-icon">📤</span><span class="s-section-title">Upload Resumes</span></div>
@@ -2812,6 +2737,89 @@
                 </div>
             </div>
         </div><!-- /app-page-share -->
+
+        <!-- ─── SETTINGS PAGE ─── -->
+        <div class="app-page" id="app-page-settings">
+            <div class="setup-page-wrap" style="max-width:680px;margin:0 auto;">
+                <div class="setup-col" style="width:100%;">
+                    <div class="setup-section-card">
+                        <div class="s-section-header" onclick="toggleSideSection('api')">
+                            <div class="s-section-left"><span class="s-section-icon">🔑</span><span class="s-section-title">API Config</span></div>
+                            <span class="s-toggle open" id="apiToggle">▼</span>
+                        </div>
+                        <div class="s-content open" id="apiContent"><div class="s-content-inner">
+                            <div class="form-group"><label>AI Provider</label>
+                                <div class="provider-toggle">
+                                    <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">⚡ Groq <span class="provider-badge">Fast · Free</span></button>
+                                    <button class="provider-btn" id="btnGemini" onclick="switchProvider('gemini')">✦ Gemini <span class="provider-badge">Google</span></button>
+                                </div>
+                            </div>
+                            <div id="groqFields">
+                                <div class="form-group"><label for="groqKey">Groq API Key</label>
+                                    <input type="password" id="groqKey" placeholder="gsk_..." onchange="saveGroqKey()">
+                                    <small class="hint">Get free key from <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM free. You can paste multiple keys separated by commas; app auto-switches sequentially when one hits limit.</small>
+                                </div>
+                            </div>
+                            <div id="geminiFields" style="display:none;">
+                                <div class="form-group"><label for="geminiKey">Gemini API Key</label>
+                                    <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveGeminiKey()">
+                                    <small class="hint">Get from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM free. Multiple keys (comma-separated) are supported.</small>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="appsScriptUrlInput">⚙️ Apps Script Web App URL <span style="font-weight:400;color:var(--success);font-size:0.68rem;">★ Required for folder links</span></label>
+                                <div style="display:flex;gap:0.4rem;align-items:center;">
+                                    <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveAppsScriptUrl()" style="flex:1;">
+                                    <button class="btn-add-links" onclick="saveAppsScriptUrl()" style="white-space:nowrap;">Save</button>
+                                    <button class="btn-add-links" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(86,211,100,0.1);border-color:rgba(86,211,100,0.3);color:var(--success);white-space:nowrap;">Test</button>
+                                </div>
+                                <div id="scriptTestResult" style="margin-top:0.4rem;font-size:0.72rem;display:none;"></div>
+                                <small class="hint">Deploy your <strong>Code.gs</strong> as a Web App and paste the URL here. Enables full folder listing.</small>
+                            </div>
+                            <div class="form-group"><label for="sheetsId">Google Sheets ID</label>
+                                <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
+                                <small class="hint">Or use the <strong>Links</strong> tab to paste the full Google Sheets URL.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="linkedSheetUrlInput">🔗 Candidate Data Sheet <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional)</span></label>
+                                <div style="display:flex;gap:0.4rem;align-items:center;">
+                                    <input type="text" id="linkedSheetUrlInput" placeholder="Google Sheets URL or ID with CTC / Notice Period data" style="flex:1;" onchange="saveLinkedSheetUrl()">
+                                    <button class="btn-add-links" onclick="saveLinkedSheetUrl()" style="white-space:nowrap;">Save &amp; Load</button>
+                                </div>
+                                <small class="hint">Sheet must have columns: <strong>Email</strong> or <strong>Phone</strong> (to match candidates) + <strong>Current CTC</strong>, <strong>Expected CTC</strong>, <strong>Notice Period</strong>. Values will appear in results and share pages.</small>
+                            </div>
+                            <div class="form-group"><label for="apiDelay">API Call Delay (seconds)</label>
+                                <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
+                                <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
+                            </div>
+                            <div class="form-group">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+                                    <label style="margin:0;">API Token Budget <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional)</span></label>
+                                    <button class="btn-add-links" onclick="setDefaultTokenBudgets()" style="padding:0.2rem 0.55rem;font-size:0.68rem;white-space:nowrap;">Use Free-Tier Defaults</button>
+                                </div>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.45rem;">
+                                    <div>
+                                        <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="e.g. 6000 (free tier/min)" onchange="saveTokenBudget('groq')">
+                                        <small class="hint">Groq free tier: <strong>6,000 tokens/min</strong> · ~30 resumes per analysis run</small>
+                                    </div>
+                                    <div>
+                                        <input type="number" id="geminiTokenLimit" min="0" step="1" placeholder="e.g. 1000000 (free tier/min)" onchange="saveTokenBudget('gemini')">
+                                        <small class="hint">Gemini free tier: <strong>1,000,000 tokens/min</strong> · very generous</small>
+                                    </div>
+                                </div>
+                                <small class="hint">Tokens used per resume ≈ 2,000. "Remaining" = your budget minus tokens used this session. Click <em>Reset Active Usage</em> to start fresh each session.</small>
+                            </div>
+                            <div style="border:1px solid var(--border);border-radius:9px;padding:0.55rem 0.65rem;background:rgba(255,255,255,0.02);">
+                                <div id="tokenUsageInfo" style="font-size:0.73rem;color:var(--text-secondary);line-height:1.45;">Token usage will appear after API calls.</div>
+                                <div style="display:flex;justify-content:flex-end;margin-top:0.45rem;">
+                                    <button class="btn-add-links" onclick="resetTokenUsage(selectedProvider)" style="padding:0.25rem 0.55rem;font-size:0.68rem;">Reset Active Usage</button>
+                                </div>
+                            </div>
+                        </div></div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /app-page-settings -->
 
     </div><!-- /app-pages -->
 </div><!-- /app-shell -->
@@ -3464,7 +3472,7 @@
 
     // ─── Open flyout and jump to a section ───
     function openFlyout(sectionId) {
-        switchPage('setup');
+        switchPage(sectionId === 'api' ? 'settings' : 'setup');
         const content = document.getElementById(sectionId + 'Content');
         const toggle  = document.getElementById(sectionId + 'Toggle');
         if (content && !content.classList.contains('open')) {
