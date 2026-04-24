@@ -2720,6 +2720,27 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Candidate Data Sheets -->
+                    <div class="setup-section-card" style="padding:1.5rem 2rem;margin-top:1rem;">
+                        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--accent);margin-bottom:0.3rem;">Candidate Data</div>
+                        <div style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;">Candidate Data Sheets</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6;">
+                            Link one or more Google Sheets that contain candidate CTC / Notice Period data. The app matches rows by <strong style="color:var(--text-secondary);">Email</strong> or <strong style="color:var(--text-secondary);">Phone</strong> and enriches each candidate card automatically.
+                        </div>
+                        <div class="form-group" style="margin-bottom:0.6rem;">
+                            <div style="display:flex;gap:0.45rem;align-items:center;margin-bottom:0.45rem;">
+                                <input type="text" id="linkedSheetUrlInputLinks" placeholder="https://docs.google.com/spreadsheets/d/…/edit" style="flex:1;">
+                                <button class="btn-add-links" onclick="addLinkedSheetUrlFrom('links')" style="white-space:nowrap;">＋ Add &amp; Load</button>
+                            </div>
+                            <div id="linkedSheetListLinks" style="display:flex;flex-direction:column;gap:0.3rem;"></div>
+                            <small class="hint" style="margin-top:0.4rem;">Sheet columns needed: <strong>Email</strong> or <strong>Phone</strong> · <strong>Current CTC</strong> · <strong>Expected CTC</strong> · <strong>Notice Period</strong></small>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-top:0.5rem;">
+                            <button class="btn-analyze" onclick="reloadAllLinkedSheets()" style="font-size:0.78rem;padding:0.45rem 1.1rem;max-width:200px;">🔄 Reload All Sheets</button>
+                            <div id="linkedSheetLoadStatus" style="font-size:0.72rem;color:var(--text-muted);"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div><!-- /app-page-links -->
@@ -2784,12 +2805,13 @@
                                 <small class="hint">Or use the <strong>Links</strong> tab to paste the full Google Sheets URL.</small>
                             </div>
                             <div class="form-group">
-                                <label for="linkedSheetUrlInput">🔗 Candidate Data Sheet <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional)</span></label>
-                                <div style="display:flex;gap:0.4rem;align-items:center;">
-                                    <input type="text" id="linkedSheetUrlInput" placeholder="Google Sheets URL or ID with CTC / Notice Period data" style="flex:1;" onchange="saveLinkedSheetUrl()">
-                                    <button class="btn-add-links" onclick="saveLinkedSheetUrl()" style="white-space:nowrap;">Save &amp; Load</button>
+                                <label>🔗 Candidate Data Sheets <span style="font-weight:400;color:var(--text-muted);font-size:0.68rem;">(optional · multiple allowed)</span></label>
+                                <div style="display:flex;gap:0.4rem;align-items:center;margin-bottom:0.45rem;">
+                                    <input type="text" id="linkedSheetUrlInput" placeholder="Google Sheets URL or ID with CTC / Notice Period data" style="flex:1;">
+                                    <button class="btn-add-links" onclick="addLinkedSheetUrl()" style="white-space:nowrap;">＋ Add &amp; Load</button>
                                 </div>
-                                <small class="hint">Sheet must have columns: <strong>Email</strong> or <strong>Phone</strong> (to match candidates) + <strong>Current CTC</strong>, <strong>Expected CTC</strong>, <strong>Notice Period</strong>. Values will appear in results and share pages.</small>
+                                <div id="linkedSheetList" style="display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.4rem;"></div>
+                                <small class="hint">Each sheet must have: <strong>Email</strong> or <strong>Phone</strong> + <strong>Current CTC</strong>, <strong>Expected CTC</strong>, <strong>Notice Period</strong>. You can link multiple sheets — data is merged.</small>
                             </div>
                             <div class="form-group"><label for="apiDelay">API Call Delay (seconds)</label>
                                 <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
@@ -3119,7 +3141,17 @@
     let sheetsId           = localStorage.getItem('sheetsId') || '';
     let sheetsUrl          = localStorage.getItem('sheetsUrl') || '';
     let sheetSnapshotData  = null;
-    let linkedSheetUrl     = localStorage.getItem('linkedSheetUrl') || '';
+    let linkedSheetUrl     = ''; // legacy (kept for backward compat read)
+    let linkedSheetUrls    = (function() {
+        try {
+            const s = localStorage.getItem('linkedSheetUrls');
+            if (s) return JSON.parse(s);
+            // Migrate legacy single URL
+            const legacy = localStorage.getItem('linkedSheetUrl') || '';
+            if (legacy) { const arr = [legacy]; localStorage.setItem('linkedSheetUrls', JSON.stringify(arr)); return arr; }
+        } catch(e) {}
+        return [];
+    })();
     let _linkedSheetMap    = {}; // normalized email/phone → { current_ctc, expected_ctc, notice_period }
     let tokenUsage = _parseStoredJson('tokenUsage', {
         groq: { prompt: 0, completion: 0, total: 0 },
@@ -3393,10 +3425,9 @@
             loadLocations();
         }
         syncSheetsUi();
-        if (linkedSheetUrl) {
-            const li = document.getElementById('linkedSheetUrlInput');
-            if (li) li.value = linkedSheetUrl;
-            fetchLinkedSheetData();
+        if (linkedSheetUrls.length) {
+            renderLinkedSheetList();
+            fetchAllLinkedSheets();
         }
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
@@ -3686,42 +3717,89 @@ Rules:
     }
 
     // ─── Linked Candidate Data Sheet ───────────────────────────────
-    function saveLinkedSheetUrl() {
-        linkedSheetUrl = (document.getElementById('linkedSheetUrlInput')?.value || '').trim();
-        localStorage.setItem('linkedSheetUrl', linkedSheetUrl);
-        if (linkedSheetUrl) fetchLinkedSheetData();
-        else showToast('Linked sheet cleared', 'success');
+    // ─── Candidate Data Sheets (multi-URL) ───
+    function _saveLinkedSheetUrls() {
+        localStorage.setItem('linkedSheetUrls', JSON.stringify(linkedSheetUrls));
     }
 
-    function _normPhone(p) {
-        const d = (p || '').replace(/\D/g, '');
-        return d.length >= 7 ? d.slice(-10) : '';
-    }
-    function _normEmail(e) { return (e || '').trim().toLowerCase(); }
-
-    function _enrichCandidate(r) {
-        if (!r || !Object.keys(_linkedSheetMap).length) return;
-        const byEmail = r.email ? _linkedSheetMap[_normEmail(r.email)] : null;
-        const byPhone = r.phone ? _linkedSheetMap[_normPhone(r.phone)] : null;
-        const match   = byEmail || byPhone;
-        if (!match) return;
-        if (match.current_ctc  !== undefined) r.current_ctc  = match.current_ctc;
-        if (match.expected_ctc !== undefined) r.expected_ctc = match.expected_ctc;
-        if (match.notice_period!== undefined) r.notice_period= match.notice_period;
+    function renderLinkedSheetList() {
+        ['linkedSheetList', 'linkedSheetListLinks'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (!linkedSheetUrls.length) { el.innerHTML = ''; return; }
+            el.innerHTML = linkedSheetUrls.map((url, i) => `
+                <div style="display:flex;align-items:center;gap:0.4rem;padding:0.28rem 0.55rem;background:rgba(255,255,255,0.035);border:1px solid var(--border);border-radius:7px;">
+                    <span style="font-size:0.82rem;opacity:0.5;">📋</span>
+                    <span style="flex:1;font-size:0.71rem;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${url}">${url}</span>
+                    <button onclick="removeLinkedSheetUrl(${i})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:0 2px;line-height:1;" title="Remove">✕</button>
+                </div>`).join('');
+        });
     }
 
-    async function fetchLinkedSheetData() {
-        if (!linkedSheetUrl) return;
-        if (!appsScriptUrl) { showToast('Save Apps Script URL first — needed to read the linked sheet', 'error'); return; }
-        const sheetId = extractSheetsId(linkedSheetUrl);
-        if (!sheetId) { showToast('Invalid Google Sheets URL or ID for linked sheet', 'error'); return; }
+    function addLinkedSheetUrl() {
+        const inp = document.getElementById('linkedSheetUrlInput');
+        _doAddLinkedSheetUrl((inp?.value || '').trim());
+        if (inp) inp.value = '';
+    }
+
+    function addLinkedSheetUrlFrom(source) {
+        const inp = document.getElementById(source === 'links' ? 'linkedSheetUrlInputLinks' : 'linkedSheetUrlInput');
+        _doAddLinkedSheetUrl((inp?.value || '').trim());
+        if (inp) inp.value = '';
+    }
+
+    function _doAddLinkedSheetUrl(raw) {
+        if (!raw) return;
+        const id = extractSheetsId(raw) || raw;
+        const normalized = raw.includes('spreadsheets') ? raw : `https://docs.google.com/spreadsheets/d/${id}/edit`;
+        if (linkedSheetUrls.includes(normalized) || linkedSheetUrls.includes(raw)) {
+            showToast('Sheet already added', 'error'); return;
+        }
+        linkedSheetUrls.push(normalized);
+        _saveLinkedSheetUrls();
+        renderLinkedSheetList();
+        fetchSingleLinkedSheet(normalized);
+    }
+
+    function removeLinkedSheetUrl(index) {
+        linkedSheetUrls.splice(index, 1);
+        _saveLinkedSheetUrls();
+        renderLinkedSheetList();
+        // Rebuild map from remaining sheets
+        _linkedSheetMap = {};
+        linkedSheetUrls.forEach(u => fetchSingleLinkedSheet(u, true));
+    }
+
+    async function reloadAllLinkedSheets() {
+        if (!linkedSheetUrls.length) { showToast('No candidate data sheets added yet', 'error'); return; }
+        _linkedSheetMap = {};
+        await fetchAllLinkedSheets();
+    }
+
+    async function fetchAllLinkedSheets() {
+        for (const url of linkedSheetUrls) {
+            await fetchSingleLinkedSheet(url, true);
+        }
+        if (analysisResults.length) renderMainPanels();
+    }
+
+    async function fetchSingleLinkedSheet(url, silent = false) {
+        if (!url) return;
+        if (!appsScriptUrl) {
+            if (!silent) showToast('Save Apps Script URL first — needed to read the linked sheet', 'error');
+            return;
+        }
+        const sheetId = extractSheetsId(url);
+        if (!sheetId) { if (!silent) showToast('Invalid Google Sheets URL or ID', 'error'); return; }
+
+        const statusEl = document.getElementById('linkedSheetLoadStatus');
+        if (statusEl) statusEl.textContent = 'Loading…';
+
         try {
-            const url = appsScriptUrl + '?action=getSheetSnapshot&spreadsheetId=' + encodeURIComponent(sheetId);
-            const res = await fetch(url);
+            const res  = await fetch(appsScriptUrl + '?action=getSheetSnapshot&spreadsheetId=' + encodeURIComponent(sheetId));
             const data = await res.json();
             if (!data.ok) throw new Error(data.error || 'Sheet fetch failed');
 
-            _linkedSheetMap = {};
             for (const sheet of (data.sheets || [])) {
                 const headers = (sheet.headers || []).map(h => (h || '').toLowerCase().trim());
                 const emailIdx  = headers.findIndex(h => /^e[\s_-]?mail/.test(h) || h === 'email');
@@ -3743,14 +3821,40 @@ Rules:
                     if (np)   _linkedSheetMap[np] = record;
                 }
             }
-            // Enrich any already-analysed results
             analysisResults.forEach(r => _enrichCandidate(r));
-            if (analysisResults.length) renderMainPanels();
-            showToast(`✅ Linked sheet loaded`, 'success');
+            if (!silent) {
+                showToast('✅ Candidate data sheet loaded', 'success');
+                if (analysisResults.length) renderMainPanels();
+            }
+            if (statusEl) statusEl.textContent = `${linkedSheetUrls.length} sheet${linkedSheetUrls.length !== 1 ? 's' : ''} loaded · ${Object.keys(_linkedSheetMap).length} records`;
         } catch(err) {
-            showToast('Linked sheet error: ' + err.message, 'error');
+            if (statusEl) statusEl.textContent = 'Error: ' + err.message;
+            if (!silent) showToast('Linked sheet error: ' + err.message, 'error');
         }
     }
+
+    // Legacy stub — no-op (kept so any old callers don't crash)
+    function saveLinkedSheetUrl() { addLinkedSheetUrl(); }
+    async function fetchLinkedSheetData() { await fetchAllLinkedSheets(); }
+
+    function _normPhone(p) {
+        const d = (p || '').replace(/\D/g, '');
+        return d.length >= 7 ? d.slice(-10) : '';
+    }
+    function _normEmail(e) { return (e || '').trim().toLowerCase(); }
+
+    function _enrichCandidate(r) {
+        if (!r || !Object.keys(_linkedSheetMap).length) return;
+        const byEmail = r.email ? _linkedSheetMap[_normEmail(r.email)] : null;
+        const byPhone = r.phone ? _linkedSheetMap[_normPhone(r.phone)] : null;
+        const match   = byEmail || byPhone;
+        if (!match) return;
+        if (match.current_ctc  !== undefined) r.current_ctc  = match.current_ctc;
+        if (match.expected_ctc !== undefined) r.expected_ctc = match.expected_ctc;
+        if (match.notice_period!== undefined) r.notice_period= match.notice_period;
+    }
+
+    async function fetchLinkedSheetData() { await fetchAllLinkedSheets(); }
 
     function buildSheetsUrl(id) {
         return id ? `https://docs.google.com/spreadsheets/d/${id}/edit` : '';
