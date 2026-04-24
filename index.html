@@ -2475,59 +2475,47 @@
 
         <!-- ─── SETUP PAGE ─── -->
         <div class="app-page" id="app-page-setup">
-            <div class="setup-page-wrap">
+            <div style="flex:1;overflow-y:auto;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
 
-                <!-- LEFT COL: Upload -->
-                <div class="setup-col">
-                    <div class="setup-section-card">
-                        <div class="s-section-header" onclick="toggleSideSection('upload')">
-                            <div class="s-section-left"><span class="s-section-icon">📤</span><span class="s-section-title">Upload Resumes</span></div>
-                            <span class="s-toggle open" id="uploadToggle">▼</span>
-                        </div>
-                        <div class="s-content open" id="uploadContent"><div class="s-content-inner">
-                            <div class="upload-zone" id="uploadZone"
-                                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                                <span class="upload-icon">📤</span>
-                                <p>Drop files or click to browse</p>
-                                <small>PDF, DOC, DOCX</small>
-                                <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
-                            </div>
-                            <div class="drive-links-divider">or paste Google Drive file / folder links</div>
-                            <div class="drive-links-input-wrap">
-                                <textarea id="driveLinksInput" class="drive-links-textarea"
-                                    placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
-                                <button class="btn-add-links" onclick="addDriveLinks()">＋ Add</button>
-                            </div>
-                            <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;">
-                                <label style="margin-bottom:0.4rem;">Loaded Resumes</label>
-                                <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
-                                    <span id="resumeDropLabel">0 files loaded</span>
-                                    <span id="resumeDropChevron" style="font-size:0.65rem;transition:transform 0.3s;">▼</span>
-                                </div>
-                                <div class="resume-dropdown-list" id="resumeDropList"></div>
-                            </div>
-                        </div></div>
-                    </div>
-                </div>
+                <!-- Top row: Upload · Position & Filters · Actions -->
+                <div style="display:grid;grid-template-columns:1fr 1.1fr 0.9fr;gap:1rem;align-items:start;">
 
-                <!-- RIGHT COL: Position + Filters + Analyze -->
-                <div class="setup-col setup-col-wide">
-                    <div class="setup-section-card">
-                        <div class="s-section-header" onclick="toggleSideSection('jd')">
-                            <div class="s-section-left"><span class="s-section-icon">📋</span><span class="s-section-title">Position &amp; Job Description</span></div>
-                            <span class="s-toggle open" id="jdToggle">▼</span>
+                    <!-- Card: Upload Resumes -->
+                    <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
+                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.7rem;">📤 Upload Resumes</div>
+                        <div class="upload-zone" id="uploadZone"
+                             ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                             style="padding:1rem;">
+                            <span class="upload-icon">📤</span>
+                            <p>Drop files or click to browse</p>
+                            <small>PDF, DOC, DOCX</small>
+                            <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
                         </div>
-                        <div class="s-content open" id="jdContent"><div class="s-content-inner">
-                            <div class="form-group"><label for="positionSelect">Select Position</label>
-                                <select id="positionSelect" onchange="loadJD()"><option value="">-- Select Position --</option></select>
+                        <div class="drive-links-divider">or paste Google Drive links</div>
+                        <div class="drive-links-input-wrap">
+                            <textarea id="driveLinksInput" class="drive-links-textarea"
+                                placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
+                            <button class="btn-add-links" onclick="addDriveLinks()">＋ Add</button>
+                        </div>
+                        <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;margin-top:0.5rem;">
+                            <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
+                                <span id="resumeDropLabel">0 files loaded</span>
+                                <span id="resumeDropChevron" style="font-size:0.65rem;transition:transform 0.3s;">▼</span>
                             </div>
-                        </div></div>
+                            <div class="resume-dropdown-list" id="resumeDropList"></div>
+                        </div>
                     </div>
 
-                    <div style="margin-top:0.5rem;">
-                        <textarea class="jd-preview-box" id="jdEditBox" placeholder="Select a position above, or type / paste a job description here…" oninput="currentJD = this.value;" style="display:block;"></textarea>
-                        <div style="display:flex;justify-content:flex-end;margin-top:0.45rem;">
-                            <button class="jd-rec-btn" id="jdRecBtn" onclick="getJdRecommendations()">✨ Get AI Recommendations</button>
+                    <!-- Card: Position & Job Description -->
+                    <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
+                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--success);margin-bottom:0.7rem;">📋 Position &amp; Job Description</div>
+                        <div class="form-group" style="margin-bottom:0.75rem;">
+                            <label for="positionSelect">Select Position</label>
+                            <select id="positionSelect" onchange="loadJD()"><option value="">-- Select Position --</option></select>
+                        </div>
+                        <textarea class="jd-preview-box" id="jdEditBox" placeholder="Select a position above, or type / paste a job description here…" oninput="currentJD = this.value;" style="display:block;min-height:140px;"></textarea>
+                        <div style="display:flex;justify-content:flex-end;margin-top:0.4rem;">
+                            <button class="jd-rec-btn" id="jdRecBtn" onclick="getJdRecommendations()">✨ AI Recommendations</button>
                         </div>
                         <div class="jd-rec-panel" id="jdRecPanel">
                             <div class="jd-rec-header">🎯 Recruiter Focus Areas</div>
@@ -2538,73 +2526,61 @@
                         </div>
                     </div>
 
-                    <div class="setup-section-card">
-                        <div class="s-section-header" onclick="toggleSideSection('filters')">
-                            <div class="s-section-left"><span class="s-section-icon">🔍</span><span class="s-section-title">Filters</span></div>
-                            <span class="s-toggle open" id="filtersToggle">▼</span>
-                        </div>
-                        <div class="s-content open" id="filtersContent"><div class="s-content-inner">
+                    <!-- Card: Filters + Extra Instructions + Analyze -->
+                    <div style="display:flex;flex-direction:column;gap:0.85rem;">
+                        <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
+                            <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber);margin-bottom:0.7rem;">🔍 Filters</div>
                             <div class="form-group">
                                 <label>Experience Range</label>
-                                <div style="display:flex;align-items:center;gap:0.5rem;">
-                                    <div style="display:flex;align-items:center;gap:0.3rem;flex:1;">
+                                <div style="display:flex;align-items:center;gap:0.4rem;">
+                                    <div style="display:flex;align-items:center;gap:0.25rem;flex:1;">
                                         <input type="number" id="minExp" min="0" max="40" step="1" placeholder="0" style="flex:1;min-width:0;" title="Min years">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">yrs</span>
+                                        <span style="font-size:0.68rem;color:var(--text-muted);">yr</span>
                                         <input type="number" id="minExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;min-width:0;" title="Min months">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">mo</span>
+                                        <span style="font-size:0.68rem;color:var(--text-muted);">mo</span>
                                     </div>
-                                    <span style="color:var(--text-muted);font-size:0.8rem;flex-shrink:0;">→</span>
-                                    <div style="display:flex;align-items:center;gap:0.3rem;flex:1;">
+                                    <span style="color:var(--text-muted);font-size:0.75rem;">→</span>
+                                    <div style="display:flex;align-items:center;gap:0.25rem;flex:1;">
                                         <input type="number" id="maxExp" min="0" max="40" step="1" placeholder="any" style="flex:1;min-width:0;" title="Max years">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">yrs</span>
+                                        <span style="font-size:0.68rem;color:var(--text-muted);">yr</span>
                                         <input type="number" id="maxExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;min-width:0;" title="Max months">
-                                        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">mo</span>
+                                        <span style="font-size:0.68rem;color:var(--text-muted);">mo</span>
                                     </div>
                                 </div>
-                                <small class="hint" style="margin-top:0.35rem;">Min → Max &nbsp;·&nbsp; e.g. <strong>0 yrs 6 mo → 2 yrs 0 mo</strong> for freshers to 2yr exp</small>
+                                <small class="hint" style="margin-top:0.3rem;">e.g. 0yr 6mo → 2yr 0mo for fresher range</small>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="margin-bottom:0;">
                                 <label for="location">Location</label>
                                 <select id="location">
                                     <option value="" selected>Any location</option>
                                     <option value="Hyderabad">Hyderabad</option>
                                 </select>
-                                <small class="hint" style="margin-top:0.3rem;">Add a <strong>Locations</strong> tab in your sheet — row 1 header: <strong>Location</strong>, then one city per row</small>
+                                <small class="hint" style="margin-top:0.25rem;">Add a <strong>Locations</strong> tab in your sheet</small>
                             </div>
-                        </div></div>
-                    </div>
-
-                    <div class="setup-section-card">
-                        <div class="s-section-header" onclick="toggleSideSection('extraReqs')">
-                            <div class="s-section-left"><span class="s-section-icon">✏️</span><span class="s-section-title">Extra Screening Instructions</span></div>
-                            <span class="s-toggle open" id="extraReqsToggle">▼</span>
                         </div>
-                        <div class="s-content open" id="extraReqsContent"><div class="s-content-inner">
-                            <div class="form-group">
-                                <label for="extraReqsInput">Custom AI Focus Areas</label>
-                                <textarea id="extraReqsInput" rows="4"
-                                    placeholder="e.g. Focus heavily on grammar and spelling mistakes in the resume. Check if the resume is well-structured. Flag any inconsistencies in dates or job titles..."
-                                    oninput="saveExtraRequirements()"
-                                    style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.8rem;font-family:'Source Sans 3',sans-serif;padding:0.6rem 0.75rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
-                                    onfocus="this.style.borderColor='var(--accent)'"
-                                    onblur="this.style.borderColor='var(--border)'"
-                                ></textarea>
-                                <small class="hint">Tell the AI what to specifically look for or focus on. Each issue found will appear in the results as <strong>Custom Screening Feedback</strong>.</small>
-                            </div>
-                        </div></div>
-                    </div>
 
-                    <div class="setup-section-card" style="padding:0.75rem 1rem;">
-                        <div style="font-size:0.65rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.4rem;">
-                            <span style="opacity:0.6;">🛡️</span>
+                        <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
+                            <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.6rem;">✏️ Extra Instructions</div>
+                            <textarea id="extraReqsInput" rows="3"
+                                placeholder="e.g. Focus on grammar, flag date inconsistencies, check for structure…"
+                                oninput="saveExtraRequirements()"
+                                style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.78rem;font-family:'Source Sans 3',sans-serif;padding:0.55rem 0.7rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
+                                onfocus="this.style.borderColor='var(--accent)'"
+                                onblur="this.style.borderColor='var(--border)'"
+                            ></textarea>
+                            <small class="hint">Custom AI focus areas. Findings appear as <strong>Custom Screening Feedback</strong>.</small>
+                        </div>
+
+                        <div style="font-size:0.65rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.35rem;padding:0 0.15rem;">
+                            <span style="opacity:0.55;">🛡️</span>
                             <div id="rateLimitInfo" style="line-height:1.45;">Each API call is delayed to prevent rate limit errors.</div>
                         </div>
+
+                        <button class="btn-analyze" onclick="analyzeResumes()" id="analyzeBtn2">🚀 Analyze Resumes</button>
+                        <button id="analyzeBtn" onclick="analyzeResumes()" style="display:none;visibility:hidden;"></button>
                     </div>
 
-                    <button class="btn-analyze" onclick="analyzeResumes()" id="analyzeBtn2">🚀 Analyze Resumes</button>
-                    <button id="analyzeBtn" onclick="analyzeResumes()" style="display:none;visibility:hidden;"></button>
                 </div>
-
             </div>
         </div>
 
