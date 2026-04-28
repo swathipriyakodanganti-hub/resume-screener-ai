@@ -2489,6 +2489,23 @@
             accent-color: #388bfd;
             cursor: pointer; flex-shrink: 0; margin: 0;
         }
+        /* ─── COMPANY RESEARCH ─── */
+        .comp-card {
+            background: rgba(56,139,253,0.06);
+            border: 1px solid rgba(56,139,253,0.18);
+            border-radius: 9px;
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        .comp-card-name { font-weight: 700; font-size: 0.82rem; color: #79c0ff; margin-bottom: 0.3rem; }
+        .comp-card-body { font-size: 0.75rem; color: #c9d1d9; line-height: 1.55; }
+        .comp-card-tag {
+            display: inline-flex; align-items: center;
+            background: rgba(56,139,253,0.1); border: 1px solid rgba(56,139,253,0.2);
+            border-radius: 4px; padding: 1px 7px; font-size: 0.65rem; color: #79c0ff;
+            margin-right: 4px; margin-bottom: 3px;
+        }
+        .comp-card-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 0.35rem; }
     </style>
 
 </head>
@@ -5376,6 +5393,80 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             ${qItems}`;
     }
 
+    // ─── Company Research ───
+    async function researchCompanies(idx, context) {
+        const r = (context === 'share') ? _shareCandidates[idx] : analysisResults[idx];
+        if (!r) return;
+        const secId = context === 'share' ? `compResearchSec-share-${idx}` : `compResearchSec-${idx}`;
+        const btnId = context === 'share' ? `compResearchBtn-share-${idx}` : `compResearchBtn-${idx}`;
+        const btn = document.getElementById(btnId);
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Researching…'; }
+
+        const isGroq = selectedProvider === 'groq';
+        const activeKey = getActiveProviderKey(isGroq ? 'groq' : 'gemini');
+        if (!activeKey) { showToast('Configure your API key first', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Research'; } return; }
+
+        const prompt = `You are a recruitment research analyst. Based on the candidate profile below, identify the companies they have worked at and provide concise research on each.\n\nCandidate Profile:\nName: ${r.name}\nSummary: ${r.summary || ''}\nHighlights: ${(r.highlights || []).join('; ')}\nScore Reasoning: ${r.rating_reason || ''}\n\nReturn ONLY valid JSON (no markdown fences).\n{\n  "companies": [\n    {\n      "name": "Company Name",\n      "industry": "e.g. FinTech / E-commerce / SaaS",\n      "size": "e.g. Startup / Mid-size / Large / Enterprise",\n      "what_they_do": "One sentence on what the company does",\n      "employer_reputation": "Brief note on culture or employer brand if known, else omit",\n      "relevance": "How this experience is relevant to the current role"\n    }\n  ]\n}\nRULES: Only include companies actually mentioned in the profile. Max 5. Keep each field to 1-2 sentences.`;
+
+        try {
+            let raw;
+            if (isGroq) {
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
+                    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.2, max_tokens: 1000 })
+                });
+                if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+                const data = await res.json();
+                recordTokenUsage('groq', { promptTokens: data?.usage?.prompt_tokens, completionTokens: data?.usage?.completion_tokens, totalTokens: data?.usage?.total_tokens });
+                raw = data?.choices?.[0]?.message?.content;
+            } else {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1000 } })
+                });
+                if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+                const data = await res.json();
+                recordTokenUsage('gemini', { promptTokens: data?.usageMetadata?.promptTokenCount, completionTokens: data?.usageMetadata?.candidatesTokenCount, totalTokens: data?.usageMetadata?.totalTokenCount });
+                raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            }
+            if (!raw) throw new Error('Empty response from AI');
+            const cleaned = raw.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/i,'').trim();
+            const match = cleaned.match(/\{[\s\S]*\}/);
+            if (!match) throw new Error('Could not parse AI response');
+            const parsed = JSON.parse(match[0]);
+            if (!parsed.companies?.length) throw new Error('No companies identified in profile');
+            const sec = document.getElementById(secId);
+            if (sec) sec.innerHTML = _renderCompanyResearchHTML(parsed.companies, idx, context);
+            showToast('Company research complete!', 'success');
+        } catch (err) {
+            showToast(`Research failed: ${err.message}`, 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Research'; }
+        }
+    }
+
+    function _renderCompanyResearchHTML(companies, idx, context) {
+        const cards = companies.map(c => `
+            <div class="comp-card">
+                <div class="comp-card-name">🏢 ${c.name}</div>
+                <div class="comp-card-body">${c.what_they_do || ''}</div>
+                <div class="comp-card-row">
+                    ${c.industry ? `<span class="comp-card-tag">🏷 ${c.industry}</span>` : ''}
+                    ${c.size ? `<span class="comp-card-tag">👥 ${c.size}</span>` : ''}
+                </div>
+                ${c.employer_reputation ? `<div class="comp-card-body" style="margin-top:0.3rem;color:var(--text-muted);">&#128188; ${c.employer_reputation}</div>` : ''}
+                ${c.relevance ? `<div class="comp-card-body" style="margin-top:0.3rem;color:rgba(86,211,100,0.8);">&#x21B3; ${c.relevance}</div>` : ''}
+            </div>`).join('');
+        const btnId = context === 'share' ? `compResearchBtn-share-${idx}` : `compResearchBtn-${idx}`;
+        return `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.65rem;">
+                <div class="overlay-section-title" style="color:#388bfd;margin-bottom:0;">🔍 Company Research</div>
+                <button id="${btnId}" onclick="researchCompanies(${idx}, '${context}')" style="font-size:0.68rem;padding:3px 10px;background:rgba(56,139,253,0.12);color:#79c0ff;border:1px solid rgba(56,139,253,0.3);border-radius:5px;cursor:pointer;font-weight:600;">↺ Re-research</button>
+            </div>
+            ${cards}`;
+    }
+
     // ─── Render three-panel main UI ───
     function renderMainPanels() {
         const listEl   = document.getElementById('mainCandidateList');
@@ -5587,6 +5678,14 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                         ${r.notice_period ? `<div class="overlay-contact-item">📅 Notice Period: <strong>${r.notice_period}</strong></div>` : ''}
                     </div>
                 </div>` : ''}
+
+                <div class="overlay-section" id="compResearchSec-${idx}">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div class="overlay-section-title" style="color:#388bfd;margin-bottom:0;">🔍 Company Research</div>
+                        <button id="compResearchBtn-${idx}" onclick="researchCompanies(${idx}, 'main')" style="font-size:0.72rem;padding:4px 12px;background:rgba(56,139,253,0.12);color:#79c0ff;border:1px solid rgba(56,139,253,0.3);border-radius:6px;cursor:pointer;font-weight:600;">🔍 Research</button>
+                    </div>
+                    <div style="font-size:0.73rem;color:var(--text-muted);margin-top:0.4rem;font-style:italic;">AI will research the companies this candidate has worked at — uses API tokens.</div>
+                </div>
 
                 ${r.filename ? `
                 <div class="overlay-section">
@@ -7236,6 +7335,13 @@ main.addEventListener('scroll',()=>{
                         ${missing.length ? `<div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${missing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div></div>` : '<div></div>'}
                     </div>
                 </div>` : ''}
+                <div class="share-pg-section" id="compResearchSec-share-${idx}">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div class="share-pg-section-title" style="color:#388bfd;margin-bottom:0;">🔍 Company Research</div>
+                        <button id="compResearchBtn-share-${idx}" onclick="researchCompanies(${idx}, 'share')" style="font-size:0.72rem;padding:4px 12px;background:rgba(56,139,253,0.12);color:#79c0ff;border:1px solid rgba(56,139,253,0.3);border-radius:6px;cursor:pointer;font-weight:600;">🔍 Research</button>
+                    </div>
+                    <div style="font-size:0.73rem;color:var(--text-muted);margin-top:0.4rem;font-style:italic;">AI will research the companies this candidate has worked at — uses API tokens.</div>
+                </div>
             </div>`;
 
         // Scroll detail panel to top
