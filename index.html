@@ -2423,6 +2423,128 @@
         .tb-tab:hover {
             animation: btnBlink 0.55s ease-in-out infinite;
         }
+
+        /* ─── NEON HERO CARD ─── */
+        .neon-hero-card {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            border-bottom: 1px solid rgba(167,139,250,0.2);
+            position: relative;
+            overflow: hidden;
+            border-left-width: 3px;
+            border-left-style: solid;
+            border-left-color: transparent;
+        }
+        .neon-hero-card.stripe-high { border-left-color: #00ff88; }
+        .neon-hero-card.stripe-mid  { border-left-color: #fbbf24; }
+        .neon-hero-card.stripe-low  { border-left-color: #f85149; }
+        .neon-hero-card::before {
+            content: '';
+            position: absolute;
+            top: -50px; right: -50px;
+            width: 160px; height: 160px;
+            background: radial-gradient(circle, rgba(139,92,246,0.35) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .neon-hero-card::after {
+            content: '';
+            position: absolute;
+            bottom: -40px; left: -40px;
+            width: 130px; height: 130px;
+            background: radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .nhc-inner { position: relative; z-index: 1; padding: 1rem 1.25rem; }
+        .nhc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+        .nhc-name {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.92rem; font-weight: 700;
+            color: #00ff88;
+            text-shadow: 0 0 12px rgba(0,255,136,0.5);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            line-height: 1.3;
+            flex: 1; min-width: 0; margin-right: 0.75rem;
+        }
+        .nhc-score-badge {
+            background: transparent;
+            border: 1px solid #00ff88;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-family: monospace;
+            font-size: 1rem; font-weight: 700;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0,255,136,0.6);
+            box-shadow: 0 0 10px rgba(0,255,136,0.15), inset 0 0 10px rgba(0,255,136,0.05);
+            display: flex; flex-direction: column; align-items: center;
+            gap: 1px; line-height: 1; flex-shrink: 0;
+        }
+        .nhc-score-badge.neon-mid { border-color: #fbbf24; color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,0.6); box-shadow: 0 0 10px rgba(251,191,36,0.15); }
+        .nhc-score-badge.neon-low { border-color: #f85149; color: #f85149; text-shadow: 0 0 10px rgba(248,81,73,0.6);  box-shadow: 0 0 10px rgba(248,81,73,0.15);  }
+        .nhc-score-sub { font-size: 0.5rem; color: rgba(0,255,136,0.5); text-transform: uppercase; letter-spacing: 0.1em; }
+        .nhc-score-badge.neon-mid .nhc-score-sub { color: rgba(251,191,36,0.5); }
+        .nhc-score-badge.neon-low .nhc-score-sub { color: rgba(248,81,73,0.5); }
+        .nhc-status {
+            font-size: 0.67rem; font-family: monospace;
+            color: #00ff88; letter-spacing: 0.06em;
+            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .nhc-status.neon-mid { color: #fbbf24; }
+        .nhc-status.neon-low { color: #f85149; }
+        .nhc-status-text { opacity: 0.85; }
+        .nhc-fields {
+            display: flex; flex-direction: column; gap: 3px;
+            margin-bottom: 14px; font-family: monospace; font-size: 0.7rem;
+        }
+        .nhc-field { display: flex; align-items: baseline; line-height: 1.55; }
+        .nhc-key   { color: #3b82f6; min-width: 114px; flex-shrink: 0; }
+        .nhc-sep   { color: #475569; margin: 0 4px; }
+        .nhc-val   { color: #94a3b8; }
+        .nhc-val.hl     { color: #e2e8f0; }
+        .nhc-val.green  { color: #00ff88; }
+        .nhc-val.yellow { color: #fbbf24; }
+        .nhc-val.blue   { color: #79c0ff; }
+        .nhc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+        .nhc-btn-proceed {
+            padding: 8px; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 700;
+            cursor: pointer; font-family: monospace;
+            letter-spacing: 0.05em; transition: all 0.2s;
+            background: transparent;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            text-shadow: 0 0 8px rgba(0,255,136,0.4);
+            box-shadow: 0 0 12px rgba(0,255,136,0.1);
+        }
+        .nhc-btn-proceed:hover, .nhc-btn-proceed.active {
+            background: rgba(0,255,136,0.12);
+            box-shadow: 0 0 20px rgba(0,255,136,0.28);
+        }
+        .nhc-btn-pass {
+            padding: 8px; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 700;
+            cursor: pointer; font-family: monospace;
+            letter-spacing: 0.05em; transition: all 0.2s;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.4);
+        }
+        .nhc-btn-pass:hover { border-color: #f85149; color: #f87171; }
+        .nhc-btn-pass.active { background: rgba(248,81,73,0.1); border-color: #f85149; color: #f87171; }
+        .nhc-shortlist-wrap {
+            display: flex; align-items: center; gap: 6px;
+            cursor: pointer; user-select: none;
+            margin-top: 8px;
+        }
+        .nhc-shortlist-wrap input[type="checkbox"] {
+            width: 13px; height: 13px;
+            accent-color: #00ff88;
+            cursor: pointer; flex-shrink: 0; margin: 0;
+        }
+        .nhc-shortlist-label {
+            font-size: 0.69rem; font-family: monospace;
+            letter-spacing: 0.04em; color: rgba(0,255,136,0.6);
+        }
     </style>
 
 </head>
@@ -5369,35 +5491,31 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const recCls  = r.match_score >= 75 ? 'rec-proceed' : r.match_score >= 50 ? 'rec-consider' : 'rec-pass';
         const recTxt  = r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Consider' : '❌ Pass';
 
+        const _nhcScoreCls = r.match_score >= 75 ? '' : r.match_score >= 50 ? 'neon-mid' : 'neon-low';
+        const _nhcStatusCls = r.match_score >= 75 ? '' : r.match_score >= 50 ? 'neon-mid' : 'neon-low';
+        const _nhcStripeCls = r.match_score >= 75 ? 'stripe-high' : r.match_score >= 50 ? 'stripe-mid' : 'stripe-low';
+        const _nhcStatusTxt = r.match_score >= 75 ? 'RECOMMENDED — MOVE FORWARD' : r.match_score >= 50 ? 'CONSIDER — FURTHER REVIEW' : 'NOT RECOMMENDED — PASS';
         detailEl.innerHTML = `
             <!-- Hero -->
-            <div class="share-detail-hero stripe-${r.match_score >= 75 ? 'high' : r.match_score >= 50 ? 'mid' : 'low'}" style="padding:1rem 1.25rem;">
-                <!-- Row 1: Name + rec pill left / score ring right -->
-                <div class="share-hero-row1">
-                    <div style="flex:1;min-width:0;">
-                        <div class="share-detail-name" style="font-size:0.95rem;">${r.name}</div>
-                        <div style="margin-top:4px;"><span class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.64rem;padding:2px 8px;">${recTxt}</span></div>
+            <div class="neon-hero-card ${_nhcStripeCls}">
+                <div class="nhc-inner">
+                    <div class="nhc-top">
+                        <div class="nhc-name">${r.name}</div>
+                        <div class="nhc-score-badge ${_nhcScoreCls}">${r.match_score}%<span class="nhc-score-sub">match</span></div>
                     </div>
-                    <div class="share-detail-score-ring ${ringClass(r.match_score)}">
-                        <span style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;" class="${scoreClass(r.match_score)}">${r.match_score}%</span>
-                        <span style="font-size:0.52rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Match</span>
+                    <div class="nhc-status ${_nhcStatusCls}">▶ <span class="nhc-status-text">${_nhcStatusTxt}</span></div>
+                    <div class="nhc-fields">
+                        <div class="nhc-field"><span class="nhc-key">location    </span><span class="nhc-sep">:</span><span class="nhc-val hl">${r.location || '—'}</span></div>
+                        <div class="nhc-field"><span class="nhc-key">experience  </span><span class="nhc-sep">:</span><span class="nhc-val hl">${_fmtExp(r.experience_years)}</span></div>
+                        ${r.email  ? `<div class="nhc-field"><span class="nhc-key">email       </span><span class="nhc-sep">:</span><span class="nhc-val blue">${r.email}</span></div>` : ''}
+                        ${r.phone  ? `<div class="nhc-field"><span class="nhc-key">phone       </span><span class="nhc-sep">:</span><span class="nhc-val blue">${r.phone}</span></div>` : ''}
+                        ${r.current_ctc  ? `<div class="nhc-field"><span class="nhc-key">current_ctc </span><span class="nhc-sep">:</span><span class="nhc-val yellow">${r.current_ctc}</span></div>` : ''}
+                        ${r.expected_ctc ? `<div class="nhc-field"><span class="nhc-key">expected_ctc</span><span class="nhc-sep">:</span><span class="nhc-val yellow">${r.expected_ctc}</span></div>` : ''}
+                        ${r.notice_period ? `<div class="nhc-field"><span class="nhc-key">notice      </span><span class="nhc-sep">:</span><span class="nhc-val green">${r.notice_period}</span></div>` : ''}
                     </div>
-                </div>
-                <!-- Row 2: Meta pills -->
-                <div class="share-hero-row2">
-                    <span class="share-hero-pill">📍 ${r.location || '—'}</span>
-                    <span class="share-hero-pill">💼 ${_fmtExp(r.experience_years)}</span>
-                    ${r.email  ? `<span class="share-hero-pill accent">📧 ${r.email}</span>` : ''}
-                    ${r.phone  ? `<span class="share-hero-pill accent">📞 ${r.phone}</span>` : ''}
-                    ${r.current_ctc   ? `<span class="share-hero-pill green">💰 ${r.current_ctc}</span>` : ''}
-                    ${r.expected_ctc  ? `<span class="share-hero-pill amber">🎯 ${r.expected_ctc}</span>` : ''}
-                    ${r.notice_period ? `<span class="share-hero-pill accent">📅 ${r.notice_period}</span>` : ''}
-                </div>
-                <!-- Row 3: Shortlist action -->
-                <div class="share-detail-actions">
-                    <label class="share-checkbox-wrap" onclick="event.stopPropagation()" title="Add to shortlist" style="margin-left:0;">
+                    <label class="nhc-shortlist-wrap" onclick="event.stopPropagation()" title="Add to shortlist">
                         <input type="checkbox" id="main-shortlist-cb-${idx}" ${_selectedCards.has(idx) ? 'checked' : ''} onchange="toggleShareBtn(${idx}, this.checked); syncShortlistCheckboxes(${idx}, this.checked, 'detail')">
-                        <span class="share-checkbox-label">Shortlist</span>
+                        <span class="nhc-shortlist-label">[✓] ADD TO SHORTLIST</span>
                     </label>
                 </div>
             </div>
@@ -6906,11 +7024,11 @@ main.addEventListener('scroll',()=>{
     function _buildDecisionBtns(idx) {
         const dec = _shareFeedback[idx];
         return `
-            <button class="btn-share-proceed${dec === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
-                ${dec === 'proceed' ? '✅ Proceeding' : '✅ Proceed'}
+            <button class="nhc-btn-proceed${dec === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+                ${dec === 'proceed' ? '[✅] PROCEEDING' : '[✓] PROCEED'}
             </button>
-            <button class="btn-share-pass${dec === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
-                ${dec === 'pass' ? '❌ Passed' : '❌ Pass'}
+            <button class="nhc-btn-pass${dec === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+                ${dec === 'pass' ? '[✕] PASSED' : '[✕] PASS'}
             </button>`;
     }
 
@@ -7103,36 +7221,38 @@ main.addEventListener('scroll',()=>{
                 ? `<button class="share-mobile-resume-btn" onclick="openShareResumeViewer(${idx})">📄 View Resume</button>`
                 : '');
 
+        const _sNhcScoreCls  = r.match_score >= 75 ? '' : r.match_score >= 50 ? 'neon-mid' : 'neon-low';
+        const _sNhcStripeCls = r.match_score >= 75 ? 'stripe-high' : r.match_score >= 50 ? 'stripe-mid' : 'stripe-low';
+        const _sNhcStatusCls = r.match_score >= 75 ? '' : r.match_score >= 50 ? 'neon-mid' : 'neon-low';
+        const _sNhcStatusTxt = r.match_score >= 75 ? 'RECOMMENDED — MOVE FORWARD' : r.match_score >= 50 ? 'CONSIDER — FURTHER REVIEW' : 'NOT RECOMMENDED — PASS';
+        const _decisionState = _shareFeedback[idx];
         document.getElementById('sharePgHero').innerHTML = `
-            <div class="share-detail-hero stripe-${r.match_score >= 75 ? 'high' : r.match_score >= 50 ? 'mid' : 'low'}">
-                <!-- Row 1: Name + rec pill left / score ring right -->
-                <div class="share-hero-row1">
-                    <div style="flex:1;min-width:0;">
-                        <div class="share-detail-name">${r.name}</div>
-                        <div style="margin-top:4px;"><span class="bulk-rec-pill ${recCls}" style="margin:0;font-size:0.65rem;padding:2px 9px;">${recTxt}</span></div>
+            <div class="neon-hero-card ${_sNhcStripeCls}">
+                <div class="nhc-inner">
+                    <div class="nhc-top">
+                        <div class="nhc-name">${r.name}</div>
+                        <div class="nhc-score-badge ${_sNhcScoreCls}">${r.match_score}%<span class="nhc-score-sub">match</span></div>
                     </div>
-                    <div class="share-detail-score-ring ${ringCls}">
-                        <span class="share-detail-score-num ${scoreCls}">${r.match_score}%</span>
-                        <span class="share-detail-score-lbl">Match</span>
+                    <div class="nhc-status ${_sNhcStatusCls}">▶ <span class="nhc-status-text">${_sNhcStatusTxt}</span></div>
+                    <div class="nhc-fields">
+                        <div class="nhc-field"><span class="nhc-key">location    </span><span class="nhc-sep">:</span><span class="nhc-val hl">${r.location || '—'}</span></div>
+                        <div class="nhc-field"><span class="nhc-key">experience  </span><span class="nhc-sep">:</span><span class="nhc-val hl">${_fmtExp(r.experience_years)}</span></div>
+                        ${r.internship_months > 0 ? `<div class="nhc-field"><span class="nhc-key">internship  </span><span class="nhc-sep">:</span><span class="nhc-val" style="color:#a78bfa;">${r.internship_months}mo</span></div>` : ''}
+                        ${r.email  ? `<div class="nhc-field"><span class="nhc-key">email       </span><span class="nhc-sep">:</span><span class="nhc-val blue">${r.email}</span></div>` : ''}
+                        ${r.phone  ? `<div class="nhc-field"><span class="nhc-key">phone       </span><span class="nhc-sep">:</span><span class="nhc-val blue">${r.phone}</span></div>` : ''}
+                        ${r.current_ctc  ? `<div class="nhc-field"><span class="nhc-key">current_ctc </span><span class="nhc-sep">:</span><span class="nhc-val yellow">${r.current_ctc}</span></div>` : ''}
+                        ${r.expected_ctc ? `<div class="nhc-field"><span class="nhc-key">expected_ctc</span><span class="nhc-sep">:</span><span class="nhc-val yellow">${r.expected_ctc}</span></div>` : ''}
+                        ${r.notice_period ? `<div class="nhc-field"><span class="nhc-key">notice      </span><span class="nhc-sep">:</span><span class="nhc-val green">${r.notice_period}</span></div>` : ''}
                     </div>
-                </div>
-                <!-- Row 2: Meta pills -->
-                <div class="share-hero-row2">
-                    <span class="share-hero-pill">📍 Loc: ${r.location || '—'}</span>
-                    <span class="share-hero-pill">💼 Exp: ${_fmtExp(r.experience_years)}</span>
-                    ${r.internship_months > 0 ? `<span class="share-hero-pill" style="background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.3);color:#a78bfa;">🎓 Intern: ${r.internship_months}mo</span>` : ''}
-                    ${r.email  ? `<span class="share-hero-pill accent">📧 Email: ${r.email}</span>` : ''}
-                    ${r.phone  ? `<span class="share-hero-pill accent">📞 Phone: ${r.phone}</span>` : ''}
-                    ${r.current_ctc   ? `<span class="share-hero-pill green">💰 Current CTC: ${r.current_ctc}</span>` : ''}
-                    ${r.expected_ctc  ? `<span class="share-hero-pill amber">🎯 Expected CTC: ${r.expected_ctc}</span>` : ''}
-                    ${r.notice_period ? `<span class="share-hero-pill accent">📅 Notice Period: ${r.notice_period}</span>` : ''}
-                </div>
-                <!-- Row 3: Actions -->
-                <div class="share-detail-actions">
-                    ${mobileResumeBtn}
-                </div>
-                <div class="share-decision-row" id="shareDecisionRow">
-                    ${_buildDecisionBtns(idx)}
+                    <div class="nhc-actions" id="shareDecisionRow">
+                        <button class="nhc-btn-proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+                            ${_decisionState === 'proceed' ? '[✅] PROCEEDING' : '[✓] PROCEED'}
+                        </button>
+                        <button class="nhc-btn-pass${_decisionState === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+                            ${_decisionState === 'pass' ? '[✕] PASSED' : '[✕] PASS'}
+                        </button>
+                    </div>
+                    ${mobileResumeBtn ? `<div style="margin-top:8px;">${mobileResumeBtn}</div>` : ''}
                 </div>
             </div>`;
 
