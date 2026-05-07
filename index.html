@@ -706,6 +706,17 @@
             position: absolute; top: 0.28rem; right: 0.45rem;
             font-size: 0.52rem; font-weight: 700; color: var(--text-muted);
         }
+        .cand-reanalyze-btn {
+            position: absolute; bottom: 0.3rem; right: 0.4rem;
+            background: none; border: 1px solid transparent;
+            color: var(--text-muted); border-radius: 4px;
+            padding: 1px 4px; font-size: 0.65rem; line-height: 1.4;
+            cursor: pointer; opacity: 0; transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+            z-index: 2;
+        }
+        .main-cand-item:hover .cand-reanalyze-btn { opacity: 1; }
+        .cand-reanalyze-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,220,255,0.07); }
+        .cand-reanalyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .main-cand-bar {
             position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
             background: rgba(0,220,255,0.06); border-radius: 0 0 9px 9px; overflow: hidden;
@@ -1084,6 +1095,16 @@
         }
 
         .overlay-close:hover { border-color: var(--danger); color: var(--danger); background: rgba(248,113,113,0.08); }
+
+        .overlay-reanalyze-btn {
+            width: 30px; height: 30px; border-radius: 8px;
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-muted); font-size: 0.95rem;
+            cursor: pointer; transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .overlay-reanalyze-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,220,255,0.08); }
+        .overlay-reanalyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .overlay-body {
             flex: 1; overflow-y: auto; padding: 1.5rem;
@@ -2489,6 +2510,16 @@
             accent-color: #388bfd;
             cursor: pointer; flex-shrink: 0; margin: 0;
         }
+        .dh-reanalyze-btn {
+            margin: 0 1.25rem 0.85rem;
+            background: rgba(0,220,255,0.06); border: 1px solid rgba(0,220,255,0.2);
+            color: var(--accent); border-radius: 7px;
+            padding: 0.32rem 0.75rem; font-size: 0.74rem;
+            cursor: pointer; width: calc(100% - 2.5rem); text-align: center;
+            transition: background 0.15s;
+        }
+        .dh-reanalyze-btn:hover { background: rgba(0,220,255,0.12); }
+        .dh-reanalyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         /* ─── COMPANY RESEARCH ─── */
         .comp-card {
             background: rgba(56,139,253,0.06);
@@ -2953,6 +2984,7 @@
             <span class="overlay-score-num" id="overlayScoreNum"></span>
             <span class="overlay-score-label">Match</span>
         </div>
+        <button class="overlay-reanalyze-btn" id="overlayReanalyzeBtn" title="Re-analyse this candidate">🔄</button>
         <button class="overlay-close" onclick="closeOverlay()">✕</button>
     </div>
     <div class="overlay-body" id="overlayBody"></div>
@@ -4977,6 +5009,61 @@ Return exactly:
         await _runAnalysisLoop(_pendingUploadedFiles.splice(0), _pendingDriveFiles.splice(0), _savedFilters, _savedTotal, _savedDone, true);
     }
 
+    async function reAnalyzeCandidate(rawIdx) {
+        const r = analysisResults[rawIdx];
+        if (!r) return;
+        const reBtn = document.getElementById(`reanalyze-btn-${rawIdx}`);
+        if (reBtn) { reBtn.disabled = true; reBtn.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:2px;vertical-align:middle;display:inline-block;"></span>'; }
+        try {
+            let text = '';
+            const filters = _savedFilters || { minExpDecimal: null, maxExpDecimal: null, location: '' };
+            if (r.drive_link) {
+                const { file: pdfFile } = await fetchDrivePdf({ name: r.filename, driveLink: r.drive_link });
+                text = await extractTextFromPDF(pdfFile);
+            } else {
+                const fileObj = uploadedFiles.find(f => f.name === r.filename);
+                if (fileObj) {
+                    const ext = fileObj.name.split('.').pop().toLowerCase();
+                    if (fileObj.type === 'application/pdf' || ext === 'pdf') {
+                        text = await extractTextFromPDF(fileObj);
+                    } else if (ext === 'docx' || fileObj.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                        text = await extractTextFromDOCX(fileObj);
+                    } else {
+                        text = await fileObj.text().catch(() => '');
+                    }
+                } else if (r.resume_pdf_b64) {
+                    const byteString = atob(r.resume_pdf_b64);
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let bi = 0; bi < byteString.length; bi++) ia[bi] = byteString.charCodeAt(bi);
+                    const blob = new Blob([ab], { type: 'application/pdf' });
+                    const file = new File([blob], r.filename || 'resume.pdf', { type: 'application/pdf' });
+                    text = await extractTextFromPDF(file);
+                } else {
+                    throw new Error('Original file no longer available — please re-upload');
+                }
+            }
+            if (!text || text.trim().length < 30) throw new Error('Could not extract text from resume');
+            const newResult = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
+            newResult.filename       = r.filename;
+            newResult.file_type      = r.file_type;
+            newResult.drive_link     = r.drive_link;
+            newResult.resume_pdf_b64 = r.resume_pdf_b64;
+            _enrichCandidate(newResult);
+            analysisResults[rawIdx] = newResult;
+            analysisResults.sort((a, b) => b.match_score - a.match_score);
+            const newIdx = analysisResults.indexOf(newResult);
+            if (_selectedMainIdx === rawIdx) _selectedMainIdx = newIdx;
+            if (document.getElementById('resumeOverlay').classList.contains('open')) closeOverlay();
+            renderMainPanels();
+            if (_selectedMainIdx !== null) renderMainDetail(_selectedMainIdx);
+            showToast(`Re-analysis complete for ${newResult.name || r.filename}`, 'success');
+        } catch (err) {
+            showToast(`Re-analysis failed: ${err.message}`, 'error');
+            if (reBtn) { reBtn.disabled = false; reBtn.innerHTML = '🔄'; }
+        }
+    }
+
     async function analyzeResumes() {
         if (!hasAnyApiKey()) { showToast('Configure your API key first', 'error'); return; }
         if (selectedProvider === 'groq' && !hasProviderKey('groq')) { showToast('Configure your Groq API key first', 'error'); return; }
@@ -5503,6 +5590,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>
                 <div class="main-cand-score ${scoreClass(r.match_score)}">${r.match_score}%</div>
                 <div class="main-cand-rank">${rankLabel}</div>
+                <button class="cand-reanalyze-btn" id="reanalyze-btn-${i}" onclick="event.stopPropagation(); reAnalyzeCandidate(${i})" title="Re-analyse this candidate">🔄</button>
                 <div class="main-cand-bar"><div class="main-cand-bar-fill ${fillClass(r.match_score)}" style="width:${r.match_score}%"></div></div>
             </div>`;
         }).join('');
@@ -5549,8 +5637,6 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>
                 <div class="dh-rec-bar ${_scoreCls}"><span class="dh-rec-dot"></span>${_recTxt}</div>
                 <div class="dh-kv-list">
-                    ${r.email ? `<div class="dh-kv"><span class="dh-kv-label">Email</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-label">Phone</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
                     ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Current CTC</span><span class="dh-kv-value amber">${r.current_ctc}</span></div>` : ''}
                     ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Expected CTC</span><span class="dh-kv-value amber">${r.expected_ctc}</span></div>` : ''}
                     ${r.notice_period ? `<div class="dh-kv"><span class="dh-kv-label">Notice Period</span><span class="dh-kv-value green">${r.notice_period}</span></div>` : ''}
@@ -5559,6 +5645,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     <input type="checkbox" id="main-shortlist-cb-${idx}" ${_selectedCards.has(idx) ? 'checked' : ''} onchange="toggleShareBtn(${idx}, this.checked); syncShortlistCheckboxes(${idx}, this.checked, 'detail')">
                     <span>Add to shortlist</span>
                 </label>
+                <button class="dh-reanalyze-btn" id="reanalyze-btn-${idx}" onclick="reAnalyzeCandidate(${idx})" title="Re-analyse this candidate with AI">🔄 Re-analyse</button>
             </div>
 
             <!-- Stat row -->
@@ -5636,7 +5723,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <div class="overlay-section">
                     <div class="overlay-section-title" style="color:var(--amber);">📝 Custom Screening Feedback</div>
                     ${r.extra_requirements_feedback.map(f => {
-                        const low = f.toLowerCase();
+                        const low = (f || '').toLowerCase();
                         const isPass = /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low);
                         const isFail = /found \d|missing|not found|lacks?|absent|none found|poor|weak|inconsistent|errors? found|mistakes? found|no (demonstrated|relevant|direct)|not (relevant|present|demonstrated|stated)|limited/.test(low);
                         const color  = isPass ? 'var(--success)' : isFail ? 'var(--danger)' : 'var(--amber)';
@@ -5668,18 +5755,6 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                             <div class="sbd-bar-wrap"><div class="sbd-bar"><div class="sbd-bar-fill ${fillCl}" style="width:${val}%"></div></div><span class="sbd-val ${valCl}">${val}</span></div>
                         </div>`;
                     }).join('')}
-                    </div>
-                </div>` : ''}
-
-                ${(r.email || r.phone || r.current_ctc || r.expected_ctc || r.notice_period) ? `
-                <div class="overlay-section">
-                    <div class="overlay-section-title">📬 Contact</div>
-                    <div class="overlay-contact-grid">
-                        ${r.email  ? `<div class="overlay-contact-item">📧 ${r.email}</div>` : ''}
-                        ${r.phone  ? `<div class="overlay-contact-item">📞 ${r.phone}</div>` : ''}
-                        ${r.current_ctc   ? `<div class="overlay-contact-item">💰 Current CTC: <strong>${r.current_ctc}</strong></div>` : ''}
-                        ${r.expected_ctc  ? `<div class="overlay-contact-item">🎯 Expected CTC: <strong>${r.expected_ctc}</strong></div>` : ''}
-                        ${r.notice_period ? `<div class="overlay-contact-item">📅 Notice Period: <strong>${r.notice_period}</strong></div>` : ''}
                     </div>
                 </div>` : ''}
 
@@ -5878,14 +5953,6 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                         <div class="detail-text">${r.summary}</div>
                     </div>` : ''}
 
-                    ${(r.email || r.phone) ? `
-                    <div class="detail-section">
-                        <div class="detail-label">Contact</div>
-                        <div class="contact-row">
-                            ${r.email ? `<div class="contact-item">📧 ${r.email}</div>` : ''}
-                            ${r.phone ? `<div class="contact-item">📞 ${r.phone}</div>` : ''}
-                        </div>
-                    </div>` : ''}
                 </div>
             </div>
         </div>`;
@@ -5911,9 +5978,12 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
         const r = sorted[idx];
         if (!r) return;
+        const rawIdx = analysisResults.indexOf(r);
 
         // Header
         document.getElementById('overlayAvatar').textContent = initials(r.name);
+        const reBtn = document.getElementById('overlayReanalyzeBtn');
+        if (reBtn) reBtn.onclick = () => reAnalyzeCandidate(rawIdx);
         document.getElementById('overlayName').textContent   = r.name;
         document.getElementById('overlayMeta').textContent   = `📍 ${r.location || '—'}  ·  💼 ${_fmtExp(r.experience_years)}`;
 
@@ -6025,15 +6095,6 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             <div class="overlay-section">
                 <div class="overlay-section-title">⭐ Key Highlights</div>
                 ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
-            </div>` : ''}
-
-            ${(r.email || r.phone) ? `
-            <div class="overlay-section">
-                <div class="overlay-section-title">📬 Contact</div>
-                <div class="overlay-contact-grid">
-                    ${r.email ? `<div class="overlay-contact-item"><span style="font-size:1rem;">📧</span>${r.email}</div>` : ''}
-                    ${r.phone ? `<div class="overlay-contact-item"><span style="font-size:1rem;">📞</span>${r.phone}</div>` : ''}
-                </div>
             </div>` : ''}
 
             ${r.filename ? `
@@ -6189,7 +6250,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             const sqCount = (r.screening_questions || []).length;
 
             const feedback = (r.extra_requirements_feedback || []).map(f => {
-                const low = f.toLowerCase();
+                const low = (f || '').toLowerCase();
                 const isPass = /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low);
                 const isFail = /found \d|missing|not found|lacks?|absent|none found|poor|weak|inconsistent|errors? found|mistakes? found|no (demonstrated|relevant|direct)|not (relevant|present|demonstrated|stated)|limited/.test(low);
                 const ic = isPass ? '✅' : isFail ? '❌' : '⚠️';
@@ -7289,8 +7350,6 @@ main.addEventListener('scroll',()=>{
                 </div>
                 <div class="dh-rec-bar ${_sScoreCls}"><span class="dh-rec-dot"></span>${_sRecTxt}</div>
                 <div class="dh-kv-list">
-                    ${r.email ? `<div class="dh-kv"><span class="dh-kv-label">Email</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-label">Phone</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
                     ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-label">Internship</span><span class="dh-kv-value" style="color:#a78bfa;">${r.internship_months} mo</span></div>` : ''}
                     ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Current CTC</span><span class="dh-kv-value amber">${r.current_ctc}</span></div>` : ''}
                     ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Expected CTC</span><span class="dh-kv-value amber">${r.expected_ctc}</span></div>` : ''}
@@ -7849,14 +7908,7 @@ main.addEventListener('scroll',()=>{
                             ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
                         </div>` : ''}
 
-                        ${(r.email || r.phone) ? `
-                        <div style="margin-top:0.875rem;">
-                            <div class="bulk-section-label">📬 Contact</div>
-                            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.4rem;">
-                                ${r.email ? `<span style="font-size:0.8rem;color:var(--text-secondary);">📧 ${r.email}</span>` : ''}
-                                ${r.phone ? `<span style="font-size:0.8rem;color:var(--text-secondary);">📞 ${r.phone}</span>` : ''}
-                            </div>
-                        </div>` : ''}
+                        ${(r.email || r.phone) ? `` : ''}
                     </div>
                 </div>
             </div>
