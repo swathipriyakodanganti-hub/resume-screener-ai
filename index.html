@@ -2644,6 +2644,16 @@
         .pearly-name {
             font-family: 'Outfit', sans-serif; font-size: 0.95rem;
             font-weight: 700; color: #e9d5ff;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .pearly-name-badge {
+            font-size: 0.55rem; font-weight: 600;
+            background: rgba(249,168,212,0.15);
+            border: 1px solid rgba(249,168,212,0.35);
+            color: #fbcfe8;
+            padding: 2px 7px; border-radius: 20px;
+            letter-spacing: 0.02em; white-space: nowrap;
+            font-family: 'Source Sans 3', sans-serif;
         }
         .pearly-status {
             font-size: 0.67rem; color: rgba(233,213,255,0.55);
@@ -3412,7 +3422,7 @@
     <div class="pearly-header">
         <div class="pearly-avatar">🌸</div>
         <div class="pearly-header-info">
-            <div class="pearly-name">Pearly</div>
+            <div class="pearly-name">Pearly <span class="pearly-name-badge">Swathi's cute bot 💗</span></div>
             <div class="pearly-status">
                 <div class="pearly-status-dot"></div>
                 Your talent BFF · always here!
@@ -3424,7 +3434,7 @@
     <div class="pearly-messages" id="pearly-msg-list">
         <div class="pmsg pmsg-bot">
             <div class="pmsg-mini-avatar">🌸</div>
-            <div class="pmsg-bubble">Hii! 🌸 I'm Pearly — your resident talent genius with zero chill and 100% accuracy (okay, like 98%). Drop your burning candidate questions and let's get to work bestie~</div>
+            <div class="pmsg-bubble">Hii! 🌸 I'm <strong>Pearly</strong> <span class="pearly-name-badge" style="vertical-align:middle;">Swathi's cute bot 💗</span> — your resident talent genius with zero chill and 100% accuracy (okay, like 98%). Drop your burning candidate questions and let's get to work bestie~</div>
         </div>
     </div>
 
