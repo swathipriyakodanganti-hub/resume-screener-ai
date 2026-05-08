@@ -2537,6 +2537,210 @@
             margin-right: 4px; margin-bottom: 3px;
         }
         .comp-card-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 0.35rem; }
+
+        /* ═══════════════════════════════════════════════════
+           PEARLY — AI Talent Chatbot (Design A)
+           ═══════════════════════════════════════════════════ */
+
+        /* FAB */
+        #pearly-fab {
+            position: fixed;
+            bottom: 28px; right: 28px;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f9a8d4, #c084fc, #818cf8);
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 24px rgba(192,132,252,0.5);
+            animation: pearlyFabPulse 2.5s ease-in-out infinite, pearlyFabFloat 3s ease-in-out infinite;
+            z-index: 9000;
+            transition: transform 0.2s ease;
+        }
+        #pearly-fab:hover { transform: scale(1.12); }
+        #pearly-fab .pf-flower {
+            font-size: 1.75rem; display: block; line-height: 1;
+            animation: pearlyFlowerSway 6s ease-in-out infinite;
+        }
+        @keyframes pearlyFabPulse {
+            0%,100%{box-shadow:0 4px 24px rgba(192,132,252,0.5),0 0 0 0 rgba(192,132,252,0.35)}
+            50%{box-shadow:0 4px 32px rgba(192,132,252,0.7),0 0 0 10px rgba(192,132,252,0)}
+        }
+        @keyframes pearlyFabFloat {
+            0%,100%{transform:translateY(0)}
+            50%{transform:translateY(-5px)}
+        }
+        @keyframes pearlyFlowerSway {
+            0%,100%{transform:rotate(-10deg) scale(1)}
+            25%{transform:rotate(12deg) scale(1.1)}
+            75%{transform:rotate(-6deg) scale(1.05)}
+        }
+
+        /* Tooltip bubble */
+        #pearly-tooltip {
+            position: fixed;
+            bottom: 98px; right: 28px;
+            background: linear-gradient(135deg, #2d1b69, #1e1b4b);
+            border: 1px solid rgba(192,132,252,0.3);
+            color: #e9d5ff; font-size: 0.72rem; font-weight: 500;
+            padding: 6px 12px; border-radius: 20px;
+            white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            animation: pearlyTooltipBob 3s ease-in-out infinite;
+            z-index: 8999; pointer-events: none;
+        }
+        #pearly-tooltip::after {
+            content: '';
+            position: absolute; bottom: -5px; right: 24px;
+            width: 8px; height: 8px;
+            background: #2d1b69;
+            border-right: 1px solid rgba(192,132,252,0.3);
+            border-bottom: 1px solid rgba(192,132,252,0.3);
+            transform: rotate(45deg);
+        }
+        @keyframes pearlyTooltipBob {
+            0%,100%{transform:translateY(0);opacity:1}
+            50%{transform:translateY(-3px);opacity:0.85}
+        }
+
+        /* Chat Window */
+        #pearly-window {
+            position: fixed;
+            bottom: 100px; right: 28px;
+            width: 340px;
+            height: min(480px, calc(100vh - 115px));
+            max-height: calc(100vh - 115px);
+            background: #130f1e;
+            border: 1px solid rgba(192,132,252,0.25);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(192,132,252,0.1);
+            display: flex; flex-direction: column;
+            overflow: hidden; z-index: 9001;
+            animation: pearlyChatSlideIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes pearlyChatSlideIn {
+            from{opacity:0;transform:translateY(20px) scale(0.92)}
+            to{opacity:1;transform:translateY(0) scale(1)}
+        }
+
+        /* Header */
+        .pearly-header {
+            padding: 1rem 1.1rem 0.85rem;
+            background: linear-gradient(135deg, rgba(192,132,252,0.15), rgba(129,140,248,0.1));
+            border-bottom: 1px solid rgba(192,132,252,0.15);
+            display: flex; align-items: center; gap: 0.75rem;
+            flex-shrink: 0;
+        }
+        .pearly-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #f9a8d4, #c084fc);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; flex-shrink: 0;
+            animation: pearlyAvatarGlow 3s ease-in-out infinite;
+        }
+        @keyframes pearlyAvatarGlow {
+            0%,100%{box-shadow:0 0 8px rgba(192,132,252,0.3)}
+            50%{box-shadow:0 0 18px rgba(192,132,252,0.6)}
+        }
+        .pearly-header-info { flex: 1; }
+        .pearly-name {
+            font-family: 'Outfit', sans-serif; font-size: 0.95rem;
+            font-weight: 700; color: #e9d5ff;
+        }
+        .pearly-status {
+            font-size: 0.67rem; color: rgba(233,213,255,0.55);
+            display: flex; align-items: center; gap: 4px; margin-top: 1px;
+        }
+        .pearly-status-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #86efac;
+            animation: pearlyBlink 2s ease-in-out infinite;
+        }
+        @keyframes pearlyBlink{0%,100%{opacity:1}50%{opacity:0.3}}
+        .pearly-close {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.2);
+            color: rgba(233,213,255,0.6); font-size: 0.75rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; flex-shrink: 0;
+        }
+        .pearly-close:hover{background:rgba(248,113,113,0.15);border-color:rgba(248,113,113,0.3);color:#fca5a5}
+
+        /* Messages */
+        .pearly-messages {
+            flex: 1; overflow-y: auto; padding: 1rem;
+            display: flex; flex-direction: column; gap: 0.75rem;
+            scrollbar-width: thin; scrollbar-color: rgba(192,132,252,0.15) transparent;
+        }
+        .pmsg { display: flex; gap: 0.5rem; align-items: flex-end; }
+        .pmsg-bot { justify-content: flex-start; }
+        .pmsg-user { justify-content: flex-end; }
+        .pmsg-bubble {
+            max-width: 82%; padding: 0.55rem 0.85rem;
+            border-radius: 16px; font-size: 0.8rem; line-height: 1.55;
+        }
+        .pmsg-bot .pmsg-bubble {
+            background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.15);
+            color: #e9d5ff; border-bottom-left-radius: 4px;
+        }
+        .pmsg-user .pmsg-bubble {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #f3f0ff; border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(109,40,217,0.3);
+        }
+        .pmsg-mini-avatar {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: linear-gradient(135deg, #f9a8d4, #c084fc);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; flex-shrink: 0;
+        }
+        .pearly-typing {
+            display: flex; gap: 4px; align-items: center;
+            padding: 0.55rem 0.85rem;
+            background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.15);
+            border-radius: 16px; border-bottom-left-radius: 4px; width: fit-content;
+        }
+        .pearly-typing span {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: rgba(192,132,252,0.6);
+            animation: pearlyTyping 1.2s ease-in-out infinite;
+        }
+        .pearly-typing span:nth-child(2){animation-delay:0.2s}
+        .pearly-typing span:nth-child(3){animation-delay:0.4s}
+        @keyframes pearlyTyping{0%,60%,100%{transform:translateY(0);opacity:0.5}30%{transform:translateY(-5px);opacity:1}}
+
+        /* Chips */
+        .pearly-chips {
+            padding: 0 1rem 0.75rem; display: flex; flex-wrap: wrap; gap: 0.4rem;
+        }
+        .pearly-chip {
+            background: rgba(192,132,252,0.08); border: 1px solid rgba(192,132,252,0.2);
+            color: #d8b4fe; font-size: 0.68rem; padding: 4px 10px;
+            border-radius: 20px; cursor: pointer; transition: all 0.15s;
+        }
+        .pearly-chip:hover{background:rgba(192,132,252,0.18);border-color:rgba(192,132,252,0.4)}
+
+        /* Input row */
+        .pearly-input-row {
+            padding: 0.75rem 1rem; border-top: 1px solid rgba(192,132,252,0.12);
+            display: flex; gap: 0.5rem; align-items: center;
+            background: rgba(19,15,30,0.95); flex-shrink: 0;
+        }
+        .pearly-input {
+            flex: 1; background: rgba(192,132,252,0.07);
+            border: 1px solid rgba(192,132,252,0.18); border-radius: 20px;
+            padding: 0.45rem 1rem; color: #e9d5ff; font-size: 0.8rem;
+            font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .pearly-input::placeholder{color:rgba(192,132,252,0.4)}
+        .pearly-input:focus{border-color:rgba(192,132,252,0.45)}
+        .pearly-send {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, #c084fc, #818cf8);
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(192,132,252,0.3);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .pearly-send:hover{transform:scale(1.1);box-shadow:0 4px 16px rgba(192,132,252,0.5)}
     </style>
 
 </head>
@@ -2545,7 +2749,7 @@
 
     <!-- ─── TOP BAR ─── -->
     <div class="topbar">
-        <div class="tb-logo">Pearl Hire<span class="tb-logo-tagline">Made with ❤️ by Team SPY</span></div>
+        <div class="tb-logo">Pearl Hire<span class="tb-logo-tagline">Made with ❤️ by Team SPY</span><span class="tb-logo-tagline" style="margin-left:0.5rem;color:rgba(0,220,255,0.7);border-left:1px solid rgba(0,220,255,0.2);padding-left:0.5rem;">Talent Acquisition · BeamX</span></div>
         <div class="tb-tabs">
             <div class="tb-tab" onclick="switchPage('links')" id="page-tab-links">🔗 Links</div>
             <div class="tb-tab" onclick="switchPage('setup')" id="page-tab-setup">⚙ Setup</div>
@@ -3058,7 +3262,7 @@
     <div class="share-top-bar">
         <div class="share-top-bar-left">
             <div class="share-pg-logo-wrap"><div class="share-pg-logo">Pearl Hire</div><div class="share-pg-logo-tagline">Made with ❤️ by Team SPY</div></div>
-            <span class="share-pg-tag">🔒 Confidential · Talent Acquisition</span>
+            <span class="share-pg-tag">🔒 Confidential · Talent Acquisition · BeamX</span>
             <span class="share-position-pill" id="sharePgPositionBanner" style="display:none;"></span>
         </div>
         <div style="font-size:0.68rem;color:var(--text-muted);">Powered by AI · For recipient use only</div>
@@ -3196,6 +3400,49 @@
         </div>
     </div>
 </div>
+
+<!-- ─── PEARLY AI CHATBOT ─── -->
+<div id="pearly-tooltip">💬 Ask me about candidates~</div>
+
+<button id="pearly-fab" onclick="pearlyToggle()" title="Chat with Pearly">
+    <span class="pf-flower">🌸</span>
+</button>
+
+<div id="pearly-window" style="display:none;">
+    <div class="pearly-header">
+        <div class="pearly-avatar">🌸</div>
+        <div class="pearly-header-info">
+            <div class="pearly-name">Pearly</div>
+            <div class="pearly-status">
+                <div class="pearly-status-dot"></div>
+                Your talent BFF · always here!
+            </div>
+        </div>
+        <button class="pearly-close" onclick="pearlyToggle()">✕</button>
+    </div>
+
+    <div class="pearly-messages" id="pearly-msg-list">
+        <div class="pmsg pmsg-bot">
+            <div class="pmsg-mini-avatar">🌸</div>
+            <div class="pmsg-bubble">Hii! 🌸 I'm Pearly — your resident talent genius with zero chill and 100% accuracy (okay, like 98%). Drop your burning candidate questions and let's get to work bestie~</div>
+        </div>
+    </div>
+
+    <div class="pearly-chips" id="pearly-chips">
+        <span class="pearly-chip" onclick="pearlyChip(this)">🏆 Who's the star?</span>
+        <span class="pearly-chip" onclick="pearlyChip(this)">📊 Compare top 3</span>
+        <span class="pearly-chip" onclick="pearlyChip(this)">🛠 Skills gap?</span>
+        <span class="pearly-chip" onclick="pearlyChip(this)">📍 Filter by city</span>
+        <span class="pearly-chip" onclick="pearlyChip(this)">💼 Who has most exp?</span>
+    </div>
+
+    <div class="pearly-input-row">
+        <input class="pearly-input" id="pearly-input" placeholder="Ask Pearly anything…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();pearlySend()}" />
+        <button class="pearly-send" onclick="pearlySend()">➤</button>
+    </div>
+</div>
+<!-- ─── END PEARLY ─── -->
 
 <script>
     function parseApiKeys(raw) {
@@ -7917,6 +8164,158 @@ main.addEventListener('scroll',()=>{
                 </div>
             </div>
         </div>`;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  PEARLY — AI Talent Chatbot Logic
+    // ═══════════════════════════════════════════════════════
+
+    let _pearlyOpen = false;
+    let _pearlyThinking = false;
+
+    function pearlyToggle() {
+        _pearlyOpen = !_pearlyOpen;
+        const win = document.getElementById('pearly-window');
+        const tip = document.getElementById('pearly-tooltip');
+        if (_pearlyOpen) {
+            win.style.display = 'flex';
+            win.style.animation = 'none';
+            requestAnimationFrame(() => {
+                win.style.animation = 'pearlyChatSlideIn 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+            });
+            if (tip) tip.style.display = 'none';
+            document.getElementById('pearly-input')?.focus();
+        } else {
+            win.style.display = 'none';
+        }
+    }
+
+    function pearlyChip(el) {
+        const txt = el.textContent.replace(/^[^\w]*/, '').trim();
+        document.getElementById('pearly-input').value = txt;
+        document.getElementById('pearly-chips').style.display = 'none';
+        pearlySend();
+    }
+
+    function pearlyAppendMsg(html, isUser) {
+        const list = document.getElementById('pearly-msg-list');
+        const div = document.createElement('div');
+        div.className = `pmsg ${isUser ? 'pmsg-user' : 'pmsg-bot'}`;
+        if (isUser) {
+            div.innerHTML = `<div class="pmsg-bubble">${html}</div>`;
+        } else {
+            div.innerHTML = `<div class="pmsg-mini-avatar">🌸</div><div class="pmsg-bubble">${html}</div>`;
+        }
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+        return div;
+    }
+
+    function pearlyShowTyping() {
+        const list = document.getElementById('pearly-msg-list');
+        const div = document.createElement('div');
+        div.className = 'pmsg pmsg-bot';
+        div.id = 'pearly-typing-indicator';
+        div.innerHTML = `<div class="pmsg-mini-avatar">🌸</div><div class="pearly-typing"><span></span><span></span><span></span></div>`;
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function pearlyHideTyping() {
+        document.getElementById('pearly-typing-indicator')?.remove();
+    }
+
+    function pearlyBuildContext() {
+        if (!analysisResults || analysisResults.length === 0) {
+            return 'No candidates have been analyzed yet.';
+        }
+        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+        return sorted.map((r, i) => {
+            const expStr = r.experience_years > 0
+                ? `${r.experience_years.toFixed(1)}yrs exp`
+                : r.internship_months > 0 ? `${r.internship_months}mo internship` : 'no listed exp';
+            const skills = (r.skills_present || r.key_skills || []).slice(0, 6).join(', ');
+            const missing = (r.skills_missing || []).slice(0, 4).join(', ');
+            return `#${i+1} ${r.name || 'Unknown'} — ${r.match_score}% match | ${expStr} | Location: ${r.location || '?'} | Skills: ${skills || 'N/A'} | Missing: ${missing || 'none'} | Summary: ${(r.summary || '').slice(0, 120)}`;
+        }).join('\n');
+    }
+
+    async function pearlySend() {
+        if (_pearlyThinking) return;
+        const inp = document.getElementById('pearly-input');
+        const msg = (inp.value || '').trim();
+        if (!msg) return;
+        inp.value = '';
+
+        pearlyAppendMsg(msg.replace(/</g,'&lt;').replace(/>/g,'&gt;'), true);
+        document.getElementById('pearly-chips').style.display = 'none';
+
+        _pearlyThinking = true;
+        pearlyShowTyping();
+
+        const context = pearlyBuildContext();
+        const systemPrompt = `You are Pearly 🌸 — a witty, warm, slightly sassy AI talent assistant for Pearl Hire, made by Team SPY for BeamX's Talent Acquisition team. You help recruiters understand, compare, and make decisions about candidates. Be funny, human, sharp, and engaging — like that one brilliant friend who casually drops career gold over coffee. Keep responses concise (2-5 sentences max). Use relevant emojis sparingly. Never be boring. Always give a concrete answer or observation, not vague platitudes. When you don't know something, say so with personality.
+
+Current candidate data:
+${context}`;
+
+        try {
+            const isGroq = selectedProvider === 'groq';
+            const keys = isGroq ? groqApiKeys : geminiApiKeys;
+            if (!keys || keys.length === 0) {
+                pearlyHideTyping();
+                pearlyAppendMsg(`Hmm, no API key found! 😅 Pop one in Settings and I'll be back in action.`, false);
+                _pearlyThinking = false;
+                return;
+            }
+            const activeKey = keys[isGroq ? groqKeyIndex : geminiKeyIndex] || keys[0];
+
+            let responseText = '';
+
+            if (isGroq) {
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: msg }
+                        ],
+                        temperature: 0.75,
+                        max_tokens: 300
+                    })
+                });
+                if (!res.ok) throw new Error(`API error ${res.status}`);
+                const data = await res.json();
+                responseText = data.choices?.[0]?.message?.content || 'Hmm, I got nothing. Try again?';
+            } else {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: systemPrompt + '\n\nUser: ' + msg }] }],
+                        generationConfig: { temperature: 0.75, maxOutputTokens: 300 }
+                    })
+                });
+                if (!res.ok) throw new Error(`API error ${res.status}`);
+                const data = await res.json();
+                responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Hmm, I got nothing. Try again?';
+            }
+
+            pearlyHideTyping();
+            // Sanitize and render
+            const safe = responseText
+                .replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+            pearlyAppendMsg(safe, false);
+        } catch (err) {
+            pearlyHideTyping();
+            pearlyAppendMsg(`Oof, something went sideways on my end 😬 — ${err.message || 'mystery error'}. Give it another shot?`, false);
+        }
+
+        _pearlyThinking = false;
     }
 
 </script>
