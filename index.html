@@ -3809,8 +3809,9 @@
         // Restore provider selection
         switchProvider(selectedProvider, true);
 
-        if (geminiApiKeys.length) document.getElementById('geminiKey').value = geminiApiKeys.join(', ');
-        if (groqApiKeys.length)   document.getElementById('groqKey').value   = groqApiKeys.join(', ');
+        if (geminiApiKeys.length)      document.getElementById('geminiKey').value      = geminiApiKeys.join(', ');
+        if (groqApiKeys.length)        document.getElementById('groqKey').value        = groqApiKeys.join(', ');
+        if (perplexityApiKeys.length)  document.getElementById('perplexityKey').value  = perplexityApiKeys.join(', ');
         const _groqBudgetIn = document.getElementById('groqTokenLimit');
         const _gemBudgetIn = document.getElementById('geminiTokenLimit');
         if (_groqBudgetIn) _groqBudgetIn.value = _numOrZero(tokenBudgets.groq) || '';
