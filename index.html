@@ -3068,6 +3068,7 @@
                             <div class="provider-toggle">
                                 <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">⚡ Groq <span class="provider-badge">Fast · Free</span></button>
                                 <button class="provider-btn" id="btnGemini" onclick="switchProvider('gemini')">✦ Gemini <span class="provider-badge">Google</span></button>
+                                <button class="provider-btn" id="btnPerplexity" onclick="switchProvider('perplexity')">🔍 Perplexity <span class="provider-badge">Sonar</span></button>
                             </div>
                         </div>
                         <div id="groqFields">
@@ -3082,6 +3083,13 @@
                                 <label for="geminiKey">Gemini API Key</label>
                                 <input type="password" id="geminiKey" placeholder="Enter API key..." onchange="saveGeminiKey()">
                                 <small class="hint">Free key → <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a> · 15 RPM. Multiple keys comma-separated.</small>
+                            </div>
+                        </div>
+                        <div id="perplexityFields" style="display:none;">
+                            <div class="form-group">
+                                <label for="perplexityKey">Perplexity API Key</label>
+                                <input type="password" id="perplexityKey" placeholder="pplx-..." onchange="savePerplexityKey()">
+                                <small class="hint">Get key → <a href="https://www.perplexity.ai/settings/api" target="_blank">perplexity.ai/settings/api</a> · Uses <strong>sonar-pro</strong> model. Works with Airtel Pro subscription.</small>
                             </div>
                         </div>
                     </div>
@@ -3489,16 +3497,20 @@
     let driveFiles     = []; // [{ name, driveLink, id }]  — Drive-link mode entries
     let currentJD      = '';
     let analysisResults = [];
-    let geminiApiKeys  = parseApiKeys(localStorage.getItem('geminiApiKeys') || localStorage.getItem('geminiApiKey') || '');
-    let groqApiKeys    = parseApiKeys(localStorage.getItem('groqApiKeys') || localStorage.getItem('groqApiKey') || '');
-    let geminiKeyIndex = parseInt(localStorage.getItem('geminiKeyIndex') || '0', 10);
-    let groqKeyIndex   = parseInt(localStorage.getItem('groqKeyIndex') || '0', 10);
+    let geminiApiKeys       = parseApiKeys(localStorage.getItem('geminiApiKeys') || localStorage.getItem('geminiApiKey') || '');
+    let groqApiKeys         = parseApiKeys(localStorage.getItem('groqApiKeys') || localStorage.getItem('groqApiKey') || '');
+    let perplexityApiKeys   = parseApiKeys(localStorage.getItem('perplexityApiKeys') || '');
+    let geminiKeyIndex      = parseInt(localStorage.getItem('geminiKeyIndex') || '0', 10);
+    let groqKeyIndex        = parseInt(localStorage.getItem('groqKeyIndex') || '0', 10);
+    let perplexityKeyIndex  = parseInt(localStorage.getItem('perplexityKeyIndex') || '0', 10);
     if (!Number.isInteger(geminiKeyIndex) || geminiKeyIndex < 0) geminiKeyIndex = 0;
     if (!Number.isInteger(groqKeyIndex) || groqKeyIndex < 0) groqKeyIndex = 0;
-    let geminiApiKey   = geminiApiKeys[geminiKeyIndex] || geminiApiKeys[0] || '';
-    let groqApiKey     = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
-    let driveApiKey    = localStorage.getItem('driveApiKey') || '';
-    let selectedProvider = localStorage.getItem('selectedProvider') || 'groq';
+    if (!Number.isInteger(perplexityKeyIndex) || perplexityKeyIndex < 0) perplexityKeyIndex = 0;
+    let geminiApiKey        = geminiApiKeys[geminiKeyIndex] || geminiApiKeys[0] || '';
+    let groqApiKey          = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
+    let perplexityApiKey    = perplexityApiKeys[perplexityKeyIndex] || perplexityApiKeys[0] || '';
+    let driveApiKey         = localStorage.getItem('driveApiKey') || '';
+    let selectedProvider    = localStorage.getItem('selectedProvider') || 'groq';
     let sheetsId           = localStorage.getItem('sheetsId') || '';
     let sheetsUrl          = localStorage.getItem('sheetsUrl') || '';
     let sheetSnapshotData  = null;
@@ -3516,13 +3528,12 @@
     let _linkedSheetMap    = {}; // normalized email/phone → { current_ctc, expected_ctc, notice_period }
     let tokenUsage = _parseStoredJson('tokenUsage', {
         groq: { prompt: 0, completion: 0, total: 0 },
-        gemini: { prompt: 0, completion: 0, total: 0 }
+        gemini: { prompt: 0, completion: 0, total: 0 },
+        perplexity: { prompt: 0, completion: 0, total: 0 }
     });
-    let tokenBudgets = _parseStoredJson('tokenBudgets', { groq: 0, gemini: 0 });
-    // Per-provider: track the rolling 1-minute token window start time
-    let _tokenWindowStart = { groq: 0, gemini: 0 };
-    // If a 429 hard-stops all keys, record when we can retry: { groq: timestamp, gemini: timestamp }
-    let _rateLimitUntil   = { groq: 0, gemini: 0 };
+    let tokenBudgets = _parseStoredJson('tokenBudgets', { groq: 0, gemini: 0, perplexity: 0 });
+    let _tokenWindowStart = { groq: 0, gemini: 0, perplexity: 0 };
+    let _rateLimitUntil   = { groq: 0, gemini: 0, perplexity: 0 };
     let _countdownTimer   = null; // setInterval handle for the live UI ticker
     let extraRequirements  = localStorage.getItem('extraRequirements') || '';
     let resumeDropOpen = false;
@@ -3661,20 +3672,17 @@
 
     function normalizeProviderKeyState(provider) {
         if (provider === 'groq') {
-            if (!groqApiKeys.length) {
-                groqKeyIndex = 0;
-                groqApiKey = '';
-                return;
-            }
+            if (!groqApiKeys.length) { groqKeyIndex = 0; groqApiKey = ''; return; }
             groqKeyIndex = groqKeyIndex % groqApiKeys.length;
             groqApiKey = groqApiKeys[groqKeyIndex];
             localStorage.setItem('groqKeyIndex', String(groqKeyIndex));
+        } else if (provider === 'perplexity') {
+            if (!perplexityApiKeys.length) { perplexityKeyIndex = 0; perplexityApiKey = ''; return; }
+            perplexityKeyIndex = perplexityKeyIndex % perplexityApiKeys.length;
+            perplexityApiKey = perplexityApiKeys[perplexityKeyIndex];
+            localStorage.setItem('perplexityKeyIndex', String(perplexityKeyIndex));
         } else {
-            if (!geminiApiKeys.length) {
-                geminiKeyIndex = 0;
-                geminiApiKey = '';
-                return;
-            }
+            if (!geminiApiKeys.length) { geminiKeyIndex = 0; geminiApiKey = ''; return; }
             geminiKeyIndex = geminiKeyIndex % geminiApiKeys.length;
             geminiApiKey = geminiApiKeys[geminiKeyIndex];
             localStorage.setItem('geminiKeyIndex', String(geminiKeyIndex));
@@ -3682,12 +3690,16 @@
     }
 
     function getProviderKeys(provider) {
-        return provider === 'groq' ? groqApiKeys : geminiApiKeys;
+        if (provider === 'groq') return groqApiKeys;
+        if (provider === 'perplexity') return perplexityApiKeys;
+        return geminiApiKeys;
     }
 
     function getActiveProviderKey(provider) {
         normalizeProviderKeyState(provider);
-        return provider === 'groq' ? groqApiKey : geminiApiKey;
+        if (provider === 'groq') return groqApiKey;
+        if (provider === 'perplexity') return perplexityApiKey;
+        return geminiApiKey;
     }
 
     function hasProviderKey(provider) {
@@ -3695,7 +3707,7 @@
     }
 
     function hasAnyApiKey() {
-        return hasProviderKey('groq') || hasProviderKey('gemini');
+        return hasProviderKey('groq') || hasProviderKey('gemini') || hasProviderKey('perplexity');
     }
 
     function rotateProviderKey(provider, reason = 'limit') {
@@ -3708,6 +3720,15 @@
             localStorage.setItem('groqKeyIndex', String(groqKeyIndex));
             if (selectedProvider === 'groq') updateConnStatus(true);
             showToast(`Switched to Groq key ${groqKeyIndex + 1}/${keys.length} (${reason})`, 'success');
+            return true;
+        }
+
+        if (provider === 'perplexity') {
+            perplexityKeyIndex = (perplexityKeyIndex + 1) % keys.length;
+            perplexityApiKey = keys[perplexityKeyIndex];
+            localStorage.setItem('perplexityKeyIndex', String(perplexityKeyIndex));
+            if (selectedProvider === 'perplexity') updateConnStatus(true);
+            showToast(`Switched to Perplexity key ${perplexityKeyIndex + 1}/${keys.length} (${reason})`, 'success');
             return true;
         }
 
@@ -3750,6 +3771,23 @@
                     ? `Saved ${geminiApiKeys.length} Gemini key${geminiApiKeys.length !== 1 ? 's' : ''}`
                     : 'Gemini keys cleared',
                 geminiApiKeys.length ? 'success' : 'error'
+            );
+        }
+        updateTokenUsageInfo();
+    }
+
+    function savePerplexityKeys(parsedKeys, showMessage = true) {
+        perplexityApiKeys = parsedKeys;
+        localStorage.setItem('perplexityApiKeys', perplexityApiKeys.join('\n'));
+        if (perplexityKeyIndex >= perplexityApiKeys.length) perplexityKeyIndex = 0;
+        normalizeProviderKeyState('perplexity');
+        updateConnStatus(hasProviderKey(selectedProvider));
+        if (showMessage) {
+            showToast(
+                perplexityApiKeys.length
+                    ? `Saved ${perplexityApiKeys.length} Perplexity key${perplexityApiKeys.length !== 1 ? 's' : ''}`
+                    : 'Perplexity keys cleared',
+                perplexityApiKeys.length ? 'success' : 'error'
             );
         }
         updateTokenUsageInfo();
@@ -3844,13 +3882,16 @@
         localStorage.setItem('selectedProvider', p);
 
         const isGroq = p === 'groq';
-        document.getElementById('groqFields').style.display   = isGroq ? 'block' : 'none';
-        document.getElementById('geminiFields').style.display = isGroq ? 'none'  : 'block';
+        const isPerplexity = p === 'perplexity';
+        document.getElementById('groqFields').style.display        = isGroq ? 'block' : 'none';
+        document.getElementById('geminiFields').style.display      = p === 'gemini' ? 'block' : 'none';
+        document.getElementById('perplexityFields').style.display  = isPerplexity ? 'block' : 'none';
         document.getElementById('btnGroq').classList.toggle('active', isGroq);
-        document.getElementById('btnGemini').classList.toggle('active', !isGroq);
+        document.getElementById('btnGemini').classList.toggle('active', p === 'gemini');
+        document.getElementById('btnPerplexity').classList.toggle('active', isPerplexity);
 
         // Set sensible default delay per provider
-        const providerDefault = isGroq ? 2000 : 5000;
+        const providerDefault = isGroq ? 2000 : isPerplexity ? 3000 : 5000;
         if (!localStorage.getItem('apiDelayMs')) {
             API_DELAY_MS = providerDefault;
         } else {
@@ -3861,11 +3902,11 @@
 
         rateLimiter.updateDelay(API_DELAY_MS);
 
-        const key = getActiveProviderKey(isGroq ? 'groq' : 'gemini');
+        const key = getActiveProviderKey(p);
         updateConnStatus(!!key);
         updateRateLimitInfo();
         updateTokenUsageInfo();
-        if (!silent) showToast(`Switched to ${isGroq ? 'Groq ⚡' : 'Gemini ✦'}`, 'success');
+        if (!silent) showToast(`Switched to ${isGroq ? 'Groq ⚡' : isPerplexity ? 'Perplexity 🔍' : 'Gemini ✦'}`, 'success');
     }
 
     function updateRateLimitInfo() {
@@ -3875,17 +3916,18 @@
         const delayS = (API_DELAY_MS / 1000).toFixed(1);
         const reqPerMin = Math.floor(60000 / API_DELAY_MS);
         const isGroq = selectedProvider === 'groq';
-        const limitRPM = isGroq ? 30 : 15;
+        const isPerplexity = selectedProvider === 'perplexity';
+        const limitRPM = isGroq ? 30 : isPerplexity ? 20 : 15;
         const safe = reqPerMin <= limitRPM - 2;
 
         info.innerHTML = `
             Each API call is delayed by <strong>${delayS}s</strong> to prevent rate limit errors.
             <span style="color:var(--text-muted);display:block;margin-top:0.25rem;">
-                ${isGroq ? '⚡ Groq' : '✦ Gemini'} free tier: ${limitRPM} RPM &nbsp;·&nbsp;
+                ${isGroq ? '⚡ Groq' : isPerplexity ? '🔍 Perplexity' : '✦ Gemini'} free tier: ${limitRPM} RPM &nbsp;·&nbsp;
                 Current: ~${reqPerMin} req/min &nbsp;${safe ? '<span style="color:var(--success)">✓ Safe</span>' : '<span style="color:var(--danger)">⚠️ Too fast!</span>'}
             </span>
         `;
-        if (hint) hint.textContent = `${isGroq ? 'Groq: keep ≥ 2s (30 RPM)' : 'Gemini: keep ≥ 5s (15 RPM)'}`;
+        if (hint) hint.textContent = `${isGroq ? 'Groq: keep ≥ 2s (30 RPM)' : isPerplexity ? 'Perplexity: keep ≥ 3s (20 RPM)' : 'Gemini: keep ≥ 5s (15 RPM)'}`;
     }
 
     // ─── Sidebar Toggles ───
@@ -3927,6 +3969,11 @@
     function saveGeminiKey() {
         const raw = document.getElementById('geminiKey').value.trim();
         saveGeminiKeys(parseApiKeys(raw), true);
+    }
+
+    function savePerplexityKey() {
+        const raw = document.getElementById('perplexityKey').value.trim();
+        savePerplexityKeys(parseApiKeys(raw), true);
     }
 
     function saveExtraRequirements() {
@@ -4975,9 +5022,11 @@ Rules:
 
     async function analyzeWithProvider(resumeText, jd, filters) {
         const isGroq = selectedProvider === 'groq';
-        const provider = isGroq ? 'groq' : 'gemini';
+        const isPerplexity = selectedProvider === 'perplexity';
+        const provider = isGroq ? 'groq' : isPerplexity ? 'perplexity' : 'gemini';
         const keys = getProviderKeys(provider);
-        if (!keys.length) throw new Error(`No ${isGroq ? 'Groq' : 'Gemini'} API key configured`);
+        const providerLabel = isGroq ? 'Groq' : isPerplexity ? 'Perplexity' : 'Gemini';
+        if (!keys.length) throw new Error(`No ${providerLabel} API key configured`);
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
         if (_stopSignal) throw new Error('STOP_REQUESTED');
 
@@ -5016,7 +5065,7 @@ Return exactly:
         const triedIndexes = new Set();
 
         while (triedIndexes.size < keys.length) {
-            const keyIndex = provider === 'groq' ? groqKeyIndex : geminiKeyIndex;
+            const keyIndex = provider === 'groq' ? groqKeyIndex : provider === 'perplexity' ? perplexityKeyIndex : geminiKeyIndex;
             if (triedIndexes.has(keyIndex)) break;
             triedIndexes.add(keyIndex);
             const activeKey = getActiveProviderKey(provider);
@@ -5024,11 +5073,15 @@ Return exactly:
             controller = new AbortController();
             _activeApiAbortController = controller;
 
-            if (isGroq) {
-                // ─── Groq (OpenAI-compatible) ───
+            if (isGroq || isPerplexity) {
+                // ─── Groq / Perplexity (OpenAI-compatible) ───
+                const apiUrl = isGroq
+                    ? 'https://api.groq.com/openai/v1/chat/completions'
+                    : 'https://api.perplexity.ai/chat/completions';
+                const model = isGroq ? 'llama-3.3-70b-versatile' : 'sonar-pro';
                 let res;
                 try {
-                    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -5036,7 +5089,7 @@ Return exactly:
                         },
                         signal: controller.signal,
                         body: JSON.stringify({
-                            model: 'llama-3.3-70b-versatile',
+                            model,
                             messages: [{ role: 'user', content: prompt }],
                             temperature: 0.2,
                             max_tokens: 1500
@@ -5044,45 +5097,44 @@ Return exactly:
                     });
                 } catch (err) {
                     if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
-                    throw new Error('Network error reaching Groq API');
+                    throw new Error(`Network error reaching ${providerLabel} API`);
                 }
 
                 if (!res.ok) {
                     let errMsg = `HTTP ${res.status}`;
                     try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
                     if (res.status === 401) {
-                        if (rotateProviderKey('groq', 'invalid key')) continue;
-                        throw new Error('Groq API key invalid — check console.groq.com');
+                        if (rotateProviderKey(provider, 'invalid key')) continue;
+                        throw new Error(`${providerLabel} API key invalid`);
                     }
                     if (res.status === 429) {
-                        // Honor retry-after header if short — wait on same key instead of burning next key
                         const retryAfterSec = parseInt(res.headers.get('retry-after') || '0', 10);
                         if (retryAfterSec > 0 && retryAfterSec <= 65 && !triedIndexes.has(String(keyIndex) + '_waited')) {
                             triedIndexes.add(String(keyIndex) + '_waited');
-                            _rateLimitUntil['groq'] = Date.now() + (retryAfterSec * 1000) + 500;
+                            _rateLimitUntil[provider] = Date.now() + (retryAfterSec * 1000) + 500;
                             updateTokenUsageInfo();
-                            showToast(`Groq key ${groqKeyIndex+1} rate limited — waiting ${retryAfterSec}s…`, 'warning');
+                            showToast(`${providerLabel} key ${keyIndex+1} rate limited — waiting ${retryAfterSec}s…`, 'warning');
                             await sleepInterruptible(retryAfterSec * 1000 + 500);
-                            _rateLimitUntil['groq'] = 0;
-                            triedIndexes.delete(keyIndex); // allow retry on same key
+                            _rateLimitUntil[provider] = 0;
+                            triedIndexes.delete(keyIndex);
                             continue;
                         }
-                        if (rotateProviderKey('groq', 'rate limit')) continue;
-                        _rateLimitUntil['groq'] = Date.now() + 60000;
+                        if (rotateProviderKey(provider, 'rate limit')) continue;
+                        _rateLimitUntil[provider] = Date.now() + 60000;
                         updateTokenUsageInfo();
-                        throw new Error('RATE_LIMIT:Groq rate limit hit — all configured Groq keys are exhausted');
+                        throw new Error(`RATE_LIMIT:${providerLabel} rate limit hit — all configured keys are exhausted`);
                     }
-                    throw new Error(`Groq error: ${errMsg}`);
+                    throw new Error(`${providerLabel} error: ${errMsg}`);
                 }
 
                 const data = await res.json();
-                recordTokenUsage('groq', {
+                recordTokenUsage(provider, {
                     promptTokens: data?.usage?.prompt_tokens,
                     completionTokens: data?.usage?.completion_tokens,
                     totalTokens: data?.usage?.total_tokens
                 });
                 raw = data?.choices?.[0]?.message?.content;
-                if (!raw) throw new Error('Groq returned empty response');
+                if (!raw) throw new Error(`${providerLabel} returned empty response`);
                 break;
 
             } else {
@@ -5141,7 +5193,7 @@ Return exactly:
         }
 
         if (!raw) {
-            throw new Error(`RATE_LIMIT:${isGroq ? 'Groq' : 'Gemini'} keys exhausted — add a fresh key and resume`);
+            throw new Error(`RATE_LIMIT:${providerLabel} keys exhausted — add a fresh key and resume`);
         }
 
         try {
@@ -8272,23 +8324,30 @@ ${context}`;
 
         try {
             const isGroq = selectedProvider === 'groq';
-            const keys = isGroq ? groqApiKeys : geminiApiKeys;
+            const isPerplexity = selectedProvider === 'perplexity';
+            const keys = isGroq ? groqApiKeys : isPerplexity ? perplexityApiKeys : geminiApiKeys;
             if (!keys || keys.length === 0) {
                 pearlyHideTyping();
                 pearlyAppendMsg(`Hmm, no API key found! 😅 Pop one in Settings and I'll be back in action.`, false);
                 _pearlyThinking = false;
                 return;
             }
-            const activeKey = keys[isGroq ? groqKeyIndex : geminiKeyIndex] || keys[0];
+            const activeKey = isGroq ? (keys[groqKeyIndex] || keys[0])
+                            : isPerplexity ? (keys[perplexityKeyIndex] || keys[0])
+                            : (keys[geminiKeyIndex] || keys[0]);
 
             let responseText = '';
 
-            if (isGroq) {
-                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            if (isGroq || isPerplexity) {
+                const apiUrl = isGroq
+                    ? 'https://api.groq.com/openai/v1/chat/completions'
+                    : 'https://api.perplexity.ai/chat/completions';
+                const model = isGroq ? 'llama-3.3-70b-versatile' : 'sonar-pro';
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
                     body: JSON.stringify({
-                        model: 'llama-3.3-70b-versatile',
+                        model,
                         messages: [
                             { role: 'system', content: systemPrompt },
                             { role: 'user', content: msg }
