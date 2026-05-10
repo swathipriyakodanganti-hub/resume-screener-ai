@@ -562,13 +562,30 @@
         .progress-wrap { display: none; margin-top: 0.75rem; }
         .progress-wrap.visible { display: block; }
         .progress-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }
-        .progress-bar { height: 3px; background: rgba(0, 220, 255, 0.12); border-radius: 2px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--amber), var(--accent)); background-size: 200% 100%; border-radius: 2px; transition: width 0.5s ease; width: 0%; animation: shimmerBar 1.4s linear infinite; }
-
-        @keyframes shimmerBar {
-            0%   { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        /* Design 5 — Animated Dots */
+        .progress-bar { padding: 5px 0; display: flex; align-items: center; gap: 4px; background: none; }
+        .progress-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(0,220,255,0.13); flex-shrink: 0; transition: background 0.3s ease; }
+        .progress-dot.dot-active { background: linear-gradient(135deg, #00dcff, #a78bfa); animation: dotPop 1s ease-in-out infinite; }
+        .progress-dot.dot-active:nth-child(1)  { animation-delay: 0.00s; }
+        .progress-dot.dot-active:nth-child(2)  { animation-delay: 0.07s; }
+        .progress-dot.dot-active:nth-child(3)  { animation-delay: 0.14s; }
+        .progress-dot.dot-active:nth-child(4)  { animation-delay: 0.21s; }
+        .progress-dot.dot-active:nth-child(5)  { animation-delay: 0.28s; }
+        .progress-dot.dot-active:nth-child(6)  { animation-delay: 0.35s; }
+        .progress-dot.dot-active:nth-child(7)  { animation-delay: 0.42s; }
+        .progress-dot.dot-active:nth-child(8)  { animation-delay: 0.49s; }
+        .progress-dot.dot-active:nth-child(9)  { animation-delay: 0.56s; }
+        .progress-dot.dot-active:nth-child(10) { animation-delay: 0.63s; }
+        .progress-dot.dot-active:nth-child(11) { animation-delay: 0.70s; }
+        .progress-dot.dot-active:nth-child(12) { animation-delay: 0.77s; }
+        .progress-dot.dot-active:nth-child(13) { animation-delay: 0.84s; }
+        .progress-dot.dot-active:nth-child(14) { animation-delay: 0.91s; }
+        .progress-dot.dot-active:nth-child(15) { animation-delay: 0.98s; }
+        .progress-dot.dot-pulse { background: #ffffff !important; animation: dotPulse 0.7s ease-in-out infinite !important; }
+        @keyframes dotPop   { 0%,100% { opacity:0.65; transform:scale(1); } 50% { opacity:1; transform:scale(1.4); } }
+        @keyframes dotPulse { 0%,100% { opacity:1; transform:scale(1);   box-shadow:0 0 0 0 rgba(0,220,255,0.5); } 50% { transform:scale(1.6); box-shadow:0 0 0 5px rgba(0,220,255,0); } }
+        /* progress-fill kept as invisible shim so JS width sets don't error */
+        .progress-fill { display: none; }
 
         /* Analyze button */
         .btn-analyze {
@@ -2788,9 +2805,30 @@
                 <div id="stopAnalysisFab" onclick="stopAnalysis()" style="display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;padding:0.55rem 1.4rem;background:#f85149;color:#fff;border:none;border-radius:999px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(248,81,73,0.5);letter-spacing:0.02em;user-select:none;animation:fabPulse 2s ease-in-out infinite;">⏹ Stop Analysis</div>
             </div>
         </div>
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-bar" id="progressDots">
+            <!-- 20 dots — filled dynamically by updateProgressDots() -->
+            <div class="progress-dot" data-i="0"></div>
+            <div class="progress-dot" data-i="1"></div>
+            <div class="progress-dot" data-i="2"></div>
+            <div class="progress-dot" data-i="3"></div>
+            <div class="progress-dot" data-i="4"></div>
+            <div class="progress-dot" data-i="5"></div>
+            <div class="progress-dot" data-i="6"></div>
+            <div class="progress-dot" data-i="7"></div>
+            <div class="progress-dot" data-i="8"></div>
+            <div class="progress-dot" data-i="9"></div>
+            <div class="progress-dot" data-i="10"></div>
+            <div class="progress-dot" data-i="11"></div>
+            <div class="progress-dot" data-i="12"></div>
+            <div class="progress-dot" data-i="13"></div>
+            <div class="progress-dot" data-i="14"></div>
+            <div class="progress-dot" data-i="15"></div>
+            <div class="progress-dot" data-i="16"></div>
+            <div class="progress-dot" data-i="17"></div>
+            <div class="progress-dot" data-i="18"></div>
+            <div class="progress-dot" data-i="19"></div>
         </div>
+        <div class="progress-fill" id="progressFill" style="display:none;"></div>
     </div>
     <!-- Resume banner shown after stop or API limit -->
     <div id="resumeBanner" style="display:none;background:rgba(227,179,65,0.1);border:1px solid rgba(227,179,65,0.35);border-radius:8px;padding:0.6rem 1rem;margin:0.5rem 1rem;font-size:0.78rem;color:#e3b341;align-items:center;gap:0.75rem;flex-wrap:wrap;">
@@ -5494,8 +5532,19 @@ Rules:
         if (stopFab) { stopFab.style.display = 'block'; stopFab.textContent = '⏹ Stop Analysis'; stopFab.style.pointerEvents = 'auto'; }
         pw.classList.add('visible');
 
+        const _TOTAL_DOTS = 20;
+        function updateProgressDots(done, total) {
+            const dots = document.querySelectorAll('#progressDots .progress-dot');
+            const filledCount = total > 0 ? Math.round((done / total) * _TOTAL_DOTS) : 0;
+            dots.forEach((d, idx) => {
+                d.classList.remove('dot-active', 'dot-pulse');
+                if (idx < filledCount - 1) d.classList.add('dot-active');
+                else if (idx === filledCount - 1 && done < total) d.classList.add('dot-pulse');
+                else if (idx < filledCount) d.classList.add('dot-active');
+            });
+        }
         let done = startDone;
-        pf.style.width = `${(done / total) * 100}%`;
+        updateProgressDots(done, total);
         pc.textContent = `${done}/${total}`;
 
         const _finish = (wasStopped, wasLimit) => {
@@ -5585,7 +5634,7 @@ Rules:
             }
 
             done++;
-            pf.style.width = `${(done / total) * 100}%`;
+            updateProgressDots(done, total);
             pc.textContent = `${done}/${total}`;
             renderResumeDropdown();
         }
@@ -5637,7 +5686,7 @@ Rules:
             }
 
             done++;
-            pf.style.width = `${(done / total) * 100}%`;
+            updateProgressDots(done, total);
             pc.textContent = `${done}/${total}`;
             renderResumeDropdown();
         }
