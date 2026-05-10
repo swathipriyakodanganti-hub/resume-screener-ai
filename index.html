@@ -8384,51 +8384,82 @@ main.addEventListener('scroll',()=>{
         const systemPrompt = buildPearlySystemPrompt(context);
 
         try {
-            // Pearly always uses Gemini 2.0 Flash (free, 1500 req/day — separate from analysis quota)
-            if (!geminiApiKeys || geminiApiKeys.length === 0) {
+            // Pearly: try all Gemini keys first, then fall back to Groq
+            if ((!geminiApiKeys || geminiApiKeys.length === 0) && (!groqApiKeys || groqApiKeys.length === 0)) {
                 pearlyHideTyping();
-                pearlyAppendMsg(`I need a Gemini API key to chat! 🥺 Pop one in Settings → Gemini (it's free at aistudio.google.com) and I'll be right with you bestie~`, false);
+                pearlyAppendMsg(`I need at least one API key to chat! 🥺 Add a Gemini or Groq key in Settings bestie~`, false);
                 _pearlyThinking = false;
                 return;
             }
 
-            // Try each key in rotation until one works
             let responseText = null;
-            const triedPearly = new Set();
-            let pearlyKeyIdx = geminiKeyIndex;
 
-            while (triedPearly.size < geminiApiKeys.length) {
-                if (triedPearly.has(pearlyKeyIdx)) break;
-                triedPearly.add(pearlyKeyIdx);
-                const activeKey = geminiApiKeys[pearlyKeyIdx] || geminiApiKeys[0];
-
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [
-                            { role: 'user', parts: [{ text: systemPrompt }] },
-                            { role: 'model', parts: [{ text: 'Got it! I\'m Pearly, ready to help.' }] },
-                            { role: 'user', parts: [{ text: msg }] }
-                        ],
-                        generationConfig: { temperature: 0.75, maxOutputTokens: 400 }
-                    })
-                });
-
-                if (res.status === 429 || res.status === 503) {
-                    // Rate limited — try next key
-                    pearlyKeyIdx = (pearlyKeyIdx + 1) % geminiApiKeys.length;
-                    continue;
+            // ── Try Gemini keys ──
+            if (geminiApiKeys && geminiApiKeys.length > 0) {
+                const triedGemini = new Set();
+                let pearlyKeyIdx = geminiKeyIndex;
+                while (triedGemini.size < geminiApiKeys.length) {
+                    if (triedGemini.has(pearlyKeyIdx)) break;
+                    triedGemini.add(pearlyKeyIdx);
+                    const activeKey = geminiApiKeys[pearlyKeyIdx] || geminiApiKeys[0];
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [
+                                { role: 'user', parts: [{ text: systemPrompt }] },
+                                { role: 'model', parts: [{ text: 'Got it! I\'m Pearly, ready to help.' }] },
+                                { role: 'user', parts: [{ text: msg }] }
+                            ],
+                            generationConfig: { temperature: 0.75, maxOutputTokens: 400 }
+                        })
+                    });
+                    if (res.status === 429 || res.status === 503) {
+                        pearlyKeyIdx = (pearlyKeyIdx + 1) % geminiApiKeys.length;
+                        continue;
+                    }
+                    if (!res.ok) throw new Error(`Gemini API error ${res.status}`);
+                    const data = await res.json();
+                    responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+                    break;
                 }
-                if (!res.ok) throw new Error(`API error ${res.status}`);
-                const data = await res.json();
-                responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Hmm, I got nothing. Try again?';
-                break;
+            }
+
+            // ── Fall back to Groq if Gemini exhausted ──
+            if (!responseText && groqApiKeys && groqApiKeys.length > 0) {
+                const triedGroq = new Set();
+                let groqKeyIdx = groqKeyIndex;
+                while (triedGroq.size < groqApiKeys.length) {
+                    if (triedGroq.has(groqKeyIdx)) break;
+                    triedGroq.add(groqKeyIdx);
+                    const activeKey = groqApiKeys[groqKeyIdx] || groqApiKeys[0];
+                    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
+                        body: JSON.stringify({
+                            model: 'llama-3.3-70b-versatile',
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { role: 'user', content: msg }
+                            ],
+                            temperature: 0.75,
+                            max_tokens: 400
+                        })
+                    });
+                    if (res.status === 429 || res.status === 503) {
+                        groqKeyIdx = (groqKeyIdx + 1) % groqApiKeys.length;
+                        continue;
+                    }
+                    if (!res.ok) throw new Error(`Groq API error ${res.status}`);
+                    const data = await res.json();
+                    responseText = data.choices?.[0]?.message?.content || null;
+                    break;
+                }
             }
 
             if (!responseText) {
                 pearlyHideTyping();
-                pearlyAppendMsg(`All my Gemini keys are rate limited rn 😅 — wait a minute and try again, or add more keys in Settings bestie~`, false);
+                pearlyAppendMsg(`All my API keys are rate limited rn 😅 — wait a minute and try again, or add more keys in Settings bestie~`, false);
                 _pearlyThinking = false;
                 return;
             }
