@@ -1204,26 +1204,49 @@
 
         .filename-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(4, 8, 20, 0.7); border: 1px solid var(--border); border-radius: 6px; font-size: 0.73rem; color: var(--text-muted); }
 
-        /* Toast */
+        /* Toast — Design 2: Pearly glowing pill, top-center bounce-in */
         .toast {
-            position: fixed; top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.92);
-            background: rgba(4, 8, 18, 0.96);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            box-shadow: 0 8px 32px var(--shadow);
-            z-index: 9999;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 0.85rem;
-            white-space: nowrap;
-            backdrop-filter: blur(12px);
+            position: fixed; top: 1.1rem; left: 50%;
+            transform: translateX(-50%) translateY(-120%) scale(0.88);
+            display: inline-flex; align-items: center; gap: 0.55rem;
+            background: linear-gradient(135deg, rgba(249,168,212,0.15), rgba(192,132,252,0.18));
+            border: 1px solid rgba(249,168,212,0.4);
+            border-radius: 999px;
+            padding: 0.5rem 1.2rem 0.5rem 0.55rem;
+            font-size: 0.82rem; color: #f0abfc;
+            box-shadow: 0 4px 20px rgba(192,132,252,0.2), 0 0 0 1px rgba(249,168,212,0.08);
+            backdrop-filter: blur(20px);
+            z-index: 9999; opacity: 0; white-space: nowrap;
+            transition: transform 0.42s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.3s ease, box-shadow 0.3s ease;
         }
-
-        .toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        .toast.success { border-color: rgba(52, 211, 153, 0.5); color: var(--success); }
-        .toast.error { border-color: rgba(248, 113, 113, 0.4); color: var(--danger); }
+        .toast.show {
+            transform: translateX(-50%) translateY(0) scale(1); opacity: 1;
+            animation: toastGlow 2s ease-in-out infinite;
+        }
+        .toast.success {
+            border-color: rgba(249,168,212,0.45); color: #f0abfc;
+            background: linear-gradient(135deg, rgba(249,168,212,0.14), rgba(192,132,252,0.18));
+        }
+        .toast.error {
+            border-color: rgba(248,113,113,0.45); color: #fca5a5;
+            background: linear-gradient(135deg, rgba(248,113,113,0.12), rgba(239,68,68,0.1));
+            box-shadow: 0 4px 20px rgba(248,113,113,0.2);
+        }
+        .toast-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(135deg, #f9a8d4, #c084fc);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; flex-shrink: 0;
+            box-shadow: 0 0 8px rgba(192,132,252,0.5);
+        }
+        .toast.error .toast-avatar {
+            background: linear-gradient(135deg, #fca5a5, #f87171);
+            box-shadow: 0 0 8px rgba(248,113,113,0.5);
+        }
+        @keyframes toastGlow {
+            0%,100% { box-shadow: 0 4px 20px rgba(192,132,252,0.2), 0 0 0 1px rgba(249,168,212,0.08); }
+            50%      { box-shadow: 0 4px 28px rgba(192,132,252,0.45), 0 0 16px rgba(249,168,212,0.2); }
+        }
 
         @media (max-width: 768px) {
             .app-shell { flex-direction: column; height: auto; }
@@ -6849,7 +6872,8 @@ main.addEventListener('scroll',()=>{
     // ─── Toast ───
     function showToast(msg, type = 'success') {
         const t = document.getElementById('toast');
-        t.textContent = msg;
+        const icon = type === 'success' ? '🌸' : '⚠️';
+        t.innerHTML = `<div class="toast-avatar">${icon}</div><span>${msg}</span>`;
         t.className = `toast ${type} show`;
         clearTimeout(t._t);
         t._t = setTimeout(() => t.classList.remove('show'), 3500);
