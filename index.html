@@ -2443,6 +2443,78 @@
             border: 1px solid var(--border);
             border-radius: 12px;
         }
+
+        /* ── Design C: Command Center ── */
+        .dc-page { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; }
+        .dc-page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.75rem; }
+        .dc-eyebrow { font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:#f472b6; margin-bottom:0.25rem; }
+        .dc-title { font-size:1.25rem; font-weight:700; color:#f1f5f9; letter-spacing:-0.02em; }
+        .dc-sub { font-size:0.76rem; color:var(--text-muted); margin-top:0.2rem; }
+        .dc-rate-badge { display:inline-flex; align-items:center; gap:0.35rem; padding:0.28rem 0.65rem; border-radius:7px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); font-size:0.65rem; color:#6ee7b7; font-weight:600; white-space:nowrap; }
+        .dc-rate-dot { width:5px; height:5px; border-radius:50%; background:#34d399; animation:dcPulse 1.8s infinite; }
+        @keyframes dcPulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+        .dc-grid-3 { display:grid; grid-template-columns:1fr 1.15fr 0.9fr; gap:1.1rem; align-items:start; }
+        .dc-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; align-items:start; }
+        .dc-stack { display:flex; flex-direction:column; gap:0.85rem; }
+        .dc-section-head { display:flex; align-items:center; gap:0.6rem; margin-bottom:0.8rem; }
+        .dc-section-num { width:21px; height:21px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.63rem; font-weight:800; background:rgba(244,114,182,0.1); color:#f9a8d4; border:1px solid rgba(244,114,182,0.22); }
+        .dc-section-num.green { background:rgba(52,211,153,0.1); color:#6ee7b7; border-color:rgba(52,211,153,0.25); }
+        .dc-section-num.amber { background:rgba(251,191,36,0.08); color:#fcd34d; border-color:rgba(251,191,36,0.2); }
+        .dc-section-num.muted { background:rgba(255,255,255,0.04); color:#94a3b8; border-color:rgba(255,255,255,0.1); }
+        .dc-section-label { font-size:0.63rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:#cbd5e1; }
+        .dc-section-line { flex:1; height:1px; background:rgba(255,255,255,0.05); }
+        .dc-card { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:1.2rem 1.35rem; }
+        .dc-card.pink-glow { box-shadow:inset 0 1px 0 rgba(244,114,182,0.1); }
+        .dc-card.green-glow { box-shadow:inset 0 1px 0 rgba(52,211,153,0.1); }
+        .dc-card.amber-glow { box-shadow:inset 0 1px 0 rgba(251,191,36,0.1); }
+        .dc-card.cyan-glow { box-shadow:inset 0 1px 0 rgba(0,220,255,0.1); }
+        .dc-label { display:block; font-size:0.68rem; font-weight:600; color:#64748b; letter-spacing:0.03em; margin-bottom:0.35rem; }
+        .dc-input { width:100%; padding:0.55rem 0.75rem; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-primary); font-size:0.78rem; font-family:var(--font-sans); outline:none; transition:border-color 0.2s, box-shadow 0.2s; }
+        .dc-input:focus { border-color:rgba(244,114,182,0.45); box-shadow:0 0 0 3px rgba(244,114,182,0.07); }
+        .dc-input.green:focus { border-color:rgba(52,211,153,0.45); box-shadow:0 0 0 3px rgba(52,211,153,0.07); }
+        .dc-input.cyan:focus { border-color:rgba(0,220,255,0.45); box-shadow:0 0 0 3px rgba(0,220,255,0.07); }
+        .dc-select { width:100%; padding:0.55rem 0.75rem; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-primary); font-size:0.78rem; font-family:var(--font-sans); outline:none; cursor:pointer; }
+        .dc-textarea { width:100%; padding:0.65rem 0.8rem; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-primary); font-size:0.77rem; font-family:var(--font-sans); resize:vertical; line-height:1.6; outline:none; transition:border-color 0.2s; }
+        .dc-textarea:focus { border-color:rgba(52,211,153,0.4); }
+        .dc-hint { font-size:0.64rem; color:var(--text-muted); margin-top:0.28rem; }
+        .dc-hint a { color:var(--accent); }
+        .dc-hint strong { color:var(--text-secondary); }
+        .dc-upload-zone { border:1px dashed rgba(244,114,182,0.22); border-radius:10px; padding:1.35rem; text-align:center; cursor:pointer; background:rgba(244,114,182,0.02); transition:all 0.2s; }
+        .dc-upload-zone:hover { border-color:rgba(244,114,182,0.45); background:rgba(244,114,182,0.04); }
+        .dc-upload-icon { font-size:1.6rem; display:block; margin-bottom:0.38rem; }
+        .dc-upload-title { font-size:0.8rem; font-weight:600; color:var(--text-primary); }
+        .dc-upload-sub { font-size:0.67rem; color:var(--text-muted); margin-top:0.18rem; }
+        .dc-divider { display:flex; align-items:center; gap:0.55rem; margin:0.65rem 0; font-size:0.63rem; color:var(--text-muted); }
+        .dc-divider::before, .dc-divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.04); }
+        .dc-btn-sm { padding:0.46rem 0.85rem; border-radius:7px; font-size:0.73rem; font-weight:600; border:1px solid rgba(255,255,255,0.1); cursor:pointer; transition:all 0.18s; background:rgba(255,255,255,0.05); color:var(--text-muted); }
+        .dc-btn-sm:hover { background:rgba(255,255,255,0.1); }
+        .dc-btn-sm.pink { background:rgba(244,114,182,0.08); border-color:rgba(244,114,182,0.25); color:#fbb6ce; }
+        .dc-btn-sm.pink:hover { background:rgba(244,114,182,0.15); }
+        .dc-btn-sm.green { background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.25); color:#6ee7b7; }
+        .dc-btn-sm.green:hover { background:rgba(52,211,153,0.15); }
+        .dc-btn-sm.cyan { background:rgba(0,220,255,0.08); border-color:rgba(0,220,255,0.25); color:#67e8f9; }
+        .dc-btn-sm.danger { background:rgba(248,81,73,0.08); border-color:rgba(248,81,73,0.25); color:#fca5a5; }
+        .dc-row { display:flex; gap:0.4rem; align-items:flex-start; }
+        .dc-exp-row { display:flex; align-items:center; gap:0.3rem; }
+        .dc-exp-in { width:48px; padding:0.5rem 0.3rem; text-align:center; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.07); border-radius:7px; color:var(--text-primary); font-size:0.76rem; font-family:var(--font-sans); outline:none; }
+        .dc-exp-unit { font-size:0.62rem; color:var(--text-muted); }
+        .dc-arrow { color:var(--text-muted); font-size:0.72rem; padding:0 0.2rem; }
+        .dc-provider-block { display:flex; align-items:center; gap:0.75rem; padding:0.7rem 0.9rem; border-radius:10px; background:rgba(0,0,0,0.35); border:1px solid rgba(0,220,255,0.15); margin-bottom:0.9rem; }
+        .dc-provider-led { width:8px; height:8px; border-radius:50%; background:#00dcff; box-shadow:0 0 6px #00dcff; animation:dcPulse 2s infinite; flex-shrink:0; }
+        .dc-provider-name { font-size:0.85rem; font-weight:700; color:var(--text-primary); }
+        .dc-provider-tag { font-size:0.62rem; color:#67e8f9; background:rgba(0,220,255,0.1); border-radius:4px; padding:0.08rem 0.42rem; margin-left:0.45rem; }
+        .dc-sheet-item { display:flex; align-items:center; gap:0.45rem; padding:0.4rem 0.55rem; border:1px solid rgba(255,255,255,0.06); border-radius:7px; font-size:0.68rem; color:var(--text-muted); background:rgba(255,255,255,0.015); }
+        .dc-sheet-url { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .dc-token-bar { height:5px; border-radius:3px; background:rgba(255,255,255,0.05); overflow:hidden; margin:0.4rem 0 0.25rem; }
+        .dc-token-fill { height:100%; background:linear-gradient(90deg,#f472b6,#a855f7); border-radius:3px; transition:width 0.4s; }
+        .dc-stat { padding:0.65rem 0.8rem; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.06); border-radius:9px; }
+        .dc-stat-label { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.1em; color:#475569; margin-bottom:0.2rem; }
+        .dc-stat-value { font-size:0.88rem; font-weight:700; color:var(--text-primary); }
+        .dc-stat-sub { font-size:0.61rem; color:#64748b; margin-top:0.12rem; }
+        .btn-dc-analyze { width:100%; padding:0.82rem; border-radius:10px; font-size:0.88rem; font-weight:700; border:none; cursor:pointer; background:linear-gradient(90deg,#f472b6 0%,#a855f7 50%,#6366f1 100%); color:#fff; letter-spacing:0.01em; position:relative; overflow:hidden; box-shadow:0 2px 16px rgba(168,85,247,0.25); transition:transform 0.25s, box-shadow 0.25s; }
+        .btn-dc-analyze::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent); transition:left 0.5s; }
+        .btn-dc-analyze:hover::before { left:100%; }
+        .btn-dc-analyze:hover { transform:translateY(-2px); box-shadow:0 4px 24px rgba(168,85,247,0.4); }
         .s-section-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 0.75rem 1rem;
@@ -2876,109 +2948,127 @@
 
         <!-- ─── SETUP PAGE ─── -->
         <div class="app-page" id="app-page-setup">
-            <div style="flex:1;overflow-y:auto;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+            <div class="dc-page">
 
-                <!-- Top row: Upload · Position & Filters · Actions -->
-                <div style="display:grid;grid-template-columns:1fr 1.1fr 0.9fr;gap:1rem;align-items:start;">
+                <!-- Page header -->
+                <div class="dc-page-header">
+                    <div>
+                        <div class="dc-eyebrow">Pearl Hire · Setup</div>
+                        <div class="dc-title">Configure &amp; Analyze</div>
+                        <div class="dc-sub">Upload resumes, describe the role, and set filters to begin AI screening.</div>
+                    </div>
+                    <div class="dc-rate-badge"><span class="dc-rate-dot"></span> <span id="rateLimitInfo">Each API call is delayed to prevent rate limit errors.</span></div>
+                </div>
 
-                    <!-- Card: Upload Resumes -->
-                    <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.7rem;">📤 Upload Resumes</div>
-                        <div class="upload-zone" id="uploadZone"
-                             ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
-                             style="padding:1rem;">
-                            <span class="upload-icon">📤</span>
-                            <p>Drop files or click to browse</p>
-                            <small>PDF, DOC, DOCX</small>
-                            <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)">
+                <div class="dc-grid-3">
+
+                    <!-- Column 1: Upload -->
+                    <div>
+                        <div class="dc-section-head">
+                            <div class="dc-section-num">1</div>
+                            <div class="dc-section-label">Upload Resumes</div>
+                            <div class="dc-section-line"></div>
                         </div>
-                        <div class="drive-links-divider">or paste Google Drive links</div>
-                        <div class="drive-links-input-wrap">
-                            <textarea id="driveLinksInput" class="drive-links-textarea"
-                                placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
-                            <button class="btn-add-links" onclick="addDriveLinks()">＋ Add</button>
-                        </div>
-                        <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;margin-top:0.5rem;">
-                            <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
-                                <span id="resumeDropLabel">0 files loaded</span>
-                                <span id="resumeDropChevron" style="font-size:0.65rem;transition:transform 0.3s;">▼</span>
+                        <div class="dc-card pink-glow">
+                            <div class="dc-upload-zone" id="uploadZone"
+                                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                <span class="dc-upload-icon">📂</span>
+                                <div class="dc-upload-title">Drop files or click to browse</div>
+                                <div class="dc-upload-sub">PDF, DOC, DOCX</div>
+                                <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx" onchange="handleFiles(this.files)" style="display:none;">
                             </div>
-                            <div class="resume-dropdown-list" id="resumeDropList"></div>
-                        </div>
-                    </div>
-
-                    <!-- Card: Position & Job Description -->
-                    <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--success);margin-bottom:0.7rem;">📋 Position &amp; Job Description</div>
-                        <div class="form-group" style="margin-bottom:0.75rem;">
-                            <label for="positionSelect">Select Position</label>
-                            <select id="positionSelect" onchange="loadJD()"><option value="">-- Select Position --</option></select>
-                        </div>
-                        <textarea class="jd-preview-box" id="jdEditBox" placeholder="Select a position above, or type / paste a job description here…" oninput="currentJD = this.value;" style="display:block;min-height:140px;"></textarea>
-                        <div style="display:flex;justify-content:flex-end;margin-top:0.4rem;">
-                            <button class="jd-rec-btn" id="jdRecBtn" onclick="getJdRecommendations()">✨ AI Recommendations</button>
-                        </div>
-                        <div class="jd-rec-panel" id="jdRecPanel">
-                            <div class="jd-rec-header">🎯 Recruiter Focus Areas</div>
-                            <div id="jdRecFocusAreas"></div>
-                            <div class="jd-rec-header" style="margin-top:0.4rem;">⚠️ Red Flags to Watch For</div>
-                            <div class="jd-rec-red-flags" id="jdRecRedFlags"></div>
-                            <div style="font-size:0.67rem;color:var(--text-muted);margin-top:0.3rem;">AI-generated · based on the job description above</div>
-                        </div>
-                    </div>
-
-                    <!-- Card: Filters + Extra Instructions + Analyze -->
-                    <div style="display:flex;flex-direction:column;gap:0.85rem;">
-                        <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
-                            <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber);margin-bottom:0.7rem;">🔍 Filters</div>
-                            <div class="form-group">
-                                <label>Experience Range</label>
-                                <div style="display:flex;align-items:center;gap:0.4rem;">
-                                    <div style="display:flex;align-items:center;gap:0.25rem;flex:1;">
-                                        <input type="number" id="minExp" min="0" max="40" step="1" placeholder="0" style="flex:1;min-width:0;" title="Min years">
-                                        <span style="font-size:0.68rem;color:var(--text-muted);">yr</span>
-                                        <input type="number" id="minExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;min-width:0;" title="Min months">
-                                        <span style="font-size:0.68rem;color:var(--text-muted);">mo</span>
-                                    </div>
-                                    <span style="color:var(--text-muted);font-size:0.75rem;">→</span>
-                                    <div style="display:flex;align-items:center;gap:0.25rem;flex:1;">
-                                        <input type="number" id="maxExp" min="0" max="40" step="1" placeholder="any" style="flex:1;min-width:0;" title="Max years">
-                                        <span style="font-size:0.68rem;color:var(--text-muted);">yr</span>
-                                        <input type="number" id="maxExpMonths" min="0" max="11" step="1" placeholder="0" style="flex:1;min-width:0;" title="Max months">
-                                        <span style="font-size:0.68rem;color:var(--text-muted);">mo</span>
-                                    </div>
+                            <div class="dc-divider">or Google Drive links</div>
+                            <div class="dc-row">
+                                <textarea id="driveLinksInput" class="dc-textarea" style="height:70px;resize:none;"
+                                    placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
+                                <button class="dc-btn-sm pink" onclick="addDriveLinks()" style="height:70px;white-space:nowrap;">＋ Add</button>
+                            </div>
+                            <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;margin-top:0.5rem;">
+                                <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
+                                    <span id="resumeDropLabel">0 files loaded</span>
+                                    <span id="resumeDropChevron" style="font-size:0.65rem;transition:transform 0.3s;">▼</span>
                                 </div>
-                                <small class="hint" style="margin-top:0.3rem;">e.g. 0yr 6mo → 2yr 0mo for fresher range</small>
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="location">Location</label>
-                                <select id="location">
-                                    <option value="" selected>Any location</option>
-                                    <option value="Hyderabad">Hyderabad</option>
-                                </select>
-                                <small class="hint" style="margin-top:0.25rem;">Add a <strong>Locations</strong> tab in your sheet</small>
+                                <div class="resume-dropdown-list" id="resumeDropList"></div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="setup-section-card" style="padding:1.1rem 1.25rem;">
-                            <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.6rem;">✏️ Extra Instructions</div>
-                            <textarea id="extraReqsInput" rows="3"
-                                placeholder="e.g. Focus on grammar, flag date inconsistencies, check for structure…"
-                                oninput="saveExtraRequirements()"
-                                style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.78rem;font-family:'Source Sans 3',sans-serif;padding:0.55rem 0.7rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
-                                onfocus="this.style.borderColor='var(--accent)'"
-                                onblur="this.style.borderColor='var(--border)'"
-                            ></textarea>
-                            <small class="hint">Custom AI focus areas. Findings appear as <strong>Custom Screening Feedback</strong>.</small>
+                    <!-- Column 2: Position & JD -->
+                    <div>
+                        <div class="dc-section-head">
+                            <div class="dc-section-num green">2</div>
+                            <div class="dc-section-label">Position &amp; Job Description</div>
+                            <div class="dc-section-line"></div>
                         </div>
-
-                        <div style="font-size:0.65rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.35rem;padding:0 0.15rem;">
-                            <span style="opacity:0.55;">🛡️</span>
-                            <div id="rateLimitInfo" style="line-height:1.45;">Each API call is delayed to prevent rate limit errors.</div>
+                        <div class="dc-card green-glow">
+                            <div style="margin-bottom:0.75rem;">
+                                <label class="dc-label" for="positionSelect">Select Position</label>
+                                <select id="positionSelect" class="dc-select" onchange="loadJD()"><option value="">-- Select Position --</option></select>
+                            </div>
+                            <div style="margin-bottom:0.4rem;">
+                                <label class="dc-label">Job Description</label>
+                                <textarea class="dc-textarea" id="jdEditBox" placeholder="Select a position above, or type / paste a job description here…" oninput="currentJD = this.value;" style="min-height:145px;"></textarea>
+                            </div>
+                            <div style="display:flex;justify-content:flex-end;">
+                                <button class="dc-btn-sm green jd-rec-btn" id="jdRecBtn" onclick="getJdRecommendations()">✨ AI Recommendations</button>
+                            </div>
+                            <div class="jd-rec-panel" id="jdRecPanel">
+                                <div class="jd-rec-header">🎯 Recruiter Focus Areas</div>
+                                <div id="jdRecFocusAreas"></div>
+                                <div class="jd-rec-header" style="margin-top:0.4rem;">⚠️ Red Flags to Watch For</div>
+                                <div class="jd-rec-red-flags" id="jdRecRedFlags"></div>
+                                <div style="font-size:0.67rem;color:var(--text-muted);margin-top:0.3rem;">AI-generated · based on the job description above</div>
+                            </div>
                         </div>
+                    </div>
 
-                        <button class="btn-analyze" onclick="analyzeResumes()" id="analyzeBtn2">🚀 Analyze Resumes</button>
-                        <button id="analyzeBtn" onclick="analyzeResumes()" style="display:none;visibility:hidden;"></button>
+                    <!-- Column 3: Filters + Extra + Analyze -->
+                    <div>
+                        <div class="dc-section-head">
+                            <div class="dc-section-num amber">3</div>
+                            <div class="dc-section-label">Filters &amp; Launch</div>
+                            <div class="dc-section-line"></div>
+                        </div>
+                        <div class="dc-stack">
+                            <div class="dc-card amber-glow">
+                                <div style="margin-bottom:0.8rem;">
+                                    <label class="dc-label">Experience Range</label>
+                                    <div class="dc-exp-row">
+                                        <input type="number" id="minExp" min="0" max="40" step="1" placeholder="0" class="dc-exp-in" title="Min years">
+                                        <span class="dc-exp-unit">yr</span>
+                                        <input type="number" id="minExpMonths" min="0" max="11" step="1" placeholder="0" class="dc-exp-in" title="Min months">
+                                        <span class="dc-exp-unit">mo</span>
+                                        <span class="dc-arrow">→</span>
+                                        <input type="number" id="maxExp" min="0" max="40" step="1" placeholder="any" class="dc-exp-in" title="Max years">
+                                        <span class="dc-exp-unit">yr</span>
+                                        <input type="number" id="maxExpMonths" min="0" max="11" step="1" placeholder="0" class="dc-exp-in" title="Max months">
+                                        <span class="dc-exp-unit">mo</span>
+                                    </div>
+                                    <div class="dc-hint" style="margin-top:0.35rem;">e.g. 0yr 6mo → 2yr 0mo for fresher range</div>
+                                </div>
+                                <div>
+                                    <label class="dc-label" for="location">Location</label>
+                                    <select id="location" class="dc-select">
+                                        <option value="" selected>Any location</option>
+                                        <option value="Hyderabad">Hyderabad</option>
+                                    </select>
+                                    <div class="dc-hint" style="margin-top:0.25rem;">Add a <strong>Locations</strong> tab in your sheet</div>
+                                </div>
+                            </div>
+
+                            <div class="dc-card">
+                                <label class="dc-label">✏️ Extra Instructions</label>
+                                <textarea id="extraReqsInput" class="dc-textarea" style="min-height:74px;"
+                                    placeholder="e.g. Focus on grammar, flag date inconsistencies, check for structure…"
+                                    oninput="saveExtraRequirements()"
+                                    onfocus="this.style.borderColor='rgba(244,114,182,0.4)'"
+                                    onblur="this.style.borderColor='rgba(255,255,255,0.08)'"></textarea>
+                                <div class="dc-hint" style="margin-top:0.35rem;">Custom AI focus areas. Findings appear as <strong>Custom Screening Feedback</strong>.</div>
+                            </div>
+
+                            <button class="btn-dc-analyze" onclick="analyzeResumes()" id="analyzeBtn2">🚀 Analyze Resumes</button>
+                            <button id="analyzeBtn" onclick="analyzeResumes()" style="display:none;visibility:hidden;"></button>
+                        </div>
                     </div>
 
                 </div>
@@ -3123,141 +3213,158 @@
 
         <!-- ─── SETTINGS PAGE ─── -->
         <div class="app-page" id="app-page-settings">
-            <div style="flex:1;overflow-y:auto;padding:1.5rem 2rem;">
+            <div class="dc-page">
 
                 <!-- Page header -->
-                <div style="margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;">
-                    <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);font-family:'Outfit',sans-serif;">⚙ Settings</div>
-                    <div style="font-size:0.76rem;color:var(--text-muted);margin-top:0.2rem;">Configure AI provider, API keys, integrations, and rate limits.</div>
+                <div class="dc-page-header">
+                    <div>
+                        <div class="dc-eyebrow">Pearl Hire · Settings</div>
+                        <div class="dc-title">Configuration</div>
+                        <div class="dc-sub">AI provider, API keys, integrations, and rate limits.</div>
+                    </div>
                 </div>
 
-                <!-- Row 1: two columns -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
-
-                    <!-- Card: AI Provider -->
-                    <div class="setup-section-card" style="padding:1.25rem 1.4rem;">
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.65rem;">🤖 AI Provider</div>
-                        <div class="form-group" style="margin-bottom:0.9rem;">
-                            <div class="provider-toggle">
-                                <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">⚡ Groq <span class="provider-badge">Fast · Free</span></button>
-                            </div>
+                <!-- Section 1: AI + Google -->
+                <div class="dc-section-head" style="margin-bottom:0.75rem;">
+                    <div class="dc-section-num">1</div>
+                    <div class="dc-section-label">AI &amp; Integration</div>
+                    <div class="dc-section-line"></div>
+                </div>
+                <div class="dc-grid-2" style="margin-bottom:1.25rem;">
+                    <div class="dc-card cyan-glow">
+                        <div class="dc-provider-block">
+                            <span class="dc-provider-led"></span>
+                            <span class="dc-provider-name">⚡ Groq<span class="dc-provider-tag">Fast · Free</span></span>
+                        </div>
+                        <div class="provider-toggle" style="display:none;">
+                            <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">⚡ Groq</button>
                         </div>
                         <div id="groqFields">
-                            <div class="form-group">
-                                <label for="groqKey">Groq API Key</label>
-                                <input type="password" id="groqKey" placeholder="gsk_..." onchange="saveGroqKey()">
-                                <small class="hint">Free key → <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM. Multiple keys comma-separated.</small>
-                            </div>
+                            <label class="dc-label" for="groqKey">Groq API Key</label>
+                            <input type="password" id="groqKey" class="dc-input cyan" placeholder="gsk_…" onchange="saveGroqKey()" style="margin-bottom:0.35rem;">
+                            <div class="dc-hint">Free key → <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM. Multiple keys comma-separated.</div>
                         </div>
-
                     </div>
 
-                    <!-- Card: Google Integration -->
-                    <div class="setup-section-card" style="padding:1.25rem 1.4rem;">
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--success);margin-bottom:0.65rem;">🔗 Google Integration</div>
-                        <div class="form-group">
-                            <label for="appsScriptUrlInput">Apps Script Web App URL <span style="font-weight:400;color:var(--success);font-size:0.65rem;margin-left:0.25rem;">★ Required for folder links</span></label>
-                            <div style="display:flex;gap:0.4rem;align-items:center;">
-                                <input type="text" id="appsScriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveAppsScriptUrl()" style="flex:1;">
-                                <button class="btn-add-links" onclick="saveAppsScriptUrl()" style="white-space:nowrap;">Save</button>
-                                <button class="btn-add-links" onclick="testAppsScriptUrl()" id="btnTestScript" style="background:rgba(86,211,100,0.1);border-color:rgba(86,211,100,0.3);color:var(--success);white-space:nowrap;">Test</button>
+                    <div class="dc-card green-glow">
+                        <div style="margin-bottom:0.9rem;">
+                            <label class="dc-label" for="appsScriptUrlInput">Apps Script Web App URL <span style="color:#6ee7b7;font-weight:400;font-size:0.61rem;">★ Required for folder links</span></label>
+                            <div class="dc-row" style="margin-bottom:0.3rem;">
+                                <input type="text" id="appsScriptUrlInput" class="dc-input green" placeholder="https://script.google.com/macros/s/…/exec" onchange="saveAppsScriptUrl()" style="flex:1;">
+                                <button class="dc-btn-sm" onclick="saveAppsScriptUrl()" style="white-space:nowrap;">Save</button>
+                                <button class="dc-btn-sm green" onclick="testAppsScriptUrl()" id="btnTestScript" style="white-space:nowrap;">Test</button>
                             </div>
-                            <div id="scriptTestResult" style="margin-top:0.35rem;font-size:0.72rem;display:none;"></div>
-                            <small class="hint">Deploy <strong>Code.gs</strong> as a Web App and paste the URL here.</small>
+                            <div id="scriptTestResult" style="margin-top:0.3rem;font-size:0.72rem;display:none;"></div>
+                            <div class="dc-hint">Deploy <strong>Code.gs</strong> as a Web App and paste the URL here.</div>
                         </div>
-                        <div class="form-group">
-                            <label for="sheetsId">Google Sheets ID</label>
-                            <input type="text" id="sheetsId" placeholder="Sheet ID from URL..." onchange="saveSheetsId()">
-                            <small class="hint">Or paste the full URL in the <strong>Links</strong> tab.</small>
+                        <div>
+                            <label class="dc-label" for="sheetsId">Google Sheets ID</label>
+                            <input type="text" id="sheetsId" class="dc-input green" placeholder="Sheet ID from URL…" onchange="saveSheetsId()" style="margin-bottom:0.3rem;">
+                            <div class="dc-hint">Or paste the full URL in the <strong>Links</strong> tab.</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Row 2: Candidate Data Sheets (full width) -->
-                <div class="setup-section-card" style="padding:1.25rem 1.4rem;margin-bottom:1.25rem;">
-                    <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber);margin-bottom:0.65rem;">📋 Candidate Data Sheets</div>
-                    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.85rem;line-height:1.5;">Link Google Sheets containing CTC / Notice Period data. Each sheet is matched by <strong style="color:var(--text-secondary);">Email</strong> or <strong style="color:var(--text-secondary);">Phone</strong> — you can add multiple sheets; data is merged automatically.</div>
-                    <div style="display:flex;gap:0.4rem;align-items:center;margin-bottom:0.5rem;">
-                        <input type="text" id="linkedSheetUrlInput" placeholder="Google Sheets URL or ID" style="flex:1;">
-                        <button class="btn-add-links" onclick="addLinkedSheetUrl()" style="white-space:nowrap;">＋ Add &amp; Load</button>
+                <!-- Section 2: Candidate Data Sheets -->
+                <div class="dc-section-head" style="margin-bottom:0.75rem;">
+                    <div class="dc-section-num amber">2</div>
+                    <div class="dc-section-label">Candidate Data Sheets</div>
+                    <div class="dc-section-line"></div>
+                </div>
+                <div class="dc-card amber-glow" style="margin-bottom:1.25rem;">
+                    <div class="dc-hint" style="font-size:0.74rem;line-height:1.55;margin-bottom:0.8rem;">Link Google Sheets containing CTC / Notice Period data. Each sheet is matched by <strong>Email</strong> or <strong>Phone</strong> — you can add multiple sheets; data is merged automatically.</div>
+                    <div class="dc-row" style="margin-bottom:0.5rem;">
+                        <input type="text" id="linkedSheetUrlInput" class="dc-input" placeholder="Google Sheets URL or ID" style="flex:1;">
+                        <button class="dc-btn-sm pink" onclick="addLinkedSheetUrl()" style="white-space:nowrap;">＋ Add &amp; Load</button>
                     </div>
-                    <div id="linkedSheetList" style="display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.35rem;"></div>
-                    <small class="hint">Required columns: <strong>Email</strong> or <strong>Phone</strong> · <strong>Current CTC</strong> · <strong>Expected CTC</strong> · <strong>Notice Period</strong></small>
+                    <div id="linkedSheetList" style="display:flex;flex-direction:column;gap:0.28rem;margin-bottom:0.4rem;"></div>
+                    <div class="dc-hint">Required columns: <strong>Email</strong> or <strong>Phone</strong> · <strong>Current CTC</strong> · <strong>Expected CTC</strong> · <strong>Notice Period</strong></div>
                 </div>
 
-                <!-- Row 3: Rate & Limits (two columns) -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-
-                    <!-- Card: Rate Settings -->
-                    <div class="setup-section-card" style="padding:1.25rem 1.4rem;">
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.65rem;">⏱ Rate Settings</div>
-                        <div class="form-group">
-                            <label for="apiDelay">API Call Delay (seconds)</label>
-                            <input type="number" id="apiDelay" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay()">
-                            <small class="hint" id="delayHint">Groq: keep ≥ 2s (30 RPM free tier)</small>
+                <!-- Section 3: Rate + Token -->
+                <div class="dc-section-head" style="margin-bottom:0.75rem;">
+                    <div class="dc-section-num muted">3</div>
+                    <div class="dc-section-label">Rate Limits &amp; Token Usage</div>
+                    <div class="dc-section-line"></div>
+                </div>
+                <div class="dc-grid-2" style="margin-bottom:1.25rem;">
+                    <div class="dc-card">
+                        <div class="dc-grid-2" style="gap:0.6rem;margin-bottom:0.9rem;">
+                            <div class="dc-stat">
+                                <div class="dc-stat-label">API Delay</div>
+                                <div class="dc-stat-value" id="delayStatVal">—</div>
+                                <div class="dc-stat-sub">Groq: keep ≥ 2s</div>
+                            </div>
+                            <div class="dc-stat">
+                                <div class="dc-stat-label">Token Budget</div>
+                                <div class="dc-stat-value" id="budgetStatVal">—</div>
+                                <div class="dc-stat-sub">tokens / min</div>
+                            </div>
                         </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-                                <label style="margin:0;">Token Budget <span style="font-weight:400;color:var(--text-muted);font-size:0.66rem;">(optional)</span></label>
-                                <button class="btn-add-links" onclick="setDefaultTokenBudgets()" style="padding:0.18rem 0.5rem;font-size:0.67rem;white-space:nowrap;">Free-Tier Defaults</button>
+                        <div style="margin-bottom:0.75rem;">
+                            <label class="dc-label" for="apiDelay">API Call Delay (seconds)</label>
+                            <input type="number" id="apiDelay" class="dc-input" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay();updateDelayStatDisplay()">
+                            <div class="dc-hint" id="delayHint" style="margin-top:0.28rem;">Groq: keep ≥ 2s (30 RPM free tier)</div>
+                        </div>
+                        <div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+                                <label class="dc-label" style="margin:0;">Token Budget <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
+                                <button class="dc-btn-sm" onclick="setDefaultTokenBudgets();updateBudgetStatDisplay()" style="padding:0.16rem 0.45rem;font-size:0.63rem;">Free-Tier Defaults</button>
                             </div>
-                            <div style="max-width:50%;">
-                                <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="Groq token/min">
-                                <small class="hint">Groq: <strong>6,000</strong> /min</small>
-                            </div>
+                            <input type="number" id="groqTokenLimit" class="dc-input" min="0" step="1" placeholder="Groq token/min" onchange="updateBudgetStatDisplay()" style="max-width:55%;">
+                            <div class="dc-hint" style="margin-top:0.28rem;">Groq: <strong>6,000</strong> /min</div>
                         </div>
                     </div>
 
-                    <!-- Card: Token Usage -->
-                    <div class="setup-section-card" style="padding:1.25rem 1.4rem;display:flex;flex-direction:column;">
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.65rem;">📊 Token Usage</div>
-                        <div style="flex:1;border:1px solid var(--border);border-radius:9px;padding:0.65rem 0.75rem;background:rgba(255,255,255,0.02);">
+                    <div class="dc-card">
+                        <div style="padding:0.75rem;border:1px solid rgba(255,255,255,0.06);border-radius:9px;background:rgba(0,0,0,0.2);margin-bottom:0.8rem;">
                             <div id="tokenUsageInfo" style="font-size:0.73rem;color:var(--text-secondary);line-height:1.5;">Token usage will appear after API calls.</div>
                         </div>
-                        <div style="display:flex;justify-content:flex-end;margin-top:0.65rem;">
-                            <button class="btn-add-links" onclick="resetTokenUsage(selectedProvider)" style="padding:0.28rem 0.65rem;font-size:0.7rem;">↺ Reset Active Usage</button>
+                        <div style="display:flex;justify-content:flex-end;">
+                            <button class="dc-btn-sm" onclick="resetTokenUsage(selectedProvider)" style="font-size:0.7rem;">↺ Reset Active Usage</button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Card: Prompt Editor -->
-                    <div class="setup-section-card" style="padding:1.25rem 1.4rem;">
-                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#c084fc;margin-bottom:0.65rem;">✏️ AI Prompt Editor</div>
-                        <p style="font-size:0.73rem;color:var(--text-muted);margin:0 0 0.9rem;line-height:1.5;">Edit the prompts sent to the AI. Every save is logged with a timestamp to the <strong>Prompt History</strong> tab in your Sheet.</p>
+                <!-- Section 4: Prompt Editor -->
+                <div class="dc-section-head" style="margin-bottom:0.75rem;">
+                    <div class="dc-section-num" style="background:rgba(192,132,252,0.1);color:#c084fc;border-color:rgba(192,132,252,0.25);">4</div>
+                    <div class="dc-section-label">AI Prompt Editor</div>
+                    <div class="dc-section-line"></div>
+                </div>
+                <div class="dc-card" style="border-color:rgba(192,132,252,0.12);">
+                    <p style="font-size:0.73rem;color:var(--text-muted);margin:0 0 1rem;line-height:1.5;">Edit the prompts sent to the AI. Every save is logged with a timestamp to the <strong style="color:var(--text-secondary);">Prompt History</strong> tab in your Sheet.</p>
 
-                        <!-- Analysis prompt -->
-                        <div class="form-group" style="margin-bottom:0.9rem;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
-                                <label style="margin:0;">📋 Analysis Prompt <span style="font-size:0.65rem;color:var(--text-muted);font-weight:400;">(Groq)</span></label>
-                                <button class="btn-add-links" onclick="saveAnalysisPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
-                            </div>
-                            <textarea id="analysisPromptInput" rows="10"
-                                style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.72rem;font-family:'Source Sans 3',monospace;padding:0.55rem 0.7rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
-                                onfocus="this.style.borderColor='#c084fc'"
-                                onblur="this.style.borderColor='var(--border)'"
-                                placeholder="Loading..."></textarea>
-                            <small class="hint">Variables you can use: <code>${jd}</code> &nbsp;·&nbsp; <code>${resumeText}</code> &nbsp;·&nbsp; <code>${filters.*}</code> &nbsp;·&nbsp; <code>${extraRequirements}</code> &nbsp;·&nbsp; <code>${_todayLabel}</code></small>
+                    <div style="margin-bottom:0.9rem;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+                            <label class="dc-label" style="margin:0;">📋 Analysis Prompt <span style="font-size:0.63rem;color:var(--text-muted);font-weight:400;">(Groq)</span></label>
+                            <button class="dc-btn-sm" onclick="saveAnalysisPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
                         </div>
-
-                        <!-- Pearly prompt -->
-                        <div class="form-group" style="margin-bottom:0.9rem;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
-                                <label style="margin:0;">🌸 Pearly Personality Prompt</label>
-                                <button class="btn-add-links" onclick="savePearlyPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
-                            </div>
-                            <textarea id="pearlyPromptInput" rows="5"
-                                style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.72rem;font-family:'Source Sans 3',monospace;padding:0.55rem 0.7rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
-                                onfocus="this.style.borderColor='#f9a8d4'"
-                                onblur="this.style.borderColor='var(--border)'"
-                                placeholder="Loading..."></textarea>
-                            <small class="hint">Pearly's personality, tone &amp; rules. Note: <code>${context}</code> (candidate data) is always appended automatically.</small>
-                        </div>
-
-                        <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
-                            <button class="btn-add-links" onclick="resetPromptsToDefault()" style="padding:0.28rem 0.65rem;font-size:0.7rem;color:var(--danger);border-color:rgba(248,81,73,0.3);">↺ Reset to Defaults</button>
-                        </div>
-                        <div id="promptSaveStatus" style="font-size:0.72rem;color:var(--success);margin-top:0.5rem;min-height:1.2em;text-align:right;"></div>
+                        <textarea id="analysisPromptInput" class="dc-textarea" rows="10"
+                            style="font-family:monospace;font-size:0.72rem;"
+                            onfocus="this.style.borderColor='rgba(192,132,252,0.4)'"
+                            onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
+                            placeholder="Loading..."></textarea>
+                        <div class="dc-hint" style="margin-top:0.3rem;">Variables: <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${jd}</code> &nbsp;·&nbsp; <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${resumeText}</code> &nbsp;·&nbsp; <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${filters.*}</code> &nbsp;·&nbsp; <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${extraRequirements}</code></div>
                     </div>
 
+                    <div style="margin-bottom:0.9rem;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+                            <label class="dc-label" style="margin:0;">🌸 Pearly Personality Prompt</label>
+                            <button class="dc-btn-sm" onclick="savePearlyPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
+                        </div>
+                        <textarea id="pearlyPromptInput" class="dc-textarea" rows="5"
+                            style="font-family:monospace;font-size:0.72rem;"
+                            onfocus="this.style.borderColor='rgba(249,168,212,0.4)'"
+                            onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
+                            placeholder="Loading..."></textarea>
+                        <div class="dc-hint" style="margin-top:0.3rem;">Pearly's personality, tone &amp; rules. Note: <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${context}</code> (candidate data) is always appended automatically.</div>
+                    </div>
+
+                    <div style="display:flex;gap:0.5rem;justify-content:flex-end;align-items:center;">
+                        <div id="promptSaveStatus" style="font-size:0.72rem;color:var(--success);min-height:1.2em;flex:1;"></div>
+                        <button class="dc-btn-sm danger" onclick="resetPromptsToDefault()" style="padding:0.28rem 0.65rem;font-size:0.7rem;">↺ Reset to Defaults</button>
+                    </div>
                 </div>
 
             </div>
@@ -3836,6 +3943,8 @@
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
         updateTokenUsageInfo();
+        updateDelayStatDisplay();
+        updateBudgetStatDisplay();
 
         // Live countdown ticker — updates the token window and rate-limit timers every second
         if (_countdownTimer) clearInterval(_countdownTimer);
@@ -4603,11 +4712,24 @@ Rules:
             localStorage.setItem('apiDelayMs', API_DELAY_MS);
             rateLimiter.updateDelay(API_DELAY_MS); // Update rate limiter
             updateRateLimitInfo(); // Update info banner
+            updateDelayStatDisplay();
             showToast(`Delay set to ${delaySeconds.toFixed(1)}s`, 'success');
         } else {
             showToast('Delay must be between 0.5 and 10 seconds', 'error');
             document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         }
+    }
+    function updateDelayStatDisplay() {
+        const el = document.getElementById('delayStatVal');
+        if (!el) return;
+        const v = document.getElementById('apiDelay');
+        el.textContent = v && v.value ? parseFloat(v.value).toFixed(1) + 's' : (API_DELAY_MS/1000).toFixed(1)+'s';
+    }
+    function updateBudgetStatDisplay() {
+        const el = document.getElementById('budgetStatVal');
+        if (!el) return;
+        const v = document.getElementById('groqTokenLimit');
+        el.textContent = v && v.value ? Number(v.value).toLocaleString() : '—';
     }
 
     function updateConnStatus(active) {
