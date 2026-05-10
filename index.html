@@ -2712,6 +2712,19 @@
             transition: all 0.2s; flex-shrink: 0;
         }
         .pearly-close:hover{background:rgba(248,113,113,0.15);border-color:rgba(248,113,113,0.3);color:#fca5a5}
+        .pearly-refresh {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(249,168,212,0.08); border: 1px solid rgba(249,168,212,0.2);
+            color: rgba(249,168,212,0.7); font-size: 0.8rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; flex-shrink: 0;
+        }
+        .pearly-refresh:hover { background: rgba(249,168,212,0.18); border-color: rgba(249,168,212,0.45); color: #f9a8d4; }
+        .pearly-refresh.spinning { animation: pearlyRefreshSpin 0.5s cubic-bezier(0.4,0,0.2,1); }
+        @keyframes pearlyRefreshSpin { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(200deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+        /* Sparkle burst on reset */
+        .pearly-sparkle { position: absolute; pointer-events: none; font-size: 1.1rem; animation: sparklePop 0.7s ease-out forwards; z-index: 9999; }
+        @keyframes sparklePop { 0% { opacity:1; transform: translate(0,0) scale(1); } 100% { opacity:0; transform: translate(var(--dx), var(--dy)) scale(0.4); } }
 
         /* Messages */
         .pearly-messages {
@@ -3516,6 +3529,7 @@
                 Your talent BFF · always here!
             </div>
         </div>
+        <button class="pearly-refresh" id="pearly-refresh-btn" onclick="pearlyReset(event)" title="Clear chat">↺</button>
         <button class="pearly-close" onclick="pearlyToggle()">✕</button>
     </div>
 
@@ -8250,6 +8264,41 @@ main.addEventListener('scroll',()=>{
 
     let _pearlyOpen = false;
     let _pearlyThinking = false;
+
+    function pearlyReset(e) {
+        if (_pearlyThinking) return;
+        // Sparkle burst from button
+        const btn = document.getElementById('pearly-refresh-btn');
+        btn.classList.remove('spinning');
+        void btn.offsetWidth;
+        btn.classList.add('spinning');
+        const rect = btn.getBoundingClientRect();
+        const sparks = ['🌸','✨','💥','🌟','💓'];
+        sparks.forEach((s, i) => {
+            const el = document.createElement('span');
+            el.className = 'pearly-sparkle';
+            el.textContent = s;
+            const angle = (i / sparks.length) * 2 * Math.PI;
+            const dist = 40 + Math.random() * 20;
+            el.style.left = (rect.left + rect.width/2 - 10) + 'px';
+            el.style.top  = (rect.top  + rect.height/2 - 10) + 'px';
+            el.style.setProperty('--dx', Math.round(Math.cos(angle)*dist) + 'px');
+            el.style.setProperty('--dy', Math.round(Math.sin(angle)*dist) + 'px');
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 750);
+        });
+        // Clear messages, restore greeting
+        const list = document.getElementById('pearly-msg-list');
+        list.innerHTML = `<div class="pmsg pmsg-bot">
+            <div class="pmsg-mini-avatar">🌸</div>
+            <div class="pmsg-bubble">Fresh start! 🌸 I'm <strong>Pearly</strong> — ready for your next candidate grilling session bestie~</div>
+        </div>`;
+        // Re-show chips
+        const chips = document.getElementById('pearly-chips');
+        if (chips) chips.style.display = 'flex';
+        _pearlyThinking = false;
+        showToast('Pearly chat cleared 🌸', 'success');
+    }
 
     function pearlyToggle() {
         _pearlyOpen = !_pearlyOpen;
