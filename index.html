@@ -3929,16 +3929,54 @@ IMPORTANT: Whenever you introduce yourself, mention your name, or someone asks w
 
     function buildAnalysisPrompt(resumeText, jd, filters) {
         const _todayLabel = (() => { const d = new Date(); return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }); })();
-        const template = customAnalysisPrompt || DEFAULT_ANALYSIS_PROMPT;
-        try {
-            // eslint-disable-next-line no-new-func
-            return new Function('resumeText','jd','filters','extraRequirements','_todayLabel',
-                '`use strict`; return `' + template.replace(/`/g, '\\`').replace(/\$\{/g, '${') + '`'
-            )(resumeText, jd, filters, extraRequirements, _todayLabel);
-        } catch(e) {
-            console.warn('Prompt template error, using raw:', e);
-            return template;
+        const minExpStr = filters.minExpDecimal !== null
+            ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal * 12) + 'mo' : filters.minExpDecimal.toFixed(1) + 'yrs')
+            : '0';
+        const maxExpStr = filters.maxExpDecimal !== null
+            ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal * 12) + 'mo' : filters.maxExpDecimal.toFixed(1) + 'yrs')
+            : 'any';
+        const extraStr = extraRequirements.trim()
+            ? '\nExtra screening (evaluate each): ' + extraRequirements.trim()
+            : '';
+
+        if (!customAnalysisPrompt) {
+            // Build default prompt directly — no eval, no template tricks
+            return `You are a senior technical recruiter. Analyze the resume vs the job description. Return ONLY valid JSON (no markdown, no extra text).
+Today's date: ${_todayLabel}. Use this exact date when a role says "Present" or "Current".
+
+SKILLS RULE: A skill only counts if used in WORK EXPERIENCE/RESPONSIBILITIES — not just listed in a Skills/Competencies section. Penalize skills listed only without job context.
+
+JD: ${jd}
+
+Filters: Exp ${minExpStr}–${maxExpStr}, Location: ${filters.location || 'any'}${extraStr}
+
+Resume: ${resumeText.slice(0, 15000)}
+
+SCORING (each 0–100):
+• skills_score (40%): demonstrated skills from work exp matching JD
+• experience_score (25%): Find the Work Experience / Employment History section. For EACH role listed:
+  1. Extract: role title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if title explicitly says Intern/Internship/Trainee/Industrial Training).
+  2. Return these raw dates in the "roles" array — do NOT compute durations yourself.
+  3. For experience_score: estimate if total professional time meets JD requirement. 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant.
+  NOTE: experience_years and internship_months will be calculated by the system — set them to 0 in your response.
+• education_score (15%): degree/field vs JD
+• achievements_score (10%): quantified results
+• culture_score (10%): soft skills/leadership signals
+match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
+
+Return exactly:
+{"name":"","email":null,"phone":null,"linkedin_url":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","company":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
         }
+
+        // Custom prompt: simple variable substitution
+        return customAnalysisPrompt
+            .replace(/\$\{jd\}/g, jd)
+            .replace(/\$\{resumeText(?:\.slice\(\s*0\s*,\s*15000\s*\))?\}/g, resumeText.slice(0, 15000))
+            .replace(/\$\{_todayLabel\}/g, _todayLabel)
+            .replace(/\$\{filters\.minExpDecimal[^}]+\}/g, minExpStr)
+            .replace(/\$\{filters\.maxExpDecimal[^}]+\}/g, maxExpStr)
+            .replace(/\$\{filters\.location[^}]+\}/g, filters.location || 'any')
+            .replace(/\$\{extraRequirements[^}]+\}/g, extraStr);
     }
 
     function buildPearlySystemPrompt(context) {
