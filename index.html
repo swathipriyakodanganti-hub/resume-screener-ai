@@ -8237,12 +8237,34 @@ main.addEventListener('scroll',()=>{
         const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
         return sorted.map((r, i) => {
             const expStr = r.experience_years > 0
-                ? `${r.experience_years.toFixed(1)}yrs exp`
-                : r.internship_months > 0 ? `${r.internship_months}mo internship` : 'no listed exp';
-            const skills = (r.skills_present || r.key_skills || []).slice(0, 6).join(', ');
-            const missing = (r.skills_missing || []).slice(0, 4).join(', ');
-            return `#${i+1} ${r.name || 'Unknown'} — ${r.match_score}% match | ${expStr} | Location: ${r.location || '?'} | Skills: ${skills || 'N/A'} | Missing: ${missing || 'none'} | Summary: ${(r.summary || '').slice(0, 120)}`;
-        }).join('\n');
+                ? `${r.experience_years.toFixed(1)}yrs professional exp`
+                : r.internship_months > 0 ? `${r.internship_months}mo internship only` : 'no listed experience';
+            const skills    = (r.skills_present || r.key_skills || []).join(', ') || 'N/A';
+            const missing   = (r.skills_missing || []).join(', ') || 'none';
+            const highlights = (r.highlights || []).join(' | ') || 'none listed';
+            const sb = r.score_breakdown || {};
+            const breakdown = `Skills:${sb.skills_score??'?'} Exp:${sb.experience_score??'?'} Edu:${sb.education_score??'?'} Achievements:${sb.achievements_score??'?'} Culture:${sb.culture_score??'?'}`;
+            const roles = (r.roles || []).map(role =>
+                `${role.title} @ ${role.company} (${role.start}–${role.end}, ${role.type})`
+            ).join(' → ') || 'no role data';
+            const extra = (r.extra_requirements_feedback || []).map(f => {
+                if (typeof f === 'object' && f !== null) return f.feedback || f.result || f.text || Object.values(f).filter(v => typeof v === 'string').join(' — ');
+                return String(f);
+            }).join(' | ') || '';
+            return [
+                `── Candidate #${i+1}: ${r.name || 'Unknown'} ──`,
+                `Match: ${r.match_score}% | ${expStr} | Location: ${r.location || 'unknown'}`,
+                `Score breakdown — ${breakdown}`,
+                `Work history: ${roles}`,
+                `Skills present: ${skills}`,
+                `Skills missing: ${missing}`,
+                `Highlights: ${highlights}`,
+                `Rating reason: ${r.rating_reason || 'n/a'}`,
+                `Summary: ${r.summary || 'n/a'}`,
+                extra ? `Custom screening: ${extra}` : '',
+                r.current_ctc ? `CTC: current=${r.current_ctc}, expected=${r.expected_ctc || '?'}, notice=${r.notice_period || '?'}` : '',
+            ].filter(Boolean).join('\n');
+        }).join('\n\n');
     }
 
     async function pearlySend() {
