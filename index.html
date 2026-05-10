@@ -648,17 +648,8 @@
             display: flex; flex-direction: column;
             overflow: hidden; flex-shrink: 0;
         }
-        .main-sidebar-header {
-            padding: 0.75rem 1rem 0.6rem;
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-        .main-sidebar-title {
-            font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 700;
-            letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
-            margin-bottom: 0.2rem;
-        }
-        .main-sidebar-meta { font-size: 0.68rem; color: var(--text-muted); }
+        .main-sidebar-title { font-family:'Outfit',sans-serif; font-size:0.72rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.2rem; }
+        .main-sidebar-meta { font-size:0.68rem; color:var(--text-muted); }
         .main-candidate-list {
             flex: 1; overflow-y: auto; padding: 0.5rem;
             scrollbar-width: thin;
@@ -2445,25 +2436,25 @@
         }
 
         /* ── Design C: Command Center ── */
-        .dc-page { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; }
-        .dc-page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.75rem; }
-        .dc-eyebrow { font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:#f472b6; margin-bottom:0.25rem; }
-        .dc-title { font-size:1.25rem; font-weight:700; color:#f1f5f9; letter-spacing:-0.02em; }
-        .dc-sub { font-size:0.76rem; color:var(--text-muted); margin-top:0.2rem; }
+        .dc-page { flex: 1; overflow-y: auto; padding: 2rem 2.5rem; }
+        .dc-page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:2.25rem; }
+        .dc-eyebrow { font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; color:#f472b6; margin-bottom:0.35rem; }
+        .dc-title { font-size:2rem; font-weight:700; font-family:'Space Grotesk','Outfit',sans-serif; color:#f1f5f9; letter-spacing:-0.03em; line-height:1.15; }
+        .dc-sub { font-size:0.82rem; color:var(--text-muted); margin-top:0.3rem; }
         .dc-rate-badge { display:inline-flex; align-items:center; gap:0.35rem; padding:0.28rem 0.65rem; border-radius:7px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.2); font-size:0.65rem; color:#6ee7b7; font-weight:600; white-space:nowrap; }
         .dc-rate-dot { width:5px; height:5px; border-radius:50%; background:#34d399; animation:dcPulse 1.8s infinite; }
         @keyframes dcPulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
-        .dc-grid-3 { display:grid; grid-template-columns:1fr 1.15fr 0.9fr; gap:1.1rem; align-items:start; }
-        .dc-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; align-items:start; }
-        .dc-stack { display:flex; flex-direction:column; gap:0.85rem; }
-        .dc-section-head { display:flex; align-items:center; gap:0.6rem; margin-bottom:0.8rem; }
-        .dc-section-num { width:21px; height:21px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.63rem; font-weight:800; background:rgba(244,114,182,0.1); color:#f9a8d4; border:1px solid rgba(244,114,182,0.22); }
+        .dc-grid-3 { display:grid; grid-template-columns:1fr 1.15fr 0.9fr; gap:1.25rem; align-items:start; }
+        .dc-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; align-items:start; }
+        .dc-stack { display:flex; flex-direction:column; gap:1rem; }
+        .dc-section-head { display:flex; align-items:center; gap:0.7rem; margin-bottom:0.95rem; }
+        .dc-section-num { width:24px; height:24px; border-radius:6px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:800; background:rgba(244,114,182,0.1); color:#f9a8d4; border:1px solid rgba(244,114,182,0.22); }
         .dc-section-num.green { background:rgba(52,211,153,0.1); color:#6ee7b7; border-color:rgba(52,211,153,0.25); }
         .dc-section-num.amber { background:rgba(251,191,36,0.08); color:#fcd34d; border-color:rgba(251,191,36,0.2); }
         .dc-section-num.muted { background:rgba(255,255,255,0.04); color:#94a3b8; border-color:rgba(255,255,255,0.1); }
-        .dc-section-label { font-size:0.63rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:#cbd5e1; }
+        .dc-section-label { font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:#cbd5e1; }
         .dc-section-line { flex:1; height:1px; background:rgba(255,255,255,0.05); }
-        .dc-card { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:1.2rem 1.35rem; }
+        .dc-card { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:1.35rem 1.5rem; }
         .dc-card.pink-glow { box-shadow:inset 0 1px 0 rgba(244,114,182,0.1); }
         .dc-card.green-glow { box-shadow:inset 0 1px 0 rgba(52,211,153,0.1); }
         .dc-card.amber-glow { box-shadow:inset 0 1px 0 rgba(251,191,36,0.1); }
@@ -2538,6 +2529,14 @@
         /* ── Results page ── */
         #app-page-results { min-height: 0; }
         #app-page-results .main-three-panel { flex: 1; min-height: 0; }
+        .results-dc-bar { flex-shrink:0; padding:1.1rem 1.75rem 0.9rem; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between; background:rgba(3,5,9,0.6); backdrop-filter:blur(12px); }
+        .results-dc-bar .dc-eyebrow { margin-bottom:0.15rem; }
+        .results-dc-bar .dc-title { font-size:1.35rem; }
+        .results-dc-count { display:inline-flex; align-items:center; gap:0.35rem; padding:0.22rem 0.6rem; border-radius:6px; background:rgba(244,114,182,0.08); border:1px solid rgba(244,114,182,0.2); font-size:0.64rem; font-weight:700; color:#f9a8d4; }
+        /* DC-styled sidebar */
+        .main-sidebar-header { padding:0.7rem 1rem 0.6rem; border-bottom:1px solid rgba(255,255,255,0.05); flex-shrink:0; }
+        .main-sidebar-title { font-size:0.62rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:#64748b; margin-bottom:0.15rem; }
+        .main-sidebar-meta { font-size:0.66rem; color:var(--text-muted); }
 
         /* ── Progress bar (global, outside pages) ── */
         .progress-wrap { display: none; flex-shrink: 0; }
@@ -3078,6 +3077,14 @@
 
         <!-- ─── RESULTS PAGE ─── -->
         <div class="app-page active" id="app-page-results">
+        <!-- Design C page header -->
+        <div class="results-dc-bar">
+            <div>
+                <div class="dc-eyebrow">Pearl Hire · Results</div>
+                <div class="dc-title">Candidate Analysis</div>
+            </div>
+            <span class="results-dc-count" id="resultsDcCount">0 candidates</span>
+        </div>
         <!-- Three-panel layout -->
         <div class="main-three-panel">
 
@@ -6017,9 +6024,11 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const metaEl   = document.getElementById('mainSidebarMeta');
         const detailEl = document.getElementById('mainDetailContent');
 
+        const dcCount = document.getElementById('resultsDcCount');
         if (!analysisResults.length) {
             listEl.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--text-muted);text-align:center;padding:1rem;"><div style="font-size:2rem;opacity:0.2;margin-bottom:0.5rem;">📭</div><div style="font-size:0.75rem;">Analyze resumes to see candidates</div></div>`;
             metaEl.textContent = 'No results yet';
+            if (dcCount) dcCount.textContent = '0 candidates';
             detailEl.innerHTML = `<div class="main-detail-empty" id="mainDetailEmpty"><div class="main-detail-empty-icon">👈</div><h3>Select a candidate</h3><p>Click any candidate to view their analysis</p></div>`;
             return;
         }
@@ -6027,6 +6036,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const avg = Math.round(analysisResults.reduce((s, r) => s + r.match_score, 0) / analysisResults.length);
         const top = analysisResults[0].match_score;
         metaEl.textContent = `${analysisResults.length} candidates · Avg ${avg}% · Top ${top}%`;
+        if (dcCount) dcCount.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
 
         // Sidebar candidate list
         listEl.innerHTML = analysisResults.map((r, i) => {
