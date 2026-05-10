@@ -3128,14 +3128,9 @@
                                 <label style="margin:0;">Token Budget <span style="font-weight:400;color:var(--text-muted);font-size:0.66rem;">(optional)</span></label>
                                 <button class="btn-add-links" onclick="setDefaultTokenBudgets()" style="padding:0.18rem 0.5rem;font-size:0.67rem;white-space:nowrap;">Free-Tier Defaults</button>
                             </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.45rem;">
-                                <div>
-                                    <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="Groq token/min">
-                                    <small class="hint">Groq: <strong>6,000</strong> /min</small>
-                                </div>
-                                <div>
-
-                                </div>
+                            <div style="max-width:50%;">
+                                <input type="number" id="groqTokenLimit" min="0" step="1" placeholder="Groq token/min">
+                                <small class="hint">Groq: <strong>6,000</strong> /min</small>
                             </div>
                         </div>
                     </div>
@@ -3816,6 +3811,9 @@
     function switchProvider(p, silent) {
         selectedProvider = 'groq';
         localStorage.setItem('selectedProvider', 'groq');
+
+        const gf = document.getElementById('groqFields');
+        if (gf) gf.style.display = 'block';
 
         // Set sensible default delay
         const providerDefault = 2000;
