@@ -305,6 +305,11 @@ function doPost(e) {
       return handleInlineFeedback(data);
     }
 
+    // ── Prompt change log ──
+    if (data.action === 'logPromptChange') {
+      return logPromptChange(data);
+    }
+
     const { recipients, candidateName, candidateCount, position, shareLink, matchScore, isBulk, candidates } = data;
 
     if (!recipients || !recipients.length) {
@@ -865,4 +870,39 @@ function jsonResponse(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ───────────────────────────────────────────────────────────────
+// Log prompt changes to "Prompt History" sheet tab
+// ───────────────────────────────────────────────────────────────
+function logPromptChange(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+
+    let sheet = ss.getSheetByName('Prompt History');
+    if (!sheet) {
+      sheet = ss.insertSheet('Prompt History');
+      const headers = ['Timestamp', 'Prompt Type', 'Changed By', 'Prompt Text'];
+      sheet.appendRow(headers);
+      const headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setColumnWidth(1, 180);
+      sheet.setColumnWidth(2, 140);
+      sheet.setColumnWidth(3, 160);
+      sheet.setColumnWidth(4, 600);
+      sheet.setFrozenRows(1);
+    }
+
+    const ts = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    sheet.appendRow([ts, data.promptType || 'Unknown', data.changedBy || 'User', data.promptText || '']);
+
+    // Auto-wrap the prompt text column
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, 4).setWrap(true);
+
+    return jsonResponse({ success: true });
+  } catch (err) {
+    Logger.log('logPromptChange error: ' + err.message);
+    return jsonResponse({ success: false, error: err.message });
+  }
 }

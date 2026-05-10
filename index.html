@@ -3158,6 +3158,46 @@
                             <button class="btn-add-links" onclick="resetTokenUsage(selectedProvider)" style="padding:0.28rem 0.65rem;font-size:0.7rem;">↺ Reset Active Usage</button>
                         </div>
                     </div>
+
+                    <!-- Card: Prompt Editor -->
+                    <div class="setup-section-card" style="padding:1.25rem 1.4rem;">
+                        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#c084fc;margin-bottom:0.65rem;">✏️ AI Prompt Editor</div>
+                        <p style="font-size:0.73rem;color:var(--text-muted);margin:0 0 0.9rem;line-height:1.5;">Edit the prompts sent to the AI. Every save is logged with a timestamp to the <strong>Prompt History</strong> tab in your Sheet.</p>
+
+                        <!-- Analysis prompt -->
+                        <div class="form-group" style="margin-bottom:0.9rem;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+                                <label style="margin:0;">📋 Analysis Prompt <span style="font-size:0.65rem;color:var(--text-muted);font-weight:400;">(Groq &amp; Gemini)</span></label>
+                                <button class="btn-add-links" onclick="saveAnalysisPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
+                            </div>
+                            <textarea id="analysisPromptInput" rows="10"
+                                style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.72rem;font-family:'Source Sans 3',monospace;padding:0.55rem 0.7rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
+                                onfocus="this.style.borderColor='#c084fc'"
+                                onblur="this.style.borderColor='var(--border)'"
+                                placeholder="Loading..."></textarea>
+                            <small class="hint">Variables you can use: <code>${jd}</code> &nbsp;·&nbsp; <code>${resumeText}</code> &nbsp;·&nbsp; <code>${filters.*}</code> &nbsp;·&nbsp; <code>${extraRequirements}</code> &nbsp;·&nbsp; <code>${_todayLabel}</code></small>
+                        </div>
+
+                        <!-- Pearly prompt -->
+                        <div class="form-group" style="margin-bottom:0.9rem;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
+                                <label style="margin:0;">🌸 Pearly Personality Prompt</label>
+                                <button class="btn-add-links" onclick="savePearlyPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
+                            </div>
+                            <textarea id="pearlyPromptInput" rows="5"
+                                style="width:100%;background:rgba(4,8,20,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.72rem;font-family:'Source Sans 3',monospace;padding:0.55rem 0.7rem;resize:vertical;line-height:1.5;outline:none;transition:border-color 0.2s;"
+                                onfocus="this.style.borderColor='#f9a8d4'"
+                                onblur="this.style.borderColor='var(--border)'"
+                                placeholder="Loading..."></textarea>
+                            <small class="hint">Pearly's personality, tone &amp; rules. Note: <code>${context}</code> (candidate data) is always appended automatically.</small>
+                        </div>
+
+                        <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+                            <button class="btn-add-links" onclick="resetPromptsToDefault()" style="padding:0.28rem 0.65rem;font-size:0.7rem;color:var(--danger);border-color:rgba(248,81,73,0.3);">↺ Reset to Defaults</button>
+                        </div>
+                        <div id="promptSaveStatus" style="font-size:0.72rem;color:var(--success);margin-top:0.5rem;min-height:1.2em;text-align:right;"></div>
+                    </div>
+
                 </div>
 
             </div>
@@ -3771,6 +3811,7 @@
         if (_gemBudgetIn) _gemBudgetIn.value = _numOrZero(tokenBudgets.gemini) || '';
         if (driveApiKey)  document.getElementById('driveApiKey').value = driveApiKey;
         updateConnStatus(hasProviderKey(selectedProvider));
+        loadPromptEditorUI();
 
         if (sheetsId) {
             document.getElementById('sheetsId').value = sheetsId;
@@ -3924,6 +3965,113 @@
     function saveExtraRequirements() {
         extraRequirements = document.getElementById('extraReqsInput').value;
         localStorage.setItem('extraRequirements', extraRequirements);
+    }
+
+    // ─── Prompt Editor ───
+    const DEFAULT_ANALYSIS_PROMPT = `You are a senior technical recruiter. Analyze the resume vs the job description. Return ONLY valid JSON (no markdown, no extra text).
+Today's date: \${_todayLabel}. Use this exact date when a role says "Present" or "Current".
+
+SKILLS RULE: A skill only counts if used in WORK EXPERIENCE/RESPONSIBILITIES — not just listed in a Skills/Competencies section. Penalize skills listed only without job context.
+
+JD: \${jd}
+
+Filters: Exp \${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal*12)+'mo' : filters.minExpDecimal.toFixed(1)+'yrs') : '0'}–\${filters.maxExpDecimal !== null ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal*12)+'mo' : filters.maxExpDecimal.toFixed(1)+'yrs') : 'any'}, Location: \${filters.location || 'any'}\${extraRequirements.trim() ? \`\\nExtra screening (evaluate each): \${extraRequirements.trim()}\` : ''}
+
+Resume: \${resumeText.slice(0, 15000)}
+
+SCORING (each 0–100):
+• skills_score (40%): demonstrated skills from work exp matching JD
+• experience_score (25%): Find the Work Experience / Employment History section. For EACH role listed:
+  1. Extract: role title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if title explicitly says Intern/Internship/Trainee/Industrial Training).
+  2. Return these raw dates in the "roles" array — do NOT compute durations yourself.
+  3. For experience_score: estimate if total professional time meets JD requirement. 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant.
+  NOTE: experience_years and internship_months will be calculated by the system — set them to 0 in your response.
+• education_score (15%): degree/field vs JD
+• achievements_score (10%): quantified results
+• culture_score (10%): soft skills/leadership signals
+match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
+
+Return exactly:
+{"name":"","email":null,"phone":null,"linkedin_url":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","company":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
+
+    const DEFAULT_PEARLY_PROMPT = `You are Pearly 🌸 — a witty, warm, slightly sassy AI talent assistant for Pearl Hire, made by Team SPY for BeamX's Talent Acquisition team. You help recruiters understand, compare, and make decisions about candidates. Be funny, human, sharp, and engaging — like that one brilliant friend who casually drops career gold over coffee. Keep responses concise (2-5 sentences max). Use relevant emojis sparingly. Never be boring. Always give a concrete answer or observation, not vague platitudes. When you don't know something, say so with personality.
+IMPORTANT: Whenever you introduce yourself, mention your name, or someone asks who you are / what your name is / about you — always include the phrase "Swathi's cute bot 💗" right after your name, like: "I'm Pearly — Swathi's cute bot 💗". This is your proud little nickname and you love it.`;
+
+    let customAnalysisPrompt = localStorage.getItem('customAnalysisPrompt') || '';
+    let customPearlyPrompt   = localStorage.getItem('customPearlyPrompt')   || '';
+
+    function buildAnalysisPrompt(resumeText, jd, filters) {
+        const _todayLabel = (() => { const d = new Date(); return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }); })();
+        const template = customAnalysisPrompt || DEFAULT_ANALYSIS_PROMPT;
+        try {
+            // eslint-disable-next-line no-new-func
+            return new Function('resumeText','jd','filters','extraRequirements','_todayLabel',
+                '`use strict`; return `' + template.replace(/`/g, '\\`').replace(/\$\{/g, '${') + '`'
+            )(resumeText, jd, filters, extraRequirements, _todayLabel);
+        } catch(e) {
+            console.warn('Prompt template error, using raw:', e);
+            return template;
+        }
+    }
+
+    function buildPearlySystemPrompt(context) {
+        const base = customPearlyPrompt || DEFAULT_PEARLY_PROMPT;
+        return base + '\n\nCurrent candidate data:\n' + context;
+    }
+
+    function loadPromptEditorUI() {
+        const analysisEl = document.getElementById('analysisPromptInput');
+        const pearlyEl   = document.getElementById('pearlyPromptInput');
+        if (analysisEl) analysisEl.value = customAnalysisPrompt || DEFAULT_ANALYSIS_PROMPT;
+        if (pearlyEl)   pearlyEl.value   = customPearlyPrompt   || DEFAULT_PEARLY_PROMPT;
+    }
+
+    async function _logPromptToSheet(promptType, promptText) {
+        if (!appsScriptUrl) return; // silently skip if no Apps Script configured
+        try {
+            await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'payload=' + encodeURIComponent(JSON.stringify({
+                    action: 'logPromptChange',
+                    promptType,
+                    promptText,
+                    changedBy: 'User'
+                }))
+            });
+        } catch(e) { /* non-fatal */ }
+    }
+
+    async function saveAnalysisPrompt() {
+        const val = document.getElementById('analysisPromptInput').value.trim();
+        customAnalysisPrompt = val;
+        localStorage.setItem('customAnalysisPrompt', val);
+        const status = document.getElementById('promptSaveStatus');
+        if (status) { status.textContent = '✓ Analysis prompt saved'; setTimeout(() => status.textContent = '', 3000); }
+        showToast('Analysis prompt saved ✓', 'success');
+        await _logPromptToSheet('Analysis Prompt', val);
+    }
+
+    async function savePearlyPrompt() {
+        const val = document.getElementById('pearlyPromptInput').value.trim();
+        customPearlyPrompt = val;
+        localStorage.setItem('customPearlyPrompt', val);
+        const status = document.getElementById('promptSaveStatus');
+        if (status) { status.textContent = '✓ Pearly prompt saved'; setTimeout(() => status.textContent = '', 3000); }
+        showToast('Pearly prompt saved ✓', 'success');
+        await _logPromptToSheet('Pearly Prompt', val);
+    }
+
+    async function resetPromptsToDefault() {
+        if (!confirm('Reset both prompts to factory defaults? This cannot be undone.')) return;
+        customAnalysisPrompt = '';
+        customPearlyPrompt   = '';
+        localStorage.removeItem('customAnalysisPrompt');
+        localStorage.removeItem('customPearlyPrompt');
+        loadPromptEditorUI();
+        showToast('Prompts reset to defaults', 'success');
+        await _logPromptToSheet('Analysis Prompt (reset)', DEFAULT_ANALYSIS_PROMPT);
+        await _logPromptToSheet('Pearly Prompt (reset)', DEFAULT_PEARLY_PROMPT);
     }
 
     // Lookup map for JD recommendation items (avoids HTML attribute escaping issues)
@@ -4978,32 +5126,7 @@ Rules:
         if (_stopSignal) throw new Error('STOP_REQUESTED');
 
         const _todayLabel = (() => { const d = new Date(); return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }); })();
-        const prompt = `You are a senior technical recruiter. Analyze the resume vs the job description. Return ONLY valid JSON (no markdown, no extra text).
-Today's date: ${_todayLabel}. Use this exact date when a role says "Present" or "Current".
-
-SKILLS RULE: A skill only counts if used in WORK EXPERIENCE/RESPONSIBILITIES — not just listed in a Skills/Competencies section. Penalize skills listed only without job context.
-
-JD: ${jd}
-
-Filters: Exp ${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Math.round(filters.minExpDecimal*12)+'mo' : filters.minExpDecimal.toFixed(1)+'yrs') : '0'}–${filters.maxExpDecimal !== null ? (filters.maxExpDecimal < 1 ? Math.round(filters.maxExpDecimal*12)+'mo' : filters.maxExpDecimal.toFixed(1)+'yrs') : 'any'}, Location: ${filters.location || 'any'}${extraRequirements.trim() ? `\nExtra screening (evaluate each): ${extraRequirements.trim()}` : ''}
-
-Resume: ${resumeText.slice(0, 15000)}
-
-SCORING (each 0–100):
-• skills_score (40%): demonstrated skills from work exp matching JD
-• experience_score (25%): Find the Work Experience / Employment History section. For EACH role listed:
-  1. Extract: role title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if title explicitly says Intern/Internship/Trainee/Industrial Training).
-  2. Return these raw dates in the "roles" array — do NOT compute durations yourself.
-  3. For experience_score: estimate if total professional time meets JD requirement. 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant.
-  NOTE: experience_years and internship_months will be calculated by the system — set them to 0 in your response.
-• education_score (15%): degree/field vs JD
-• achievements_score (10%): quantified results
-• culture_score (10%): soft skills/leadership signals
-match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
-
-Return exactly:
-{"name":"","email":null,"phone":null,"linkedin_url":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","company":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
-
+        const prompt = buildAnalysisPrompt(resumeText, jd, filters);
         let raw;
         let controller = null;
         const triedIndexes = new Set();
@@ -8258,11 +8381,7 @@ main.addEventListener('scroll',()=>{
         pearlyShowTyping();
 
         const context = pearlyBuildContext();
-        const systemPrompt = `You are Pearly 🌸 — a witty, warm, slightly sassy AI talent assistant for Pearl Hire, made by Team SPY for BeamX's Talent Acquisition team. You help recruiters understand, compare, and make decisions about candidates. Be funny, human, sharp, and engaging — like that one brilliant friend who casually drops career gold over coffee. Keep responses concise (2-5 sentences max). Use relevant emojis sparingly. Never be boring. Always give a concrete answer or observation, not vague platitudes. When you don't know something, say so with personality.
-IMPORTANT: Whenever you introduce yourself, mention your name, or someone asks who you are / what your name is / about you — always include the phrase "Swathi's cute bot 💗" right after your name, like: "I'm Pearly — Swathi's cute bot 💗". This is your proud little nickname and you love it.
-
-Current candidate data:
-${context}`;
+        const systemPrompt = buildPearlySystemPrompt(context);
 
         try {
             // Pearly always uses Gemini 2.0 Flash (free, 1500 req/day — separate from analysis quota)
