@@ -562,10 +562,10 @@
         .progress-wrap { display: none; margin-top: 0.75rem; }
         .progress-wrap.visible { display: block; }
         .progress-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }
-        /* Design 5 — Animated Dots */
+        /* Design 5 — Pearly Animated Dots 🌸 */
         .progress-bar { padding: 5px 0; display: flex; align-items: center; gap: 4px; background: none; }
-        .progress-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(0,220,255,0.13); flex-shrink: 0; transition: background 0.3s ease; }
-        .progress-dot.dot-active { background: linear-gradient(135deg, #00dcff, #a78bfa); animation: dotPop 1s ease-in-out infinite; }
+        .progress-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(249,168,212,0.12); flex-shrink: 0; transition: background 0.3s ease; }
+        .progress-dot.dot-active { background: linear-gradient(135deg, #f9a8d4, #c084fc); animation: dotPop 1s ease-in-out infinite; box-shadow: 0 0 4px rgba(192,132,252,0.4); }
         .progress-dot.dot-active:nth-child(1)  { animation-delay: 0.00s; }
         .progress-dot.dot-active:nth-child(2)  { animation-delay: 0.07s; }
         .progress-dot.dot-active:nth-child(3)  { animation-delay: 0.14s; }
@@ -581,9 +581,9 @@
         .progress-dot.dot-active:nth-child(13) { animation-delay: 0.84s; }
         .progress-dot.dot-active:nth-child(14) { animation-delay: 0.91s; }
         .progress-dot.dot-active:nth-child(15) { animation-delay: 0.98s; }
-        .progress-dot.dot-pulse { background: #ffffff !important; animation: dotPulse 0.7s ease-in-out infinite !important; }
-        @keyframes dotPop   { 0%,100% { opacity:0.65; transform:scale(1); } 50% { opacity:1; transform:scale(1.4); } }
-        @keyframes dotPulse { 0%,100% { opacity:1; transform:scale(1);   box-shadow:0 0 0 0 rgba(0,220,255,0.5); } 50% { transform:scale(1.6); box-shadow:0 0 0 5px rgba(0,220,255,0); } }
+        .progress-dot.dot-pulse { background: #fbcfe8 !important; box-shadow: 0 0 0 0 rgba(249,168,212,0.6) !important; animation: dotPulse 0.7s ease-in-out infinite !important; }
+        @keyframes dotPop   { 0%,100% { opacity:0.65; transform:scale(1); } 50% { opacity:1; transform:scale(1.45); } }
+        @keyframes dotPulse { 0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(249,168,212,0.6); } 50% { transform:scale(1.65); box-shadow:0 0 0 6px rgba(249,168,212,0); } }
         /* progress-fill kept as invisible shim so JS width sets don't error */
         .progress-fill { display: none; }
 
