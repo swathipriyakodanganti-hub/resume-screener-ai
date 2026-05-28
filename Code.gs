@@ -353,73 +353,99 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
   const avgScore = count ? Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count) : 0;
   const topScore = count ? candidates[0].match_score : 0;
 
+  // Build per-candidate score bar rows
+  const candidateRows = candidates.map(function(c) {
+    const s = c.match_score || 0;
+    const barColor = s >= 75 ? 'linear-gradient(90deg,#1D9E75,#34d399)' : s >= 50 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : 'linear-gradient(90deg,#ef4444,#f87171)';
+    const scoreColor = s >= 75 ? '#1D9E75' : s >= 50 ? '#b45309' : '#dc2626';
+    return '<tr><td style="padding-bottom:12px;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
+      '<td style="font-size:13px;font-weight:600;color:#1e293b;">' + c.name + '</td>' +
+      '<td align="right" style="font-size:13px;font-weight:800;color:' + scoreColor + ';white-space:nowrap;padding-left:12px;">' + s + '%</td>' +
+      '</tr><tr><td colspan="2" style="padding-top:5px;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
+      '<td style="background:#f1f5f9;border-radius:4px;height:6px;">' +
+      '<div style="width:' + s + '%;height:6px;background:' + barColor + ';border-radius:4px;"></div>' +
+      '</td></tr></table></td></tr></table>' +
+      '</td></tr>';
+  }).join('');
 
+  // Avg score color
+  const avgColor = avgScore >= 75 ? '#1D9E75' : avgScore >= 50 ? '#b45309' : '#dc2626';
+  const topColor = topScore >= 75 ? '#1D9E75' : topScore >= 50 ? '#b45309' : '#dc2626';
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Shortlist</title></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 16px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
-        <tr>
-          <td style="background:#0C447C;border-radius:12px 12px 0 0;padding:24px 28px;">
-            <table width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td>
-                <div style="font-size:10px;color:#85B7EB;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:5px;">Talent Acquisition · Candidate Shortlist</div>
-                <div style="font-size:20px;font-weight:700;color:#E6F1FB;">${position}</div>
-              </td>
-              <td align="right">
-                <table cellpadding="0" cellspacing="0"><tr>
-                  <td align="center" style="padding:0 12px;">
-                    <div style="font-size:22px;font-weight:700;color:#E6F1FB;">${count}</div>
-                    <div style="font-size:9px;color:#85B7EB;text-transform:uppercase;letter-spacing:0.06em;">Candidates</div>
-                  </td>
-                  <td align="center" style="padding:0 12px;border-left:1px solid rgba(133,183,235,0.3);">
-                    <div style="font-size:22px;font-weight:700;color:#E6F1FB;">${avgScore}%</div>
-                    <div style="font-size:9px;color:#85B7EB;text-transform:uppercase;letter-spacing:0.06em;">Avg Score</div>
-                  </td>
-                  <td align="center" style="padding:0 0 0 12px;border-left:1px solid rgba(133,183,235,0.3);">
-                    <div style="font-size:22px;font-weight:700;color:#E6F1FB;">${topScore}%</div>
-                    <div style="font-size:9px;color:#85B7EB;text-transform:uppercase;letter-spacing:0.06em;">Top Score</div>
-                  </td>
-                </tr></table>
-              </td>
-            </tr></table>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:28px 28px 20px;">
-            <p style="margin:0 0 4px;font-size:14px;color:#1a1a2e;">Hi <strong>${interviewerName}</strong>,</p>
-            <p style="margin:0 0 20px;font-size:13px;color:#64748b;line-height:1.7;">
-              Here is a shortlist of <strong>${count} candidate${count > 1 ? 's' : ''}</strong> screened for <strong>${position}</strong>.
-              Click the button below to view all profiles with detailed information and resumes.
-            </p>
-            <div style="text-align:center;margin-bottom:20px;">
-              <a href="${shareLink}" target="_blank"
-                 style="display:inline-block;padding:14px 32px;background:#0C447C;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 12px rgba(12,68,124,0.3);">
-                View All Candidates &amp; Resumes &rarr;
-              </a>
-              <div style="margin-top:10px;font-size:11px;color:#94a3b8;">Click to access detailed profiles, resumes and give your feedback</div>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#0C447C;border-radius:0 0 12px 12px;padding:16px 28px;">
-            <table width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td>
-                <div style="font-size:12px;font-weight:700;color:#E6F1FB;">Talent Acquisition Team</div>
-                <div style="font-size:11px;color:#85B7EB;margin-top:2px;">This email is confidential and intended only for the recipient.</div>
-              </td>
-              <td align="right"><div style="font-size:10px;color:#85B7EB;">Pearl Hire</div></td>
-            </tr></table>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+  return '<!DOCTYPE html>' +
+'<html lang="en">' +
+'<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Shortlist</title></head>' +
+'<body style="margin:0;padding:0;background:#f0f4f8;font-family:\'Segoe UI\',Arial,sans-serif;color:#1a1a2e;">' +
+'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">' +
+'<tr><td align="center">' +
+'<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">' +
+
+'<!-- Accent top stripe -->' +
+'<tr><td style="background:linear-gradient(90deg,#1a56db 0%,#0c447c 50%,#1D9E75 100%);height:5px;border-radius:14px 14px 0 0;"></td></tr>' +
+
+'<!-- Header -->' +
+'<tr><td style="background:#ffffff;padding:26px 32px 20px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">' +
+  '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
+    '<td style="vertical-align:middle;">' +
+      '<div style="font-size:9px;color:#94a3b8;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;margin-bottom:5px;">Talent Acquisition · Candidate Shortlist</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#0f172a;font-family:\'Segoe UI\',Arial,sans-serif;">' + position + '</div>' +
+    '</td>' +
+    '<td align="right" style="vertical-align:middle;">' +
+      '<table cellpadding="0" cellspacing="0"><tr>' +
+        '<td align="center" style="padding:0 12px;">' +
+          '<div style="font-size:24px;font-weight:800;color:#0f172a;">' + count + '</div>' +
+          '<div style="font-size:8px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-top:2px;">Profiles</div>' +
+        '</td>' +
+        '<td align="center" style="padding:0 12px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">' +
+          '<div style="font-size:24px;font-weight:800;color:' + avgColor + ';">' + avgScore + '%</div>' +
+          '<div style="font-size:8px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-top:2px;">Avg Score</div>' +
+        '</td>' +
+        '<td align="center" style="padding:0 0 0 12px;">' +
+          '<div style="font-size:24px;font-weight:800;color:' + topColor + ';">' + topScore + '%</div>' +
+          '<div style="font-size:8px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-top:2px;">Top Score</div>' +
+        '</td>' +
+      '</tr></table>' +
+    '</td>' +
+  '</tr></table>' +
+'</td></tr>' +
+
+'<!-- Divider -->' +
+'<tr><td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:0 32px;"><div style="height:1px;background:#f1f5f9;"></div></td></tr>' +
+
+'<!-- Body -->' +
+'<tr><td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:26px 32px 30px;">' +
+  '<p style="margin:0 0 4px;font-size:15px;color:#0f172a;">Hi <strong>' + interviewerName + '</strong>,</p>' +
+  '<p style="margin:0 0 26px;font-size:13px;color:#64748b;line-height:1.75;">' +
+    'Your AI-screened shortlist for <strong style="color:#0f172a;">' + position + '</strong> is ready — ' +
+    '<strong style="color:#0f172a;">' + count + ' candidate' + (count > 1 ? 's' : '') + '</strong> ranked by match score. ' +
+    'Click below to review full profiles, resumes, and submit your decisions.' +
+  '</p>' +
+  '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">' +
+    candidateRows +
+  '</table>' +
+  '<div style="text-align:center;margin-bottom:8px;">' +
+    '<a href="' + shareLink + '" target="_blank" style="display:inline-block;padding:14px 36px;background:#0c447c;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 14px rgba(12,68,124,0.25);">' +
+      'View All Candidates &amp; Resumes &rarr;' +
+    '</a>' +
+  '</div>' +
+  '<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px;">Access detailed profiles, resumes and submit your feedback</p>' +
+'</td></tr>' +
+
+'<!-- Footer -->' +
+'<tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;padding:16px 32px;">' +
+  '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
+    '<td>' +
+      '<div style="font-size:12px;font-weight:700;color:#1e293b;">Talent Acquisition Team</div>' +
+      '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">This email is confidential and intended only for the recipient.</div>' +
+    '</td>' +
+    '<td align="right"><div style="font-size:13px;font-weight:800;color:#0c447c;letter-spacing:0.04em;">Pearl Hire</div></td>' +
+  '</tr></table>' +
+'</td></tr>' +
+
+'</table></td></tr></table>' +
+'</body></html>';
 }
 
 // ───────────────────────────────────────────────────────────────
