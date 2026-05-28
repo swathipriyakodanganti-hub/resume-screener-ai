@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Toast Notification Designs — Pearl Hire</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; padding: 2rem; }
+  h1 { font-size: 1.1rem; color: #e9d5ff; margin-bottom: 0.3rem; }
+  p  { font-size: 0.78rem; color: #8b949e; margin-bottom: 2.5rem; }
+  .section { margin-bottom: 3rem; }
+  .tag { display: inline-block; font-size: 0.68rem; background: rgba(249,168,212,0.1); color: #f9a8d4; border: 1px solid rgba(249,168,212,0.25); border-radius: 20px; padding: 2px 10px; margin-bottom: 0.75rem; }
+  .design-title { font-size: 1rem; font-weight: 600; color: #e6edf3; margin-bottom: 0.4rem; }
+  .desc { font-size: 0.73rem; color: #8b949e; margin-top: 0.75rem; }
+  .preview-area { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 3rem 2rem; display: flex; align-items: center; justify-content: center; gap: 1.5rem; flex-wrap: wrap; min-height: 120px; }
+  .btn-trigger { font-size: 0.72rem; padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(192,132,252,0.3); background: rgba(192,132,252,0.08); color: #d8b4fe; cursor: pointer; }
+  .btn-trigger:hover { background: rgba(192,132,252,0.18); }
+
+  /* ── DESIGN 1: Bottom-right slide-in card ── */
+  .t1-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+  .t1 {
+    display: flex; align-items: center; gap: 0.6rem;
+    background: #1c1a2e; border: 1px solid rgba(192,132,252,0.25);
+    border-radius: 12px; padding: 0.7rem 1rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(192,132,252,0.1);
+    font-size: 0.82rem; color: #e9d5ff;
+    transform: translateX(110%); opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.3s ease;
+    pointer-events: auto; min-width: 240px; max-width: 320px;
+    backdrop-filter: blur(12px);
+  }
+  .t1.show { transform: translateX(0); opacity: 1; }
+  .t1.success .t1-icon { background: linear-gradient(135deg, #34d399, #10b981); }
+  .t1.error   .t1-icon { background: linear-gradient(135deg, #f87171, #ef4444); }
+  .t1-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+  .t1-text { flex: 1; line-height: 1.3; }
+  .t1-progress { position: absolute; bottom: 0; left: 0; height: 2px; background: linear-gradient(90deg, #c084fc, #f9a8d4); border-radius: 0 0 12px 12px; width: 100%; animation: t1Bar 3.5s linear forwards; }
+  @keyframes t1Bar { from { width: 100%; } to { width: 0%; } }
+
+  /* ── DESIGN 2: Top-center Pearly pill ── */
+  .t2-container { position: fixed; top: 1.2rem; left: 50%; transform: translateX(-50%); z-index: 9999; }
+  .t2 {
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    background: linear-gradient(135deg, rgba(249,168,212,0.15), rgba(192,132,252,0.15));
+    border: 1px solid rgba(249,168,212,0.35);
+    border-radius: 999px; padding: 0.5rem 1.1rem 0.5rem 0.6rem;
+    font-size: 0.8rem; color: #f0abfc;
+    box-shadow: 0 4px 20px rgba(192,132,252,0.2), 0 0 0 1px rgba(249,168,212,0.1);
+    backdrop-filter: blur(16px);
+    transform: translateY(-120%) scale(0.9); opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.3s ease;
+    white-space: nowrap;
+  }
+  .t2.show { transform: translateY(0) scale(1); opacity: 1; }
+  .t2.error { border-color: rgba(248,113,113,0.4); color: #fca5a5; background: linear-gradient(135deg, rgba(248,113,113,0.1), rgba(239,68,68,0.1)); box-shadow: 0 4px 20px rgba(248,113,113,0.2); }
+  .t2-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #f9a8d4, #c084fc); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+
+  /* ── DESIGN 3: Bottom-center bubble with bounce ── */
+  .t3-container { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 9999; }
+  .t3 {
+    display: inline-flex; align-items: center; gap: 0.65rem;
+    background: rgba(22, 16, 38, 0.97);
+    border: 1px solid rgba(192,132,252,0.3);
+    border-radius: 16px; padding: 0.75rem 1.2rem;
+    font-size: 0.82rem; color: #e9d5ff;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 20px rgba(192,132,252,0.12);
+    backdrop-filter: blur(20px);
+    transform: translateY(120%) scale(0.85); opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.3s ease;
+    white-space: nowrap;
+  }
+  .t3.show { transform: translateY(0) scale(1); opacity: 1; }
+  .t3.error { border-color: rgba(248,113,113,0.3); }
+  .t3-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .t3.success .t3-dot { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.6); animation: t3Blink 1.5s ease-in-out infinite; }
+  .t3.error   .t3-dot { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,0.6); }
+  @keyframes t3Blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  /* ── DESIGN 4: Top-right minimal glass ── */
+  .t4-container { position: fixed; top: 1.2rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+  .t4 {
+    display: flex; align-items: flex-start; gap: 0.7rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 0.8rem 1rem;
+    font-size: 0.8rem; color: #e9d5ff;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    backdrop-filter: blur(24px);
+    transform: translateY(-20px); opacity: 0;
+    transition: transform 0.35s ease, opacity 0.3s ease;
+    min-width: 220px; max-width: 300px;
+  }
+  .t4.show { transform: translateY(0); opacity: 1; }
+  .t4-icon { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+  .t4-body { flex: 1; }
+  .t4-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+  .t4.success .t4-label { color: #86efac; }
+  .t4.error   .t4-label { color: #fca5a5; }
+  .t4-msg { color: #c9d1d9; font-size: 0.79rem; line-height: 1.35; }
+  .t4-bar { height: 2px; margin-top: 0.6rem; border-radius: 1px; }
+  .t4.success .t4-bar { background: linear-gradient(90deg, #34d399, #6ee7b7); animation: t4Bar 3.5s linear forwards; }
+  .t4.error   .t4-bar { background: linear-gradient(90deg, #f87171, #fca5a5); animation: t4Bar 3.5s linear forwards; }
+  @keyframes t4Bar { from { width: 100%; } to { width: 0%; } }
+
+  /* ── DESIGN 5: Cute Pearly-branded card ── */
+  .t5-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; }
+  .t5 {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: linear-gradient(135deg, #1a1128 0%, #1c1530 100%);
+    border: 1px solid rgba(249,168,212,0.25);
+    border-radius: 16px; padding: 0.8rem 1.1rem 0.8rem 0.8rem;
+    font-size: 0.82rem; color: #e9d5ff;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(192,132,252,0.08), inset 0 1px 0 rgba(249,168,212,0.08);
+    backdrop-filter: blur(16px);
+    transform: translateX(120%) scale(0.95); opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.35s ease;
+    min-width: 250px;
+  }
+  .t5.show { transform: translateX(0) scale(1); opacity: 1; }
+  .t5-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #f9a8d4, #c084fc); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; box-shadow: 0 0 12px rgba(192,132,252,0.4); animation: t5Glow 2.5s ease-in-out infinite; }
+  @keyframes t5Glow { 0%,100% { box-shadow: 0 0 8px rgba(192,132,252,0.3); } 50% { box-shadow: 0 0 20px rgba(192,132,252,0.6); } }
+  .t5-body { flex: 1; }
+  .t5-who { font-size: 0.62rem; color: rgba(249,168,212,0.7); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+  .t5-msg { color: #e9d5ff; line-height: 1.35; }
+  .t5.error .t5-avatar { background: linear-gradient(135deg, #fca5a5, #f87171); box-shadow: 0 0 12px rgba(248,113,113,0.4); }
+  .t5-shimmer { position: absolute; inset: 0; border-radius: 16px; background: linear-gradient(105deg, transparent 40%, rgba(249,168,212,0.06) 50%, transparent 60%); animation: t5Shimmer 2s linear infinite; pointer-events: none; }
+  @keyframes t5Shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+  .static-row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
+</style>
+</head>
+<body>
+<h1>🌸 Toast Notification Designs — Pearl Hire</h1>
+<p>Click the buttons to see each design animate. Pick one and tell me the number!</p>
+
+<!-- STATIC PREVIEWS (always visible) -->
+
+<div class="section">
+  <div class="tag">Option 1</div>
+  <div class="design-title">Design 1 — Bottom-right slide-in card with progress bar</div>
+  <div class="preview-area">
+    <div class="static-row">
+      <div class="t1 show success" style="position:relative;transform:none;opacity:1;min-width:260px;">
+        <div class="t1-icon">✅</div>
+        <div class="t1-text">Feedback saved! Thank you, Swathi 🌸</div>
+        <div class="t1-progress" style="animation:none;width:60%;"></div>
+      </div>
+      <div class="t1 show error" style="position:relative;transform:none;opacity:1;min-width:220px;">
+        <div class="t1-icon">❌</div>
+        <div class="t1-text">API key missing — check Setup</div>
+        <div class="t1-progress" style="animation:none;width:30%;background:linear-gradient(90deg,#f87171,#fca5a5);"></div>
+      </div>
+    </div>
+    <button class="btn-trigger" onclick="triggerT1()">▶ Animate</button>
+  </div>
+  <div class="desc">Slides in from the right. Pink→purple progress bar drains as it auto-dismisses. Clean and informative.</div>
+</div>
+
+<div class="section">
+  <div class="tag">⭐ Recommended</div>
+  <div class="design-title">Design 2 — Top-center Pearly pill with bounce-in</div>
+  <div class="preview-area">
+    <div class="static-row">
+      <div class="t2 show success" style="position:relative;transform:none;opacity:1;flex-shrink:0;">
+        <div class="t2-avatar">🌸</div>
+        Feedback saved! Thank you, Swathi 💗
+      </div>
+      <div class="t2 show error" style="position:relative;transform:none;opacity:1;flex-shrink:0;">
+        <div class="t2-avatar" style="background:linear-gradient(135deg,#fca5a5,#f87171);">❌</div>
+        API key missing — check Setup
+      </div>
+    </div>
+    <button class="btn-trigger" onclick="triggerT2()">▶ Animate</button>
+  </div>
+  <div class="desc">Drops from the top with a bouncy spring. Pearly's 🌸 avatar leads it. Pink/purple pill — very on-brand.</div>
+</div>
+
+<div class="section">
+  <div class="tag">Option 3</div>
+  <div class="design-title">Design 3 — Bottom-center bubble with pulsing dot</div>
+  <div class="preview-area">
+    <div class="static-row">
+      <div class="t3 show success" style="position:relative;transform:none;opacity:1;">
+        <div class="t3-dot" style="background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.6);"></div>
+        Feedback saved! Thank you, Swathi 🌸
+      </div>
+      <div class="t3 show error" style="position:relative;transform:none;opacity:1;">
+        <div class="t3-dot" style="background:#f87171;box-shadow:0 0 6px rgba(248,113,113,0.6);"></div>
+        API key missing — check Setup
+      </div>
+    </div>
+    <button class="btn-trigger" onclick="triggerT3()">▶ Animate</button>
+  </div>
+  <div class="desc">Bounces up from the bottom. Pulsing green/red dot for status. Dark glass background with purple border glow.</div>
+</div>
+
+<div class="section">
+  <div class="tag">Option 4</div>
+  <div class="design-title">Design 4 — Top-right minimal glass card</div>
+  <div class="preview-area">
+    <div class="static-row">
+      <div class="t4 show success" style="position:relative;transform:none;opacity:1;">
+        <div class="t4-icon">✨</div>
+        <div class="t4-body">
+          <div class="t4-label">Saved</div>
+          <div class="t4-msg">Feedback saved! Thank you, Swathi</div>
+          <div class="t4-bar" style="animation:none;width:60%;background:linear-gradient(90deg,#34d399,#6ee7b7);"></div>
+        </div>
+      </div>
+      <div class="t4 show error" style="position:relative;transform:none;opacity:1;">
+        <div class="t4-icon">⚠️</div>
+        <div class="t4-body">
+          <div class="t4-label" style="color:#fca5a5;">Error</div>
+          <div class="t4-msg">API key missing — check Setup</div>
+          <div class="t4-bar" style="animation:none;width:30%;background:linear-gradient(90deg,#f87171,#fca5a5);"></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-trigger" onclick="triggerT4()">▶ Animate</button>
+  </div>
+  <div class="desc">Slides down from the top-right. Has a SAVED/ERROR label + message + draining progress bar. Ultra-clean glass look.</div>
+</div>
+
+<div class="section">
+  <div class="tag">Option 5</div>
+  <div class="design-title">Design 5 — Pearly-branded card with glowing avatar</div>
+  <div class="preview-area">
+    <div class="static-row">
+      <div class="t5 show success" style="position:relative;transform:none;opacity:1;">
+        <div class="t5-avatar">🌸</div>
+        <div class="t5-body">
+          <div class="t5-who">Pearly says</div>
+          <div class="t5-msg">Feedback saved! Thank you, Swathi 💗</div>
+        </div>
+      </div>
+      <div class="t5 show error" style="position:relative;transform:none;opacity:1;">
+        <div class="t5-avatar" style="background:linear-gradient(135deg,#fca5a5,#f87171);box-shadow:0 0 12px rgba(248,113,113,0.4);">⚠️</div>
+        <div class="t5-body">
+          <div class="t5-who" style="color:rgba(252,165,165,0.7);">Pearly says</div>
+          <div class="t5-msg">API key missing — check Setup</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-trigger" onclick="triggerT5()">▶ Animate</button>
+  </div>
+  <div class="desc">Pearly's glowing avatar + "Pearly says" label. Branded, cute, personality-forward. Slides in from bottom-right.</div>
+</div>
+
+<!-- LIVE TOAST CONTAINERS -->
+<div class="t1-container" id="t1c"></div>
+<div class="t2-container" id="t2c"></div>
+<div class="t3-container" id="t3c"></div>
+<div class="t4-container" id="t4c"></div>
+<div class="t5-container" id="t5c"></div>
+
+<script>
+  function makeToast(html, cls, container, delay=3500) {
+    const el = document.createElement('div');
+    el.innerHTML = html;
+    const t = el.firstElementChild;
+    container.appendChild(t);
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, delay);
+  }
+
+  function triggerT1() {
+    const c = document.getElementById('t1c');
+    makeToast(`<div class="t1 success" style="position:relative;"><div class="t1-icon">✅</div><div class="t1-text">Feedback saved! Thank you, Swathi 🌸</div><div class="t1-progress"></div></div>`, '', c);
+  }
+  function triggerT2() {
+    const c = document.getElementById('t2c');
+    makeToast(`<div class="t2 success"><div class="t2-avatar">🌸</div>Feedback saved! Thank you, Swathi 💗</div>`, '', c);
+  }
+  function triggerT3() {
+    const c = document.getElementById('t3c');
+    makeToast(`<div class="t3 success"><div class="t3-dot"></div>Feedback saved! Thank you, Swathi 🌸</div>`, '', c);
+  }
+  function triggerT4() {
+    const c = document.getElementById('t4c');
+    makeToast(`<div class="t4 success"><div class="t4-icon">✨</div><div class="t4-body"><div class="t4-label">Saved</div><div class="t4-msg">Feedback saved! Thank you, Swathi</div><div class="t4-bar"></div></div></div>`, '', c);
+  }
+  function triggerT5() {
+    const c = document.getElementById('t5c');
+    makeToast(`<div class="t5 success"><div class="t5-avatar">🌸</div><div class="t5-body"><div class="t5-who">Pearly says</div><div class="t5-msg">Feedback saved! Thank you, Swathi 💗</div></div></div>`, '', c);
+  }
+</script>
+</body>
+</html>
