@@ -2556,46 +2556,42 @@
             animation: btnBlink 0.55s ease-in-out infinite;
         }
 
-        /* ─── DESIGN D HERO CARD ─── */
-        .dh-card { background: var(--bg-card); border-bottom: 1px solid var(--border); overflow: hidden; }
+        /* ─── DESIGN A HERO CARD — GRADIENT HEADER BAND ─── */
+        .dh-card { background: linear-gradient(135deg, #0d1f3c 0%, #0f2a4a 60%, #0d1117 100%); border-bottom: 1px solid rgba(56,139,253,0.18); overflow: hidden; position: relative; }
+        .dh-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, #388bfd 40%, transparent); opacity: 0.5; pointer-events: none; }
         .dh-top-band {
-            background: linear-gradient(135deg, rgba(56,139,253,0.12) 0%, transparent 70%);
-            padding: 1rem 1.25rem 0.85rem;
-            display: flex; align-items: center; gap: 0.85rem;
-            border-bottom: 1px solid rgba(56,139,253,0.12);
+            padding: 1.1rem 1.25rem 0.75rem;
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;
         }
-        .dh-avatar {
-            width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
-            background: linear-gradient(135deg, #2f7dea, #004080);
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem; color: #d8f5ff;
-            border: 1px solid rgba(56,139,253,0.35);
-        }
+        .dh-avatar { display: none; }
         .dh-name-area { flex: 1; min-width: 0; }
-        .dh-name { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #f0f6fc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .dh-sub { font-size: 0.68rem; color: #8b949e; margin-top: 2px; }
-        .dh-score-block { flex-shrink: 0; text-align: right; }
-        .dh-score-num { font-family: 'Outfit', sans-serif; font-size: 1.7rem; font-weight: 800; color: #56d364; line-height: 1; }
-        .dh-score-num.dh-mid { color: #e3b341; }
-        .dh-score-num.dh-low { color: #f85149; }
-        .dh-score-lbl { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(86,211,100,0.6); }
-        .dh-score-lbl.dh-mid { color: rgba(227,179,65,0.6); }
-        .dh-score-lbl.dh-low { color: rgba(248,81,73,0.6); }
+        .dh-name-label { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #388bfd; margin-bottom: 3px; }
+        .dh-name { font-family: 'Outfit', sans-serif; font-size: 1.08rem; font-weight: 700; color: #f0f6fc; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dh-sub { display: none; }
+        .dh-score-block { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+        .dh-score-num { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #56d364; line-height: 1; text-shadow: 0 0 18px rgba(86,211,100,0.4); }
+        .dh-score-num.dh-mid { color: #e3b341; text-shadow: 0 0 18px rgba(227,179,65,0.4); }
+        .dh-score-num.dh-low { color: #f85149; text-shadow: 0 0 18px rgba(248,81,73,0.4); }
+        .dh-score-lbl { font-size: 0.56rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(86,211,100,0.7); }
+        .dh-score-lbl.dh-mid { color: rgba(227,179,65,0.7); }
+        .dh-score-lbl.dh-low { color: rgba(248,81,73,0.7); }
         .dh-rec-bar {
-            padding: 0.4rem 1.25rem; display: flex; align-items: center; gap: 6px;
-            font-size: 0.68rem; font-weight: 600;
-            border-bottom: 1px solid rgba(86,211,100,0.15);
-            background: rgba(86,211,100,0.07); color: #56d364;
+            margin: 0 1.25rem 0.75rem;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(86,211,100,0.1); border: 1px solid rgba(86,211,100,0.25);
+            border-radius: 5px; padding: 3px 9px;
+            font-size: 0.68rem; font-weight: 600; color: #56d364;
         }
-        .dh-rec-bar.dh-mid { background: rgba(227,179,65,0.07); border-bottom-color: rgba(227,179,65,0.15); color: #e3b341; }
-        .dh-rec-bar.dh-low { background: rgba(248,81,73,0.07); border-bottom-color: rgba(248,81,73,0.15); color: #f85149; }
+        .dh-rec-bar.dh-mid { background: rgba(227,179,65,0.1); border-color: rgba(227,179,65,0.25); color: #e3b341; }
+        .dh-rec-bar.dh-low { background: rgba(248,81,73,0.1); border-color: rgba(248,81,73,0.25); color: #f85149; }
         .dh-rec-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: dhPulse 2s ease-in-out infinite; flex-shrink: 0; }
         @keyframes dhPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .dh-kv-list { padding: 0.35rem 1.25rem 0.5rem; display: flex; flex-direction: column; border-bottom: 1px solid var(--border); }
-        .dh-kv { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.73rem; }
-        .dh-kv:last-child { border-bottom: none; }
-        .dh-kv-label { color: #8b949e; font-weight: 500; min-width: 108px; flex-shrink: 0; }
-        .dh-kv-value { color: #e6edf3; font-weight: 500; flex: 1; }
+        .dh-kv-list { padding: 0 1.25rem 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .dh-kv { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 7px; padding: 6px 9px; font-size: 0.72rem; min-width: 0; }
+        .dh-kv.full { grid-column: 1 / -1; }
+        .dh-kv-icon { font-size: 0.8rem; flex-shrink: 0; opacity: 0.85; }
+        .dh-kv-label { display: none; }
+        .dh-kv-value { color: #c9d1d9; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
         .dh-kv-value.blue  { color: #79c0ff; }
         .dh-kv-value.amber { color: #e3b341; }
         .dh-kv-value.green { color: #56d364; }
@@ -6152,10 +6148,9 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             <!-- Hero -->
             <div class="dh-card">
                 <div class="dh-top-band">
-                    <div class="dh-avatar">${_initials}</div>
                     <div class="dh-name-area">
+                        <div class="dh-name-label">Candidate Profile</div>
                         <div class="dh-name">${r.name}</div>
-                        <div class="dh-sub">${r.location ? `📍 ${r.location}` : ''}${r.location && r.experience_years ? ' · ' : ''}${r.experience_years ? `💼 ${_fmtExp(r.experience_years)}` : ''}</div>
                     </div>
                     <div class="dh-score-block">
                         <div class="dh-score-num ${_scoreCls}">${r.match_score}%</div>
@@ -6164,13 +6159,14 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>
                 <div class="dh-rec-bar ${_scoreCls}"><span class="dh-rec-dot"></span>${_recTxt}</div>
                 <div class="dh-kv-list">
-                    ${r.email ? `<div class="dh-kv"><span class="dh-kv-label">Email</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-label">Phone</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
-                    ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-label">Experience</span><span class="dh-kv-value" style="color:var(--accent);">💼 ${_fmtExp(r.experience_years)}</span></div>` : ''}
-                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-label">Internship</span><span class="dh-kv-value" style="color:#a78bfa;">🎓 ${r.internship_months} mo</span></div>` : ''}
-                    ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Current CTC</span><span class="dh-kv-value amber">${r.current_ctc}</span></div>` : ''}
-                    ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Expected CTC</span><span class="dh-kv-value amber">${r.expected_ctc}</span></div>` : ''}
-                    ${r.notice_period ? `<div class="dh-kv"><span class="dh-kv-label">Notice Period</span><span class="dh-kv-value green">${r.notice_period}</span></div>` : ''}
+                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-icon">📍</span><span class="dh-kv-value">${r.location}</span></div>` : ''}
+                    ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">💼</span><span class="dh-kv-value" style="color:var(--accent);">${_fmtExp(r.experience_years)}</span></div>` : ''}
+                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-icon">✉️</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
+                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-icon">📞</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
+                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">🎓</span><span class="dh-kv-value" style="color:#a78bfa;">${r.internship_months} mo internship</span></div>` : ''}
+                    ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">💰</span><span class="dh-kv-value amber">Current: ${r.current_ctc}</span></div>` : ''}
+                    ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">🎯</span><span class="dh-kv-value amber">Expected: ${r.expected_ctc}</span></div>` : ''}
+                    ${r.notice_period ? `<div class="dh-kv full"><span class="dh-kv-icon">📅</span><span class="dh-kv-value green">Notice: ${r.notice_period}</span></div>` : ''}
                 </div>
                 <label class="dh-shortlist-wrap" onclick="event.stopPropagation()" title="Add to shortlist">
                     <input type="checkbox" id="main-shortlist-cb-${idx}" ${_selectedCards.has(idx) ? 'checked' : ''} onchange="toggleShareBtn(${idx}, this.checked); syncShortlistCheckboxes(${idx}, this.checked, 'detail')">
@@ -7876,10 +7872,9 @@ main.addEventListener('scroll',()=>{
         document.getElementById('sharePgHero').innerHTML = `
             <div class="dh-card">
                 <div class="dh-top-band">
-                    <div class="dh-avatar">${_sInitials}</div>
                     <div class="dh-name-area">
+                        <div class="dh-name-label">Candidate Profile</div>
                         <div class="dh-name">${r.name}</div>
-                        <div class="dh-sub">${r.location ? `📍 ${r.location}` : ''}${r.location && r.experience_years ? ' · ' : ''}${r.experience_years ? `💼 ${_fmtExp(r.experience_years)}` : ''}</div>
                     </div>
                     <div class="dh-score-block">
                         <div class="dh-score-num ${_sScoreCls}">${r.match_score}%</div>
@@ -7888,12 +7883,14 @@ main.addEventListener('scroll',()=>{
                 </div>
                 <div class="dh-rec-bar ${_sScoreCls}"><span class="dh-rec-dot"></span>${_sRecTxt}</div>
                 <div class="dh-kv-list">
-                    ${r.email ? `<div class="dh-kv"><span class="dh-kv-label">Email</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-label">Phone</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
-                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-label">Internship</span><span class="dh-kv-value" style="color:#a78bfa;">${r.internship_months} mo</span></div>` : ''}
-                    ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Current CTC</span><span class="dh-kv-value amber">${r.current_ctc}</span></div>` : ''}
-                    ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-label">Expected CTC</span><span class="dh-kv-value amber">${r.expected_ctc}</span></div>` : ''}
-                    ${r.notice_period ? `<div class="dh-kv"><span class="dh-kv-label">Notice Period</span><span class="dh-kv-value green">${r.notice_period}</span></div>` : ''}
+                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-icon">📍</span><span class="dh-kv-value">${r.location}</span></div>` : ''}
+                    ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">💼</span><span class="dh-kv-value" style="color:var(--accent);">${_fmtExp(r.experience_years)}</span></div>` : ''}
+                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-icon">✉️</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
+                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-icon">📞</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
+                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">🎓</span><span class="dh-kv-value" style="color:#a78bfa;">${r.internship_months} mo internship</span></div>` : ''}
+                    ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">💰</span><span class="dh-kv-value amber">Current: ${r.current_ctc}</span></div>` : ''}
+                    ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">🎯</span><span class="dh-kv-value amber">Expected: ${r.expected_ctc}</span></div>` : ''}
+                    ${r.notice_period ? `<div class="dh-kv full"><span class="dh-kv-icon">📅</span><span class="dh-kv-value green">Notice: ${r.notice_period}</span></div>` : ''}
                 </div>
                 <div class="dh-actions" id="shareDecisionRow">
                     <button class="dh-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
