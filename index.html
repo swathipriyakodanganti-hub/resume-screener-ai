@@ -3474,6 +3474,20 @@
             </div>
             <div class="share-select-note">Select up to 2 recipients for this shortlist</div>
         </div>
+        <!-- Urgency toggle -->
+        <div style="padding:10px 20px 4px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;white-space:nowrap;">Send as:</span>
+          <div style="display:flex;gap:6px;">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+              <input type="radio" name="emailUrgency" value="asap" style="accent-color:#f59e0b;">
+              <span style="font-size:0.75rem;font-weight:700;color:#b45309;background:#fff7ed;border:1px solid #fde68a;padding:3px 10px;border-radius:20px;">⚡ ASAP</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+              <input type="radio" name="emailUrgency" value="no-rush" checked style="accent-color:#1D9E75;">
+              <span style="font-size:0.75rem;font-weight:700;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;padding:3px 10px;border-radius:20px;">🌿 No Rush</span>
+            </label>
+          </div>
+        </div>
         <div class="share-modal-footer">
             <button class="btn-cancel-share" onclick="closeShareModal()">Cancel</button>
             <button class="btn-send-share" id="btnSendShare" onclick="sendShare()" disabled>
@@ -7455,6 +7469,8 @@ main.addEventListener('scroll',()=>{
         const recipients = _interviewers.filter(iv => _selectedEmails.has(iv.email));
         const avgScore   = Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / candidates.length);
 
+        const urgency = document.querySelector('input[name="emailUrgency"]:checked')?.value || 'no-rush';
+
         const payload = {
             recipients,
             candidateName:  candidates.map(c => c.name).join(', '),
@@ -7463,6 +7479,7 @@ main.addEventListener('scroll',()=>{
             shareLink,
             matchScore:  avgScore,
             isBulk:      true,
+            urgency,
             candidates:  candidates.map(c => ({ name: c.name, match_score: c.match_score }))
         };
 

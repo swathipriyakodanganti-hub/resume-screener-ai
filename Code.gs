@@ -310,7 +310,7 @@ function doPost(e) {
       return logPromptChange(data);
     }
 
-    const { recipients, candidateName, candidateCount, position, shareLink, matchScore, isBulk, candidates } = data;
+    const { recipients, candidateName, candidateCount, position, shareLink, matchScore, isBulk, candidates, urgency } = data;
 
     if (!recipients || !recipients.length) {
       return jsonResponse({ success: false, error: 'No recipients provided' });
@@ -319,11 +319,11 @@ function doPost(e) {
     // ── Send emails ──
     recipients.forEach(({ name, email }) => {
       const subject = isBulk
-        ? `Candidate Shortlist: ${candidateCount} profiles for ${position}`
+        ? `Candidate profiles for ${position} \u2014 would love your thoughts`
         : `Candidate Profile: ${candidateName} for ${position}`;
 
       const htmlBody = isBulk
-        ? buildBulkEmailHtml(name, candidates || [], position, shareLink)
+        ? buildBulkEmailHtml(name, candidates || [], position, shareLink, urgency)
         : buildEmailHtml(name, candidateName, position, shareLink, matchScore);
 
       const textBody = buildEmailText(name, candidateName || `${candidateCount} candidates`, position, shareLink);
@@ -347,11 +347,12 @@ function doPost(e) {
 // ───────────────────────────────────────────────────────────────
 // Bulk email HTML
 // ───────────────────────────────────────────────────────────────
-function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
+function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, urgency) {
   candidates = candidates || [];
   const count    = candidates.length;
   const avgScore = count ? Math.round(candidates.reduce((s, c) => s + c.match_score, 0) / count) : 0;
   const topScore = count ? candidates[0].match_score : 0;
+  const isAsap   = urgency === 'asap';
 
   // Build per-candidate score bar rows
   const candidateRows = candidates.map(function(c) {
@@ -370,7 +371,35 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
       '</td></tr>';
   }).join('');
 
-  // Avg score color
+  // Steps box — step 3 varies by urgency
+  const step3Text = isAsap
+    ? '<strong>Share your feedback as soon as you can</strong> — so I can get the interview schedule in place without delay.'
+    : '<strong>Share your feedback</strong> whenever it suits you — there\'s no hard deadline on this one.';
+
+  const stepsBox =
+    '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:20px;"><tr><td style="padding:14px 18px;">' +
+    '<p style="margin:0 0 10px;font-size:12px;color:#475569;font-style:italic;">To make it easy, here\'s how I\'d suggest going through them:</p>' +
+    '<table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-bottom:9px;">' +
+      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">1</div>' +
+    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;padding-bottom:9px;"><strong>Open the profiles</strong> — each one has the candidate\'s background, relevant skills, and a brief summary.</td></tr>' +
+    '<tr><td style="vertical-align:top;padding-bottom:9px;">' +
+      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">2</div>' +
+    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;padding-bottom:9px;"><strong>Mark your preference</strong> — shortlist, maybe, or pass. Even a quick note on each helps a lot.</td></tr>' +
+    '<tr><td style="vertical-align:top;">' +
+      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">3</div>' +
+    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;">' + step3Text + '</td></tr></table>' +
+    '</td></tr></table>';
+
+  // Closing paragraph — varies by urgency
+  const closeBg    = isAsap ? '#fff7ed' : '#f0fdf4';
+  const closeBdr   = isAsap ? '#f59e0b' : '#34d399';
+  const closeText  = isAsap
+    ? 'We\'re hoping to move quickly on this one — if you could share your thoughts soon, that would be a huge help. Of course, reach out anytime if you\'d like to talk through any of the candidates.'
+    : 'No rush at all — take your time and review when it suits you. If you have questions or want more context on any of the candidates, just say the word. Happy to help!';
+
+  const closePara = '<p style="margin:0 0 22px;font-size:12.5px;color:#475569;line-height:1.8;background:' + closeBg + ';border-left:3px solid ' + closeBdr + ';padding:10px 14px;border-radius:0 6px 6px 0;">' + closeText + '</p>';
+
+  // Avg/Top score colours
   const avgColor = avgScore >= 75 ? '#1D9E75' : avgScore >= 50 ? '#b45309' : '#dc2626';
   const topColor = topScore >= 75 ? '#1D9E75' : topScore >= 50 ? '#b45309' : '#dc2626';
 
@@ -417,20 +446,23 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink) {
 '<!-- Body -->' +
 '<tr><td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:26px 32px 30px;">' +
   '<p style="margin:0 0 4px;font-size:15px;color:#0f172a;">Hi <strong>' + interviewerName + '</strong>,</p>' +
-  '<p style="margin:0 0 26px;font-size:13px;color:#64748b;line-height:1.75;">' +
-    'Your AI-screened shortlist for <strong style="color:#0f172a;">' + position + '</strong> is ready — ' +
-    '<strong style="color:#0f172a;">' + count + ' candidate' + (count > 1 ? 's' : '') + '</strong> ranked by match score. ' +
-    'Click below to review full profiles, resumes, and submit your decisions.' +
+  '<p style="margin:0 0 14px;font-size:13px;color:#475569;line-height:1.8;">Hope your week is going well!</p>' +
+  '<p style="margin:0 0 20px;font-size:13px;color:#475569;line-height:1.8;">' +
+    'I\'ve gone through the applications for <strong style="color:#0f172a;">' + position + '</strong> and put together a shortlist of ' +
+    '<strong style="color:#0f172a;">' + count + ' candidate' + (count > 1 ? 's' : '') + '</strong> I think are genuinely worth a closer look. ' +
+    'I\'m sharing them with you so you can review before we decide who to move forward with.' +
   '</p>' +
-  '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">' +
+  stepsBox +
+  '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px;">' +
     candidateRows +
   '</table>' +
+  closePara +
   '<div style="text-align:center;margin-bottom:8px;">' +
     '<a href="' + shareLink + '" target="_blank" style="display:inline-block;padding:14px 36px;background:#0c447c;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 14px rgba(12,68,124,0.25);">' +
-      'View All Candidates &amp; Resumes &rarr;' +
+      'View Profiles &amp; Resumes &rarr;' +
     '</a>' +
   '</div>' +
-  '<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px;">Access detailed profiles, resumes and submit your feedback</p>' +
+  '<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px;">Open each profile, review the resume, and leave your preference</p>' +
 '</td></tr>' +
 
 '<!-- Footer -->' +
