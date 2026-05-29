@@ -3479,7 +3479,7 @@
           <!-- Pearly toggle -->
           <label id="pearlyToggleCard" onclick="togglePearlyCard()" title="Include Pearly on the share page"
             style="cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;border:1.5px solid var(--border);background:transparent;transition:border 0.18s,background 0.18s;">
-            <input type="checkbox" id="includePearly" style="accent-color:#a855f7;width:12px;height:12px;pointer-events:none;">
+            <input type="checkbox" id="includePearly" checked style="accent-color:#a855f7;width:12px;height:12px;pointer-events:none;">
             <span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">🌸 Pearly</span>
           </label>
           <!-- Divider -->
@@ -7234,6 +7234,7 @@ main.addEventListener('scroll',()=>{
         document.getElementById('floatingShareBar').classList.remove('visible');
 
         if (firebaseDbUrl) document.getElementById('firebaseDbUrlInput').value = firebaseDbUrl;
+        togglePearlyCard(); // sync pill styling with checkbox state
         await loadInterviewers();
     }
 
