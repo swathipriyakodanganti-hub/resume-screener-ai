@@ -359,7 +359,7 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, ur
     const scoreColor = s >= 75 ? '#1D9E75' : s >= 50 ? '#b45309' : '#dc2626';
     return '<tr><td style="padding-bottom:12px;">' +
       '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      '<td style="font-size:13px;font-weight:600;color:#1e293b;">' + c.name + '</td>' +
+      '<td></td>' +
       '<td align="right" style="font-size:13px;font-weight:800;color:' + scoreColor + ';white-space:nowrap;padding-left:12px;">' + s + '%</td>' +
       '</tr><tr><td colspan="2" style="padding-top:5px;">' +
       '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
