@@ -7629,6 +7629,12 @@ main.addEventListener('scroll',()=>{
         _singleShareCandidate = r;
         const position = r._position || '';
 
+        // Pearly visibility for single share
+        const fab = document.getElementById('pearly-fab');
+        const tip = document.getElementById('pearly-tooltip');
+        if (fab) fab.style.display = r._pearly ? 'flex' : 'none';
+        if (tip) tip.style.display = r._pearly ? 'block' : 'none';
+
         // Position pill
         const bannerEl = document.getElementById('sharePgPositionBanner');
         if (position && bannerEl) {
@@ -7829,8 +7835,8 @@ main.addEventListener('scroll',()=>{
         // Show or hide Pearly based on share settings
         const fab = document.getElementById('pearly-fab');
         const tip = document.getElementById('pearly-tooltip');
-        if (fab) fab.style.display = showPearly ? '' : 'none';
-        if (tip) tip.style.display = showPearly ? '' : 'none';
+        if (fab) fab.style.display = showPearly ? 'flex' : 'none';
+        if (tip) tip.style.display = showPearly ? 'block' : 'none';
 
         // Auto-select first candidate
         if (count > 0) selectShareCandidate(0);
