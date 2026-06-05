@@ -2906,6 +2906,9 @@
                 <button id="stopAnalysisBtn" onclick="stopAnalysis()" style="display:none;padding:2px 10px;font-size:0.7rem;background:rgba(248,81,73,0.15);color:#f85149;border:1px solid rgba(248,81,73,0.4);border-radius:5px;cursor:pointer;font-weight:600;">⏹ Stop</button>
                 <!-- Floating stop button — visible during analysis -->
                 <div id="stopAnalysisFab" onclick="stopAnalysis()" style="display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;padding:0.55rem 1.4rem;background:#f85149;color:#fff;border:none;border-radius:999px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(248,81,73,0.5);letter-spacing:0.02em;user-select:none;animation:fabPulse 2s ease-in-out infinite;">⏹ Stop Analysis</div>
+                <!-- Progress dots pinned above the stop FAB -->
+                <div id="stopFabDots" style="display:none;position:fixed;bottom:4.2rem;left:50%;transform:translateX(-50%);z-index:9998;display:none;align-items:center;gap:4px;background:rgba(15,22,41,0.85);backdrop-filter:blur(6px);border:1px solid rgba(249,168,212,0.15);border-radius:999px;padding:6px 14px;">
+                </div>
             </div>
         </div>
         <div class="progress-bar" id="progressDots">
@@ -3469,8 +3472,8 @@
 
       <!-- Tab name -->
       <div style="margin-bottom:20px;">
-        <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;">Tab Name <span style="color:#475569;font-weight:400;">(created if it doesn't exist)</span></label>
-        <input id="pushTabName" type="text" placeholder="Screened Candidates" value="Screened Candidates" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;outline:none;transition:border 0.2s;" onfocus="this.style.borderColor='rgba(86,211,100,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;">Tab Name <span style="color:#475569;font-weight:400;">(leave blank to use the first/default sheet)</span></label>
+        <input id="pushTabName" type="text" placeholder="e.g. Candidates" value="Candidates" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;outline:none;transition:border 0.2s;" onfocus="this.style.borderColor='rgba(86,211,100,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
       </div>
 
       <!-- Status message -->
@@ -5842,7 +5845,18 @@ Rules:
         stopBtn.style.display = 'inline-block';
         stopBtn.textContent = '⏹ Stop';
         stopBtn.disabled = false;
-        if (stopFab) { stopFab.style.display = 'block'; stopFab.textContent = '⏹ Stop Analysis'; stopFab.style.pointerEvents = 'auto'; }
+        if (stopFab) { stopFab.style.display = 'block'; stopFab.textContent = '⏹ Stop Analysis'; stopFab.style.pointerEvents = 'auto'; stopFab.style.opacity = '1'; }
+        const stopFabDots = document.getElementById('stopFabDots');
+        if (stopFabDots) {
+            stopFabDots.innerHTML = '';
+            for (let d = 0; d < 20; d++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot';
+                dot.dataset.fab = d;
+                stopFabDots.appendChild(dot);
+            }
+            stopFabDots.style.display = 'flex';
+        }
         pw.classList.add('visible');
 
         const _TOTAL_DOTS = 20;
@@ -5850,6 +5864,14 @@ Rules:
             const dots = document.querySelectorAll('#progressDots .progress-dot');
             const filledCount = total > 0 ? Math.round((done / total) * _TOTAL_DOTS) : 0;
             dots.forEach((d, idx) => {
+                d.classList.remove('dot-active', 'dot-pulse');
+                if (idx < filledCount - 1) d.classList.add('dot-active');
+                else if (idx === filledCount - 1 && done < total) d.classList.add('dot-pulse');
+                else if (idx < filledCount) d.classList.add('dot-active');
+            });
+            // Mirror to floating FAB dots
+            const fabDots = document.querySelectorAll('#stopFabDots .progress-dot');
+            fabDots.forEach((d, idx) => {
                 d.classList.remove('dot-active', 'dot-pulse');
                 if (idx < filledCount - 1) d.classList.add('dot-active');
                 else if (idx === filledCount - 1 && done < total) d.classList.add('dot-pulse');
@@ -5865,6 +5887,8 @@ Rules:
             if (btn2) { btn2.disabled = false; btn2.innerHTML = '🚀 Analyze Resumes'; }
             stopBtn.style.display = 'none';
             if (stopFab) stopFab.style.display = 'none';
+            const stopFabDots = document.getElementById('stopFabDots');
+            if (stopFabDots) stopFabDots.style.display = 'none';
             if (wasStopped || wasLimit) {
                 const remaining = uploadQueue.length + driveQueue.length;
                 const reason = wasLimit
@@ -7256,14 +7280,14 @@ main.addEventListener('scroll',()=>{
         try {
             const res = await fetch(appsScriptUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'payload=' + encodeURIComponent(JSON.stringify({
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
                     action: 'pushCandidates',
                     targetSheetId,
                     tabName,
                     position,
                     candidates
-                }))
+                })
             });
             const data = await res.json();
             if (data.success) {
