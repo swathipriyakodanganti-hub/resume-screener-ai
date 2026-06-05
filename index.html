@@ -2893,6 +2893,7 @@
             <button class="btn-export" id="btnSelectAll" onclick="toggleSelectAll()" style="display:none;">☐ Select All</button>
             <button class="btn-export" onclick="openPreviewReport()">📄 Preview Report</button>
             <button class="btn-export" onclick="exportResults()" style="background:rgba(255,255,255,0.04);" title="Export CSV">💾 CSV</button>
+            <button class="btn-export" onclick="openPushModal('all')" title="Push candidates to Google Sheet" style="background:rgba(86,211,100,0.08);border-color:rgba(86,211,100,0.35);color:#6ee7b7;">📤 Push to Sheet</button>
         </div>
     </div>
 
@@ -3273,6 +3274,14 @@
                             <input type="text" id="sheetsId" class="dc-input green" placeholder="Sheet ID from URL…" onchange="saveSheetsId()" style="margin-bottom:0.3rem;">
                             <div class="dc-hint">Or paste the full URL in the <strong>Links</strong> tab.</div>
                         </div>
+                        <div>
+                            <label class="dc-label" for="strixSheetIdInput">Push to Strix Sheet <span style="color:#6ee7b7;font-weight:400;font-size:0.61rem;">★ Destination for candidate push</span></label>
+                            <div class="dc-row" style="margin-bottom:0.3rem;">
+                                <input type="text" id="strixSheetIdInput" class="dc-input green" placeholder="Strix Sheet ID or URL…" onchange="saveStrixSheetId()" style="flex:1;">
+                                <button class="dc-btn-sm green" onclick="saveStrixSheetId()" style="white-space:nowrap;">Save</button>
+                            </div>
+                            <div class="dc-hint">Candidates pushed via <strong>📤 Push to Sheet</strong> will go here by default.</div>
+                        </div>
                     </div>
                 </div>
 
@@ -3423,6 +3432,60 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ─── PUSH TO SHEET MODAL ─── -->
+<div id="pushModalBackdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9000;backdrop-filter:blur(4px);" onclick="if(event.target===this)closePushModal()">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0f1629;border:1px solid rgba(86,211,100,0.25);border-radius:16px;width:min(480px,94vw);padding:0;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,rgba(86,211,100,0.12),rgba(16,185,129,0.06));padding:20px 24px 16px;border-bottom:1px solid rgba(86,211,100,0.15);display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(86,211,100,0.15);border:1px solid rgba(86,211,100,0.35);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">📤</div>
+      <div style="flex:1;">
+        <div style="font-size:1rem;font-weight:700;color:#e2e8f0;">Push to Google Sheet</div>
+        <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;" id="pushModalSubtitle">Push screened candidates directly into a spreadsheet</div>
+      </div>
+      <button onclick="closePushModal()" style="background:none;border:none;color:#64748b;font-size:1.2rem;cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:20px 24px;">
+
+      <!-- Who to push -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;font-weight:600;margin-bottom:8px;">Candidates to push</div>
+        <div style="display:flex;gap:8px;">
+          <button id="pushScopeAll" onclick="setPushScope('all')" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(86,211,100,0.4);background:rgba(86,211,100,0.12);color:#6ee7b7;font-size:0.78rem;cursor:pointer;font-weight:600;transition:all 0.2s;">All Candidates</button>
+          <button id="pushScopeShortlisted" onclick="setPushScope('shortlisted')" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#94a3b8;font-size:0.78rem;cursor:pointer;font-weight:600;transition:all 0.2s;">Shortlisted Only</button>
+          <button id="pushScopeSingle" onclick="setPushScope('single')" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#94a3b8;font-size:0.78rem;cursor:pointer;font-weight:600;transition:all 0.2s;" id="pushScopeSingleBtn">This Candidate</button>
+        </div>
+        <div style="font-size:0.7rem;color:#64748b;margin-top:6px;" id="pushScopeHint">All <span id="pushScopeCount">0</span> analyzed candidates will be pushed.</div>
+      </div>
+
+      <!-- Target Sheet ID -->
+      <div style="margin-bottom:14px;">
+        <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;">Destination Sheet ID or URL</label>
+        <input id="pushTargetSheetId" type="text" placeholder="Paste Google Sheet ID or full URL…" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;outline:none;transition:border 0.2s;" onfocus="this.style.borderColor='rgba(86,211,100,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" oninput="savePushSheetIdDraft()">
+        <div style="font-size:0.68rem;color:#64748b;margin-top:4px;">The sheet must be accessible by the same Google account that owns your Apps Script.</div>
+      </div>
+
+      <!-- Tab name -->
+      <div style="margin-bottom:20px;">
+        <label style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;">Tab Name <span style="color:#475569;font-weight:400;">(created if it doesn't exist)</span></label>
+        <input id="pushTabName" type="text" placeholder="Screened Candidates" value="Screened Candidates" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.82rem;outline:none;transition:border 0.2s;" onfocus="this.style.borderColor='rgba(86,211,100,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+      </div>
+
+      <!-- Status message -->
+      <div id="pushStatusMsg" style="display:none;padding:10px 14px;border-radius:8px;font-size:0.78rem;margin-bottom:16px;"></div>
+
+      <!-- Footer buttons -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closePushModal()" style="padding:9px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#94a3b8;font-size:0.82rem;cursor:pointer;">Cancel</button>
+        <button id="pushConfirmBtn" onclick="executePush()" style="padding:9px 22px;border-radius:8px;border:1px solid rgba(86,211,100,0.4);background:rgba(86,211,100,0.14);color:#6ee7b7;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all 0.2s;">
+          <span id="pushBtnIcon">📤</span> <span id="pushBtnLabel">Push Candidates</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ─── SHARE MODAL ─── -->
 <div class="share-modal-backdrop" id="shareModalBackdrop">
@@ -3939,6 +4002,10 @@
         // Restore Apps Script URL
         const savedScriptUrl = localStorage.getItem('appsScriptUrl') || '';
         if (savedScriptUrl) document.getElementById('appsScriptUrlInput').value = savedScriptUrl;
+
+        // Restore Strix Sheet ID
+        const savedStrixId = localStorage.getItem('pushTargetSheetId') || '';
+        if (savedStrixId) document.getElementById('strixSheetIdInput').value = savedStrixId;
 
         // Restore Firebase DB URL
         const savedFbUrl = localStorage.getItem('firebaseDbUrl') || '';
@@ -4784,7 +4851,15 @@ Rules:
         loadPositions();
         loadLocations();
     }
-    
+
+    function saveStrixSheetId() {
+        const raw = (document.getElementById('strixSheetIdInput').value || '').trim();
+        const id  = _extractSheetId(raw) || raw;
+        if (!id) { showToast('Paste the Strix Sheet ID or URL first', 'error'); return; }
+        localStorage.setItem('pushTargetSheetId', raw);
+        showToast('Strix Sheet saved!', 'success');
+    }
+
     function saveApiDelay() {
         const delaySeconds = parseFloat(document.getElementById('apiDelay').value);
         if (delaySeconds >= 0.5 && delaySeconds <= 10) {
@@ -6237,7 +6312,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     </div>`;
                 })()}
 
-                ${r.extra_requirements_feedback?.length ? `
+                ${Array.isArray(r.extra_requirements_feedback) && r.extra_requirements_feedback?.length ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title" style="color:var(--amber);">📝 Custom Screening Feedback</div>
                     ${r.extra_requirements_feedback.map(f => {
@@ -6439,6 +6514,8 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>
                 <div class="card-divider"></div>
                 <button class="btn-view-resume" onclick="openOverlay(${i})">👁 View</button>
+                <div class="card-divider"></div>
+                <button class="btn-view-resume" onclick="openPushModal('single', ${i})" title="Push this candidate to a Google Sheet" style="color:#6ee7b7;border-color:rgba(86,211,100,0.3);">📤 Push</button>
             </div>
 
             <div class="card-detail" id="detail-${i}">
@@ -6770,7 +6847,8 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>`).join('');
             const sqCount = (r.screening_questions || []).length;
 
-            const feedback = (r.extra_requirements_feedback || []).map(f => {
+            const _fbRaw = r.extra_requirements_feedback;
+            const feedback = (Array.isArray(_fbRaw) ? _fbRaw : (typeof _fbRaw === 'string' && _fbRaw ? [_fbRaw] : [])).map(f => {
                 const txt = typeof f === 'object' && f !== null
                     ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — '))
                     : String(f ?? '');
@@ -7041,7 +7119,7 @@ main.addEventListener('scroll',()=>{
             const rec = r.match_score >= 75 ? 'Proceed' : r.match_score >= 50 ? 'Consider' : 'Pass';
             const sb  = r.score_breakdown || {};
             const sq  = (r.screening_questions || []).map(q => `Q: ${q.q} | Why: ${q.why}`).join(' || ');
-            const fb  = (r.extra_requirements_feedback || []).map(f => typeof f === 'object' && f !== null ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — ')) : String(f ?? '')).join(' || ');
+            const fb  = (Array.isArray(r.extra_requirements_feedback) ? r.extra_requirements_feedback : (typeof r.extra_requirements_feedback === 'string' && r.extra_requirements_feedback ? [r.extra_requirements_feedback] : [])).map(f => typeof f === 'object' && f !== null ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — ')) : String(f ?? '')).join(' || ');
             return [
                 esc(r.name), esc(r.email), esc(r.phone), esc(r.location),
                 r.experience_years, r.match_score,
@@ -7065,6 +7143,158 @@ main.addEventListener('scroll',()=>{
         });
         a.click();
         showToast('Results exported!', 'success');
+    }
+
+    // ─── Push to Sheet ───
+    let _pushScope = 'all';       // 'all' | 'shortlisted' | 'single'
+    let _pushSingleIdx = null;    // index into analysisResults when scope = 'single'
+
+    function openPushModal(scope, singleIdx) {
+        if (!appsScriptUrl) {
+            showToast('Apps Script URL not configured — add it in API Config first', 'error');
+            return;
+        }
+        _pushScope = scope || 'all';
+        _pushSingleIdx = (singleIdx !== undefined) ? singleIdx : null;
+
+        // Restore saved sheet ID draft
+        const saved = localStorage.getItem('pushTargetSheetId') || '';
+        document.getElementById('pushTargetSheetId').value = saved;
+
+        // Show/hide "This Candidate" scope button depending on how opened
+        document.getElementById('pushScopeSingle').style.display = (_pushSingleIdx !== null) ? '' : 'none';
+
+        setPushScope(_pushScope);
+        document.getElementById('pushStatusMsg').style.display = 'none';
+        document.getElementById('pushConfirmBtn').disabled = false;
+        document.getElementById('pushBtnIcon').textContent = '📤';
+        document.getElementById('pushBtnLabel').textContent = 'Push Candidates';
+        document.getElementById('pushModalBackdrop').style.display = 'block';
+    }
+
+    function closePushModal() {
+        document.getElementById('pushModalBackdrop').style.display = 'none';
+    }
+
+    function setPushScope(scope) {
+        _pushScope = scope;
+        const btns = { all: 'pushScopeAll', shortlisted: 'pushScopeShortlisted', single: 'pushScopeSingle' };
+        Object.entries(btns).forEach(([k, id]) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            const active = k === scope;
+            btn.style.background    = active ? 'rgba(86,211,100,0.12)' : 'rgba(255,255,255,0.03)';
+            btn.style.borderColor   = active ? 'rgba(86,211,100,0.4)'  : 'rgba(255,255,255,0.1)';
+            btn.style.color         = active ? '#6ee7b7'               : '#94a3b8';
+        });
+
+        const hint = document.getElementById('pushScopeHint');
+        const countEl = document.getElementById('pushScopeCount');
+        if (scope === 'all') {
+            countEl.textContent = analysisResults.length;
+            hint.textContent = `All ${analysisResults.length} analyzed candidates will be pushed.`;
+        } else if (scope === 'shortlisted') {
+            const n = (_selectedCards || new Set()).size || 0;
+            countEl.textContent = n;
+            hint.textContent = n ? `${n} shortlisted candidate(s) will be pushed.` : 'No shortlisted candidates yet — use the Shortlist checkbox on each card.';
+        } else if (scope === 'single' && _pushSingleIdx !== null) {
+            const r = analysisResults[_pushSingleIdx];
+            hint.textContent = `Only "${r?.name || 'this candidate'}" will be pushed.`;
+        }
+    }
+
+    function savePushSheetIdDraft() {
+        const val = (document.getElementById('pushTargetSheetId').value || '').trim();
+        if (val) localStorage.setItem('pushTargetSheetId', val);
+    }
+
+    function _extractSheetId(raw) {
+        if (!raw) return '';
+        const m = raw.match(/\/spreadsheets\/d\/([\w-]+)/);
+        return m ? m[1] : raw.trim();
+    }
+
+    function _setCandidatesToPush() {
+        if (_pushScope === 'single' && _pushSingleIdx !== null) {
+            return [analysisResults[_pushSingleIdx]].filter(Boolean);
+        }
+        if (_pushScope === 'shortlisted') {
+            return analysisResults.filter((_, i) => (_selectedCards || new Set()).has(i));
+        }
+        return [...analysisResults];
+    }
+
+    async function executePush() {
+        const rawId  = (document.getElementById('pushTargetSheetId').value || '').trim();
+        const tabName = (document.getElementById('pushTabName').value || '').trim() || 'Screened Candidates';
+        const targetSheetId = _extractSheetId(rawId);
+
+        if (!targetSheetId) {
+            _showPushStatus('error', '⚠️ Please paste a Sheet ID or URL first.');
+            return;
+        }
+
+        const candidates = _setCandidatesToPush();
+        if (!candidates.length) {
+            _showPushStatus('error', _pushScope === 'shortlisted'
+                ? '⚠️ No shortlisted candidates. Use the Shortlist checkbox on candidate cards.'
+                : '⚠️ No candidates to push.');
+            return;
+        }
+
+        // Current position from UI
+        const posEl = document.getElementById('positionSelect') || document.getElementById('selectedPositionLabel');
+        const position = posEl ? (posEl.value || posEl.textContent || '').trim() : '';
+
+        // Button loading state
+        const btn = document.getElementById('pushConfirmBtn');
+        btn.disabled = true;
+        document.getElementById('pushBtnIcon').textContent = '⏳';
+        document.getElementById('pushBtnLabel').textContent = `Pushing ${candidates.length}…`;
+        _showPushStatus('info', `⏳ Pushing ${candidates.length} candidate(s) to your sheet…`);
+
+        try {
+            const res = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'payload=' + encodeURIComponent(JSON.stringify({
+                    action: 'pushCandidates',
+                    targetSheetId,
+                    tabName,
+                    position,
+                    candidates
+                }))
+            });
+            const data = await res.json();
+            if (data.success) {
+                _showPushStatus('success',
+                    `✅ ${data.pushed} candidate(s) pushed to <strong>"${data.sheetName}"</strong> in <strong>${data.spreadsheetName}</strong>!` +
+                    (data.spreadsheetUrl ? ` <a href="${data.spreadsheetUrl}" target="_blank" style="color:#6ee7b7;text-decoration:underline;">Open Sheet ↗</a>` : '')
+                );
+                document.getElementById('pushBtnIcon').textContent = '✅';
+                document.getElementById('pushBtnLabel').textContent = 'Done!';
+                showToast(`${data.pushed} candidate(s) pushed successfully!`, 'success');
+                localStorage.setItem('pushTargetSheetId', rawId);
+            } else {
+                throw new Error(data.error || 'Unknown error from Apps Script');
+            }
+        } catch (err) {
+            _showPushStatus('error', `❌ Push failed: ${err.message}`);
+            document.getElementById('pushBtnIcon').textContent = '📤';
+            document.getElementById('pushBtnLabel').textContent = 'Retry Push';
+            btn.disabled = false;
+        }
+    }
+
+    function _showPushStatus(type, html) {
+        const el = document.getElementById('pushStatusMsg');
+        const styles = {
+            success: 'background:rgba(86,211,100,0.1);border:1px solid rgba(86,211,100,0.3);color:#6ee7b7;',
+            error:   'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#fca5a5;',
+            info:    'background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);color:#a5b4fc;'
+        };
+        el.style.cssText = `display:block;padding:10px 14px;border-radius:8px;font-size:0.78rem;margin-bottom:16px;${styles[type] || styles.info}`;
+        el.innerHTML = html;
     }
 
     // ─── Toast ───
@@ -8562,7 +8792,9 @@ main.addEventListener('scroll',()=>{
             const roles = (r.roles || []).map(role =>
                 `${role.title} @ ${role.company} (${role.start}–${role.end}, ${role.type})`
             ).join(' → ') || 'no role data';
-            const extra = (r.extra_requirements_feedback || []).map(f => {
+            const _extRaw = r.extra_requirements_feedback;
+            const _extArr = Array.isArray(_extRaw) ? _extRaw : (typeof _extRaw === 'string' && _extRaw ? [_extRaw] : []);
+            const extra = _extArr.map(f => {
                 if (typeof f === 'object' && f !== null) return f.feedback || f.result || f.text || Object.values(f).filter(v => typeof v === 'string').join(' — ');
                 return String(f);
             }).join(' | ') || '';
@@ -8670,4 +8902,3 @@ main.addEventListener('scroll',()=>{
     }
 
 </script>
-
