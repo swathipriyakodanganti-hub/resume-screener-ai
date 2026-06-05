@@ -310,6 +310,11 @@ function doPost(e) {
       return logPromptChange(data);
     }
 
+    // ── Push candidates to a target spreadsheet ──
+    if (data.action === 'pushCandidates') {
+      return pushCandidatesToSheet(data);
+    }
+
     const { recipients, candidateName, candidateCount, position, shareLink, matchScore, isBulk, candidates, urgency } = data;
 
     if (!recipients || !recipients.length) {
@@ -894,9 +899,130 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+
 // ───────────────────────────────────────────────────────────────
-// Log prompt changes to "Prompt History" sheet tab
+// Push screened candidates to a target Google Sheet
 // ───────────────────────────────────────────────────────────────
+function pushCandidatesToSheet(data) {
+  try {
+    const { targetSheetId, tabName, position, candidates } = data;
+
+    if (!targetSheetId) throw new Error('Missing targetSheetId');
+    if (!candidates || !candidates.length) throw new Error('No candidates provided');
+
+    const ss = SpreadsheetApp.openById(targetSheetId.trim());
+
+    // Use specified tab name, or fall back to first sheet (the main Strix sheet)
+    const sheetName = (tabName || '').trim();
+    const sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
+    if (!sheet) throw new Error('Tab "' + sheetName + '" not found in the spreadsheet. Check the tab name.');
+
+    // ── Exact Strix column order ──
+    // Date | Job Portal | Job Code | Position | Name | Mobile | Email |
+    // Recruiter | Recruiter Feedback | Education | Experience | Relevant Experience |
+    // Current CTC | Expected CTC | Notice Period | Location | Resume |
+    // Interview Timing | L1 Panel | L1 Status | L2 Panel | L2 Status |
+    // Final Round | Meet Link | AI Score | Score Reasons | Screen Status |
+    // Form Sent | Form Filled | Resume Text | L1 Feedback Status | L2 Feedback Status |
+    // L3 Scheduled | CEO Notified | L1 Feedback Form ID | L2 Feedback Form ID |
+    // Form Sent Date | Form Link | Form ID | L1 Schedule | L2 Schedule |
+    // Preferred Location | LinkedIn | Status | Column 1 | Column 2 | Why do you want to join BeamX
+
+    const ts  = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+    const pos = position || '';
+
+    const rows = candidates.map(r => {
+      const scoreReasons = [
+        r.rating_reason || '',
+        (r.highlights || []).join(' | ')
+      ].filter(Boolean).join(' || ');
+
+      const screenStatus = r.match_score >= 75 ? 'Proceed' : r.match_score >= 50 ? 'Consider' : 'Pass';
+
+      const expStr = r.experience_years > 0
+        ? r.experience_years + ' yrs'
+        : r.internship_months > 0 ? r.internship_months + ' months (internship)' : '';
+
+      return [
+        ts,                   // Date
+        '',                   // Job Portal
+        '',                   // Job Code
+        pos,                  // Position
+        r.name || '',         // Name
+        r.phone || '',        // Mobile
+        r.email || '',        // Email
+        '',                   // Recruiter
+        '',                   // Recruiter Feedback
+        '',                   // Education
+        expStr,               // Experience
+        '',                   // Relevant Experience
+        r.current_ctc || '',  // Current CTC
+        r.expected_ctc || '', // Expected CTC
+        r.notice_period || '',// Notice Period
+        r.location || '',     // Location
+        r.drive_link || '',   // Resume
+        '',                   // Interview Timing
+        '',                   // L1 Panel
+        '',                   // L1 Status
+        '',                   // L2 Panel
+        '',                   // L2 Status
+        '',                   // Final Round
+        '',                   // Meet Link
+        r.match_score || 0,   // AI Score
+        scoreReasons,         // Score Reasons
+        screenStatus,         // Screen Status
+        '',                   // Form Sent
+        '',                   // Form Filled
+        r.summary || '',      // Resume Text
+        '',                   // L1 Feedback Status
+        '',                   // L2 Feedback Status
+        '',                   // L3 Scheduled
+        '',                   // CEO Notified
+        '',                   // L1 Feedback Form ID
+        '',                   // L2 Feedback Form ID
+        '',                   // Form Sent Date
+        '',                   // Form Link
+        '',                   // Form ID
+        '',                   // L1 Schedule
+        '',                   // L2 Schedule
+        r.location || '',     // Preferred Location
+        r.linkedin_url || '', // LinkedIn
+        '',                   // Status
+        '',                   // Column 1
+        '',                   // Column 2
+        ''                    // Why do you want to join BeamX
+      ];
+    });
+
+    rows.forEach(row => sheet.appendRow(row));
+
+    // Colour-code Screen Status column (col 27) for pushed rows
+    const lastRow = sheet.getLastRow();
+    const firstDataRow = lastRow - rows.length + 1;
+    for (let i = 0; i < rows.length; i++) {
+      const rowIdx = firstDataRow + i;
+      const status = rows[i][26]; // Screen Status — 0-based index 26 = col 27
+      const bg = status === 'Proceed' ? '#e1f5ee' : status === 'Consider' ? '#faeeda' : '#fcebeb';
+      const fg = status === 'Proceed' ? '#1D9E75' : status === 'Consider' ? '#BA7517'  : '#A32D2D';
+      sheet.getRange(rowIdx, 27).setBackground(bg).setFontColor(fg).setFontWeight('bold');
+    }
+
+    return jsonResponse({
+      success: true,
+      pushed: rows.length,
+      sheetName: sheet.getName(),
+      spreadsheetName: ss.getName(),
+      spreadsheetUrl: ss.getUrl()
+    });
+
+  } catch (err) {
+    Logger.log('pushCandidatesToSheet error: ' + err.toString());
+    return jsonResponse({ success: false, error: err.message || String(err) });
+  }
+}
+
+
+
 function logPromptChange(data) {
   try {
     const ss = SpreadsheetApp.openById(SHEET_ID);
