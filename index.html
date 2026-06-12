@@ -7820,16 +7820,23 @@ main.addEventListener('scroll',()=>{
         btn.textContent = 'Saving…';
 
         try {
+            // Slim candidates before sending — strip heavy fields to avoid payload limits
+            const slimCandidates = analysisResults.map(c => {
+                const copy = Object.assign({}, c);
+                delete copy.resume_pdf_b64;
+                delete copy.resume_raw_text;
+                return copy;
+            });
             const res = await fetch(appsScriptUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'payload=' + encodeURIComponent(JSON.stringify({
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
                     action: 'saveBatch',
                     batchId,
                     position,
                     savedAt,
-                    candidates: analysisResults
-                }))
+                    candidates: slimCandidates
+                })
             });
             const json = await res.json();
             if (json.ok) {
@@ -7932,16 +7939,22 @@ main.addEventListener('scroll',()=>{
         const batchId = _genBatchId();
         const savedAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
         try {
+            const slimCandidates2 = analysisResults.map(c => {
+                const copy = Object.assign({}, c);
+                delete copy.resume_pdf_b64;
+                delete copy.resume_raw_text;
+                return copy;
+            });
             await fetch(appsScriptUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'payload=' + encodeURIComponent(JSON.stringify({
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
                     action: 'saveBatch',
                     batchId,
                     position,
                     savedAt,
-                    candidates: analysisResults
-                }))
+                    candidates: slimCandidates2
+                })
             });
             // Silently refresh the dropdown
             refreshBatchList().catch(() => {});
