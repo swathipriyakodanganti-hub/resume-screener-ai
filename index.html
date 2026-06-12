@@ -11,26 +11,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         :root {
-            --primary: #0d1117;
-            --primary-light: #161b22;
-            --accent: #388bfd;
-            --accent-dark: #2f7dea;
-            --accent-glow: rgba(56,139,253,0.22);
-            --amber: #e3b341;
-            --amber-dim: rgba(227,179,65,0.12);
-            --success: #56d364;
-            --success-glow: rgba(86,211,100,0.18);
-            --warning: #e3b341;
-            --danger: #f85149;
-            --bg-main: #0d1117;
-            --bg-card: #161b22;
-            --bg-sidebar: #161b22;
-            --text-primary: #f0f6fc;
-            --text-secondary: #c9d1d9;
-            --text-muted: #8b949e;
-            --border: #21262d;
-            --border-accent: rgba(56,139,253,0.3);
-            --shadow: rgba(0,0,0,0.5);
+            --primary: #05080d;
+            --primary-light: #0b0f16;
+            --accent: #4d9fff;
+            --accent-dark: #3a8ef0;
+            --accent-glow: rgba(77,159,255,0.28);
+            --amber: #f0bc42;
+            --amber-dim: rgba(240,188,66,0.14);
+            --success: #3dd68c;
+            --success-glow: rgba(61,214,140,0.22);
+            --warning: #f0bc42;
+            --danger: #ff5f57;
+            --bg-main: #04060b;
+            --bg-card: #0b0f16;
+            --bg-sidebar: #080c13;
+            --text-primary: #ffffff;
+            --text-secondary: #dde6f0;
+            --text-muted: #a8b8cc;
+            --border: #1a2030;
+            --border-accent: rgba(77,159,255,0.35);
+            --shadow: rgba(0,0,0,0.75);
             --sidebar-width: 0px;
             --sidebar-expanded: 0px;
         }
@@ -86,7 +86,7 @@
             position: fixed;
             top: 0; left: var(--sidebar-width); bottom: 0;
             width: 270px;
-            background: rgba(3, 5, 14, 0.99);
+            background: rgba(2, 3, 8, 0.99);
             backdrop-filter: blur(32px);
             border-right: 1px solid var(--border-accent);
             box-shadow: 12px 0 40px rgba(0,0,0,0.7);
@@ -669,8 +669,9 @@
             margin-bottom: 0.3rem;
             position: relative;
         }
-        .main-cand-item:hover { background: rgba(0,220,255,0.06); border-color: rgba(0,220,255,0.18); }
-        .main-cand-item.active { background: rgba(0,220,255,0.1); border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0,220,255,0.1); }
+        .main-cand-item { background: rgba(255,255,255,0.03); }
+        .main-cand-item:hover { background: rgba(77,159,255,0.10); border-color: rgba(77,159,255,0.30); }
+        .main-cand-item.active { background: rgba(77,159,255,0.16); border-color: var(--accent); box-shadow: 0 0 0 1px rgba(77,159,255,0.18); }
         /* ── Shortlisted / Proceed → spinning purple glow border ── */
         @keyframes spin-purple-border { to { transform: rotate(1turn); } }
         .main-cand-item.shortlisted-glow,
@@ -689,7 +690,7 @@
         .main-cand-item.shortlisted-glow::after,
         .share-cand-item.shortlisted-glow::after {
             content:''; position:absolute; inset:1.5px;
-            background: #161b22; border-radius:8px; z-index:1;
+            background: #080c13; border-radius:8px; z-index:1;
         }
         .main-cand-item.shortlisted-glow > *,
         .share-cand-item.shortlisted-glow > * { position:relative; z-index:2; }
