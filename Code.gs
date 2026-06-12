@@ -272,11 +272,63 @@ function doGet(e) {
     }
   }
 
-    // ── Health check endpoint ──
+    // ── List all saved analysis batches ──
+  if (action === 'getBatches') {
+    try {
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      let sheet = ss.getSheetByName('Analysis Batches');
+      if (!sheet) {
+        return jsonResponse({ ok: true, batches: [] });
+      }
+      const data = sheet.getDataRange().getValues();
+      if (data.length <= 1) return jsonResponse({ ok: true, batches: [] });
+
+      const batches = data.slice(1).map(row => ({
+        batchId:      row[0],
+        position:     row[1],
+        savedAt:      row[2],
+        candidateCount: row[3],
+        avgScore:     row[4]
+      })).reverse(); // newest first
+
+      return jsonResponse({ ok: true, batches });
+    } catch (err) {
+      return jsonResponse({ ok: false, error: err.message });
+    }
+  }
+
+  // ── Get a single saved batch by batchId ──
+  if (action === 'getBatch') {
+    try {
+      const batchId = (e.parameter.batchId || '').trim();
+      if (!batchId) throw new Error('Missing batchId');
+
+      const ss    = SpreadsheetApp.openById(SHEET_ID);
+      const sheet = ss.getSheetByName('Analysis Batches');
+      if (!sheet) throw new Error('No batches saved yet');
+
+      const data = sheet.getDataRange().getValues();
+      const row  = data.slice(1).find(r => String(r[0]) === batchId);
+      if (!row) throw new Error('Batch not found: ' + batchId);
+
+      const candidates = JSON.parse(row[5] || '[]');
+      return jsonResponse({
+        ok: true,
+        batchId:   row[0],
+        position:  row[1],
+        savedAt:   row[2],
+        candidates
+      });
+    } catch (err) {
+      return jsonResponse({ ok: false, error: err.message });
+    }
+  }
+
+  // ── Health check endpoint ──
   return jsonResponse({ 
     status: '✅ Pearl Hire — Apps Script is running.',
     timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-    version: '2.1'
+    version: '2.2'
   });
 }
 
@@ -299,6 +351,11 @@ function doPost(e) {
     }
 
     const data = JSON.parse(raw);
+
+    // ── Save an analysis batch ──
+    if (data.action === 'saveBatch') {
+      return saveBatch(data);
+    }
 
     // ── Inline feedback from share page buttons ──
     if (data.action === 'saveInlineFeedback') {
@@ -1052,5 +1109,66 @@ function logPromptChange(data) {
   } catch (err) {
     Logger.log('logPromptChange error: ' + err.message);
     return jsonResponse({ success: false, error: err.message });
+  }
+}
+
+// ───────────────────────────────────────────────────────────────
+// Save Analysis Batch to Google Sheet
+// ───────────────────────────────────────────────────────────────
+function saveBatch(data) {
+  try {
+    const { batchId, position, savedAt, candidates } = data;
+
+    if (!batchId)    throw new Error('Missing batchId');
+    if (!candidates || !candidates.length) throw new Error('No candidates to save');
+
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let sheet = ss.getSheetByName('Analysis Batches');
+
+    if (!sheet) {
+      sheet = ss.insertSheet('Analysis Batches');
+      const headers = ['Batch ID', 'Position', 'Saved At', 'Candidate Count', 'Avg Score', 'Candidates JSON'];
+      sheet.appendRow(headers);
+      const hRange = sheet.getRange(1, 1, 1, headers.length);
+      hRange.setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+      sheet.setColumnWidth(1, 160);
+      sheet.setColumnWidth(2, 180);
+      sheet.setColumnWidth(3, 180);
+      sheet.setColumnWidth(4, 100);
+      sheet.setColumnWidth(5, 100);
+      sheet.setColumnWidth(6, 400);
+    }
+
+    // Check if batchId already exists — update in place
+    const allData = sheet.getDataRange().getValues();
+    const existingRow = allData.findIndex((r, i) => i > 0 && String(r[0]) === String(batchId));
+
+    const avgScore = Math.round(candidates.reduce((s, c) => s + (c.match_score || 0), 0) / candidates.length);
+
+    // Strip resume base64 blobs before saving — keep everything else
+    const slim = candidates.map(c => {
+      const copy = Object.assign({}, c);
+      delete copy.resume_pdf_b64; // can be 500KB+ per resume
+      return copy;
+    });
+    const jsonStr = JSON.stringify(slim);
+
+    if (existingRow > 0) {
+      // Update existing row
+      sheet.getRange(existingRow + 1, 1, 1, 6).setValues([[
+        batchId, position, savedAt, candidates.length, avgScore, jsonStr
+      ]]);
+    } else {
+      sheet.appendRow([batchId, position, savedAt, candidates.length, avgScore, jsonStr]);
+      // Style the new data row
+      const lastRow = sheet.getLastRow();
+      sheet.getRange(lastRow, 5).setNumberFormat('0"%"');
+    }
+
+    return jsonResponse({ ok: true, batchId });
+  } catch (err) {
+    Logger.log('saveBatch error: ' + err.toString());
+    return jsonResponse({ ok: false, error: err.message || String(err) });
   }
 }
