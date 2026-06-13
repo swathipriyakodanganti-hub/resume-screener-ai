@@ -4568,13 +4568,13 @@ Return exactly:
         try {
             await fetch(appsScriptUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'payload=' + encodeURIComponent(JSON.stringify({
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
                     action: 'logPromptChange',
                     promptType,
                     promptText,
                     changedBy: 'User'
-                }))
+                })
             });
         } catch(e) { /* non-fatal */ }
     }
@@ -7820,13 +7820,13 @@ main.addEventListener('scroll',()=>{
         btn.textContent = 'Saving…';
 
         try {
-            // Slim candidates before sending — strip heavy fields to avoid payload limits
+            // Strip PDF blobs before sending — they can be 500KB+ each and blow the payload
             const slimCandidates = analysisResults.map(c => {
                 const copy = Object.assign({}, c);
                 delete copy.resume_pdf_b64;
-                delete copy.resume_raw_text;
                 return copy;
             });
+
             const res = await fetch(appsScriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
@@ -7939,10 +7939,9 @@ main.addEventListener('scroll',()=>{
         const batchId = _genBatchId();
         const savedAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
         try {
-            const slimCandidates2 = analysisResults.map(c => {
+            const slimCandidates = analysisResults.map(c => {
                 const copy = Object.assign({}, c);
                 delete copy.resume_pdf_b64;
-                delete copy.resume_raw_text;
                 return copy;
             });
             await fetch(appsScriptUrl, {
@@ -7953,7 +7952,7 @@ main.addEventListener('scroll',()=>{
                     batchId,
                     position,
                     savedAt,
-                    candidates: slimCandidates2
+                    candidates: slimCandidates
                 })
             });
             // Silently refresh the dropdown
