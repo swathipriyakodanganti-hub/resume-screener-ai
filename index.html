@@ -4360,6 +4360,12 @@
             renderLinkedSheetList();
             fetchAllLinkedSheets();
         }
+
+        // Populate the "Load saved batch" dropdown on startup
+        if (appsScriptUrl) {
+            refreshBatchList(true).catch(() => {});
+        }
+
         document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
         updateTokenUsageInfo();
@@ -7892,7 +7898,7 @@ main.addEventListener('scroll',()=>{
     }
 
     // Fetch batch list from GAS and populate the dropdown
-    async function refreshBatchList() {
+    async function refreshBatchList(silent) {
         if (!appsScriptUrl) return;
         const btn = document.getElementById('batchRefreshBtn');
         if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
@@ -7912,12 +7918,12 @@ main.addEventListener('scroll',()=>{
                     sel.appendChild(opt);
                 });
                 if (prev) sel.value = prev;
-                showToast(`${json.batches.length} batch${json.batches.length !== 1 ? 'es' : ''} loaded`, 'success');
-            } else {
+                if (!silent) showToast(`${json.batches.length} batch${json.batches.length !== 1 ? 'es' : ''} loaded`, 'success');
+            } else if (!silent) {
                 showToast('No saved batches yet', 'info');
             }
         } catch (err) {
-            showToast('Could not fetch batches: ' + err.message, 'error');
+            if (!silent) showToast('Could not fetch batches: ' + err.message, 'error');
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = '&#8635;'; }
         }
