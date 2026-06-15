@@ -9428,6 +9428,61 @@ main.addEventListener('scroll',()=>{
         }
     }
 
+    // ─── Robust clipboard copy (works inside GAS sandboxed iframes) ───
+    const _pearlyCopyStore = {};
+    let _pearlyCopyCounter = 0;
+
+    function pearlyRegisterCopyText(text) {
+        const id = 'pcopy_' + (++_pearlyCopyCounter);
+        _pearlyCopyStore[id] = text;
+        return id;
+    }
+
+    function pearlyCopyText(btn, storeId) {
+        const text = _pearlyCopyStore[storeId];
+        if (text === undefined) { showToast('Nothing to copy', 'error'); return; }
+
+        const finish = (ok) => {
+            const orig = btn.textContent;
+            if (ok) {
+                btn.textContent = '✓ Copied!';
+                showToast('Copied — paste into Slack or Excel', 'success');
+            } else {
+                btn.textContent = '⚠ Copy failed';
+                showToast('Copy failed — select the text manually', 'error');
+            }
+            setTimeout(() => { btn.textContent = orig; }, 1800);
+        };
+
+        // Try modern Clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => finish(true)).catch(() => {
+                _pearlyFallbackCopy(text, finish);
+            });
+        } else {
+            _pearlyFallbackCopy(text, finish);
+        }
+    }
+
+    function _pearlyFallbackCopy(text, finish) {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-9999px';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            ta.setSelectionRange(0, text.length);
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            finish(ok);
+        } catch (e) {
+            finish(false);
+        }
+    }
+
     // ─── Shared Groq caller (key rotation) for one-off generation tasks ───
     async function _callGroqOnce(systemPrompt, userMsg, maxTokens, temperature) {
         if (!groqApiKeys || groqApiKeys.length === 0) {
@@ -9474,36 +9529,69 @@ main.addEventListener('scroll',()=>{
         return responseText;
     }
 
-    // ─── Copy plain text to clipboard with toast feedback ───
-    function pearlyCopyText(btn, encodedText) {
-        const text = decodeURIComponent(encodedText);
-        navigator.clipboard.writeText(text).then(() => {
-            const orig = btn.textContent;
-            btn.textContent = '✓ Copied!';
-            showToast('Copied — ready to paste in Slack', 'success');
-            setTimeout(() => { btn.textContent = orig; }, 1800);
-        }).catch(() => {
-            showToast('Copy failed — select and copy manually', 'error');
-        });
+    // ─── Build a candidate table (TSV for Excel/Slack + HTML for display) ───
+    // columns: array of { header, get: (r) => value }
+    function _buildCandidateTable(sortedResults, columns) {
+        const headers = columns.map(c => c.header);
+        const rows = sortedResults.map(r => columns.map(c => {
+            const v = c.get(r);
+            return (v === null || v === undefined || v === '') ? '—' : String(v);
+        }));
+
+        // Tab-separated values — pastes cleanly into Excel/Google Sheets as real columns,
+        // and reads fine as plain text in Slack.
+        const tsvLines = [headers.join('\t'), ...rows.map(row => row.join('\t'))];
+        const tsvText = tsvLines.join('\n');
+
+        // HTML table for in-chat display
+        const theadHtml = `<tr>${headers.map(h =>
+            `<th style="text-align:left;padding:4px 8px;border-bottom:1px solid rgba(192,132,252,0.3);color:#d8b4fe;white-space:nowrap;">${h}</th>`
+        ).join('')}</tr>`;
+        const rowsHtml = rows.map(row =>
+            `<tr>${row.map(c =>
+                `<td style="padding:4px 8px;border-bottom:1px solid rgba(192,132,252,0.1);white-space:nowrap;">${c.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`
+            ).join('')}</tr>`
+        ).join('');
+        const tableHtml = `<div style="overflow-x:auto;"><table style="font-size:0.7rem;border-collapse:collapse;width:100%;">${theadHtml}${rowsHtml}</table></div>`;
+
+        return { tsvText, tableHtml };
     }
 
-    // ─── 📝 Generate Management Summary (formal, Slack-ready prose) ───
-    const MANAGEMENT_SUMMARY_SYSTEM_PROMPT = `You are an HR analyst preparing a candidate shortlist summary for senior management at BeamX TechLabs. Write in a formal, concise, professional business tone. Do NOT use emojis, slang, or informal language.
+    const CANDIDATE_TABLE_COLUMNS = [
+        { header: 'Name',          get: r => r.name },
+        { header: 'Location',      get: r => r.location },
+        { header: 'Notice Period', get: r => r.notice_period },
+        { header: 'Current CTC',   get: r => r.current_ctc },
+        { header: 'Expected CTC',  get: r => r.expected_ctc }
+    ];
 
-Structure the response EXACTLY as plain text (no markdown symbols like #, *, or backticks) in this format:
+    const SUMMARY_TABLE_COLUMNS = [
+        { header: 'Name',          get: r => r.name },
+        { header: 'Match %',       get: r => (r.match_score !== undefined && r.match_score !== null) ? `${r.match_score}%` : null },
+        { header: 'Location',      get: r => r.location },
+        { header: 'Notice Period', get: r => r.notice_period },
+        { header: 'Current CTC',   get: r => r.current_ctc },
+        { header: 'Expected CTC',  get: r => r.expected_ctc }
+    ];
+
+    const QUALIFIED_THRESHOLD = 70;
+
+    // ─── 📝 Generate Management Summary (counts + prose overview + auto table) ───
+    const MANAGEMENT_SUMMARY_SYSTEM_PROMPT = `You are an HR analyst preparing a candidate shortlist summary for senior management at BeamX TechLabs. Write in a formal, concise, professional business tone. Do NOT use emojis, slang, or informal language. Do NOT use markdown symbols like #, *, or backticks — plain text only.
+
+You will be told the exact total screened count and qualified count (match score 70% or above) — use those numbers exactly as given, do not recalculate or guess them.
+
+Structure the response EXACTLY as:
 
 Subject: Candidate Screening Summary – [Position, if inferable from data, else "Open Role"]
 
 Overview:
-2-3 sentences covering total candidates screened, overall pool quality, and the top recommendation.
-
-Shortlist Highlights:
-One short line per top candidate (max top 5, ordered by match score) covering name, match score, and a one-line reason (strength or concern).
+2-3 sentences. Must start with: "A total of X candidates were screened, of which Y met the minimum qualification threshold (70% match)." Then add 1-2 sentences on overall pool quality and the top recommendation by name.
 
 Recommendation:
 1-2 sentences on next steps (e.g., who to schedule for interviews, who to hold, who to reject).
 
-Keep the entire output under 200 words. This text will be pasted directly into Slack, so use plain text formatting only — no markdown.
+Do NOT include a table or list of candidates — that will be added separately. Keep the entire output under 130 words.
 
 Candidate data:
 `;
@@ -9524,17 +9612,29 @@ Candidate data:
         pearlyShowTyping();
 
         try {
+            const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+            const screenedCount  = sorted.length;
+            const qualifiedCount = sorted.filter(r => (r.match_score || 0) >= QUALIFIED_THRESHOLD).length;
+
             const context = pearlyBuildContext();
             const systemPrompt = MANAGEMENT_SUMMARY_SYSTEM_PROMPT + context;
-            const summaryText = await _callGroqOnce(systemPrompt, 'Generate the summary now.', 600, 0.3);
+            const userMsg = `Screened: ${screenedCount}\nQualified (>= ${QUALIFIED_THRESHOLD}% match): ${qualifiedCount}\n\nGenerate the summary now using these exact numbers.`;
+            const summaryText = await _callGroqOnce(systemPrompt, userMsg, 350, 0.3);
 
             pearlyHideTyping();
-            const escaped = summaryText
-                .replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                .trim();
-            const encoded = encodeURIComponent(summaryText.trim());
-            const html = `<div class="pearly-summary-pre">${escaped}</div>`
-                + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${encoded}')">📋 Copy for Slack</button>`;
+
+            // Build the table locally — always accurate, no AI needed
+            const { tsvText, tableHtml } = _buildCandidateTable(sorted, SUMMARY_TABLE_COLUMNS);
+
+            const escapedSummary = summaryText.trim()
+                .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+            const fullCopyText = summaryText.trim() + '\n\n' + tsvText;
+            const copyId = pearlyRegisterCopyText(fullCopyText);
+
+            const html = `<div class="pearly-summary-pre">${escapedSummary}</div>`
+                + `<div style="margin-top:0.6rem;">${tableHtml}</div>`
+                + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${copyId}')">📋 Copy for Slack</button>`;
             pearlyAppendMsg(html, false);
         } catch (err) {
             pearlyHideTyping();
@@ -9559,37 +9659,13 @@ Candidate data:
         pearlyAppendMsg('Generate the candidate table for Slack', true);
 
         const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+        const { tsvText, tableHtml } = _buildCandidateTable(sorted, CANDIDATE_TABLE_COLUMNS);
 
-        // Build columns
-        const headers = ['Name', 'Location', 'Notice Period', 'Current CTC', 'Expected CTC'];
-        const rows = sorted.map(r => [
-            r.name || 'Unknown',
-            r.location || '—',
-            r.notice_period || '—',
-            r.current_ctc || '—',
-            r.expected_ctc || '—'
-        ]);
-
-        // Plain-text table for Slack (aligned with padding, monospace-friendly)
-        const colWidths = headers.map((h, i) =>
-            Math.max(h.length, ...rows.map(row => String(row[i]).length))
-        );
-        const padRow = (cols) => cols.map((c, i) => String(c).padEnd(colWidths[i])).join('  |  ');
-        const separator = colWidths.map(w => '-'.repeat(w)).join('--|--');
-        const plainLines = [padRow(headers), separator, ...rows.map(padRow)];
-        const plainText = plainLines.join('\n');
-
-        // HTML table for display in chat
-        const theadHtml = `<tr>${headers.map(h => `<th style="text-align:left;padding:4px 8px;border-bottom:1px solid rgba(192,132,252,0.3);color:#d8b4fe;">${h}</th>`).join('')}</tr>`;
-        const rowsHtml = rows.map(row =>
-            `<tr>${row.map(c => `<td style="padding:4px 8px;border-bottom:1px solid rgba(192,132,252,0.1);">${String(c).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`).join('')}</tr>`
-        ).join('');
-        const tableHtml = `<table style="font-size:0.7rem;border-collapse:collapse;width:100%;">${theadHtml}${rowsHtml}</table>`;
-
-        const encoded = encodeURIComponent(plainText);
+        const copyId = pearlyRegisterCopyText(tsvText);
         const html = tableHtml
-            + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${encoded}')">📋 Copy for Slack</button>`;
+            + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${copyId}')">📋 Copy for Slack</button>`;
         pearlyAppendMsg(html, false);
     }
+
 
 </script>
