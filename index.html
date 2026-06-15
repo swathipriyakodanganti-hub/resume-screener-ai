@@ -9544,10 +9544,19 @@ main.addEventListener('scroll',()=>{
             return (v === null || v === undefined || v === '') ? '—' : String(v);
         }));
 
-        // Tab-separated values — pastes cleanly into Excel/Google Sheets as real columns,
-        // and reads fine as plain text in Slack.
+        // Tab-separated values — pastes cleanly into Excel/Google Sheets as real columns.
         const tsvLines = [headers.join('\t'), ...rows.map(row => row.join('\t'))];
         const tsvText = tsvLines.join('\n');
+
+        // Space-padded table wrapped in a code block — renders aligned in Slack
+        // because Slack uses a monospace font inside ``` blocks.
+        const colWidths = headers.map((h, i) =>
+            Math.max(h.length, ...rows.map(row => String(row[i]).length))
+        );
+        const padRow = (cols) => cols.map((c, i) => String(c).padEnd(colWidths[i])).join('  ');
+        const sepRow = colWidths.map(w => '-'.repeat(w)).join('  ');
+        const slackLines = [padRow(headers), sepRow, ...rows.map(padRow)];
+        const slackText = '```\n' + slackLines.join('\n') + '\n```';
 
         // HTML table for in-chat display
         const theadHtml = `<tr>${headers.map(h =>
@@ -9560,8 +9569,9 @@ main.addEventListener('scroll',()=>{
         ).join('');
         const tableHtml = `<div style="overflow-x:auto;"><table style="font-size:0.7rem;border-collapse:collapse;width:100%;">${theadHtml}${rowsHtml}</table></div>`;
 
-        return { tsvText, tableHtml };
+        return { tsvText, slackText, tableHtml };
     }
+
 
     const CANDIDATE_TABLE_COLUMNS = [
         { header: 'Name',          get: r => r.name },
@@ -9630,17 +9640,22 @@ Candidate data:
             pearlyHideTyping();
 
             // Build the table locally — always accurate, no AI needed
-            const { tsvText, tableHtml } = _buildCandidateTable(sorted, SUMMARY_TABLE_COLUMNS);
+            const { tsvText, slackText, tableHtml } = _buildCandidateTable(sorted, SUMMARY_TABLE_COLUMNS);
 
             const escapedSummary = summaryText.trim()
                 .replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-            const fullCopyText = summaryText.trim() + '\n\n' + tsvText;
-            const copyId = pearlyRegisterCopyText(fullCopyText);
+            const slackCopyText = summaryText.trim() + '\n\n' + slackText;
+            const excelCopyText = summaryText.trim() + '\n\n' + tsvText;
+            const slackId = pearlyRegisterCopyText(slackCopyText);
+            const excelId = pearlyRegisterCopyText(excelCopyText);
 
             const html = `<div class="pearly-summary-pre">${escapedSummary}</div>`
                 + `<div style="margin-top:0.6rem;">${tableHtml}</div>`
-                + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${copyId}')">📋 Copy for Slack</button>`;
+                + `<div style="display:flex;gap:0.4rem;margin-top:0.3rem;">`
+                + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${slackId}')">📋 Copy for Slack</button>`
+                + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${excelId}')">📊 Copy for Excel</button>`
+                + `</div>`;
             pearlyAppendMsg(html, false);
         } catch (err) {
             pearlyHideTyping();
@@ -9662,14 +9677,18 @@ Candidate data:
             return;
         }
         document.getElementById('pearly-chips').style.display = 'none';
-        pearlyAppendMsg('Generate the candidate table for Slack', true);
+        pearlyAppendMsg('Generate the candidate table', true);
 
         const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const { tsvText, tableHtml } = _buildCandidateTable(sorted, CANDIDATE_TABLE_COLUMNS);
+        const { tsvText, slackText, tableHtml } = _buildCandidateTable(sorted, CANDIDATE_TABLE_COLUMNS);
 
-        const copyId = pearlyRegisterCopyText(tsvText);
+        const slackId = pearlyRegisterCopyText(slackText);
+        const excelId = pearlyRegisterCopyText(tsvText);
         const html = tableHtml
-            + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${copyId}')">📋 Copy for Slack</button>`;
+            + `<div style="display:flex;gap:0.4rem;margin-top:0.3rem;">`
+            + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${slackId}')">📋 Copy for Slack</button>`
+            + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${excelId}')">📊 Copy for Excel</button>`
+            + `</div>`;
         pearlyAppendMsg(html, false);
     }
 
