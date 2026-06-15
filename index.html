@@ -3130,6 +3130,35 @@
         }
         .pearly-chip:hover{background:rgba(192,132,252,0.18);border-color:rgba(192,132,252,0.4)}
 
+        /* Action buttons (summary/table generation) */
+        .pearly-actions {
+            padding: 0 1rem 0.75rem; display: flex; flex-wrap: wrap; gap: 0.4rem;
+        }
+        .pearly-action-btn {
+            background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.3);
+            color: #c7d2fe; font-size: 0.7rem; padding: 5px 11px;
+            border-radius: 8px; cursor: pointer; transition: all 0.15s;
+            font-family: inherit; font-weight: 500;
+        }
+        .pearly-action-btn:hover{background:rgba(129,140,248,0.2);border-color:rgba(129,140,248,0.5)}
+        .pearly-action-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+        /* Copy-for-Slack button inside bot bubbles */
+        .pearly-copy-btn {
+            margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(192,132,252,0.15); border: 1px solid rgba(192,132,252,0.3);
+            color: #e9d5ff; font-size: 0.68rem; padding: 4px 10px;
+            border-radius: 6px; cursor: pointer; transition: all 0.15s;
+            font-family: inherit;
+        }
+        .pearly-copy-btn:hover{background:rgba(192,132,252,0.28)}
+        .pearly-summary-pre {
+            white-space: pre-wrap; font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.72rem; line-height: 1.6; color: #e9d5ff;
+            background: rgba(0,0,0,0.18); border-radius: 8px; padding: 0.6rem;
+            margin-top: 0.3rem; overflow-x: auto;
+        }
+
         /* Input row */
         .pearly-input-row {
             padding: 0.75rem 1rem; border-top: 1px solid rgba(192,132,252,0.12);
@@ -4034,6 +4063,11 @@
         <span class="pearly-chip" onclick="pearlyChip(this)">🛠 Skills gap?</span>
         <span class="pearly-chip" onclick="pearlyChip(this)">📍 Filter by city</span>
         <span class="pearly-chip" onclick="pearlyChip(this)">💼 Who has most exp?</span>
+    </div>
+
+    <div class="pearly-actions" id="pearly-actions">
+        <button class="pearly-action-btn" onclick="generateManagementSummary()">📝 Management Summary</button>
+        <button class="pearly-action-btn" onclick="generateCandidateTable()">📋 Candidate Table</button>
     </div>
 
     <div class="pearly-input-row">
@@ -9392,6 +9426,170 @@ main.addEventListener('scroll',()=>{
         } finally {
             _pearlyThinking = false;
         }
+    }
+
+    // ─── Shared Groq caller (key rotation) for one-off generation tasks ───
+    async function _callGroqOnce(systemPrompt, userMsg, maxTokens, temperature) {
+        if (!groqApiKeys || groqApiKeys.length === 0) {
+            throw new Error('NO_KEY');
+        }
+        let responseText = null;
+        const tried = new Set();
+        let keyIdx = groqKeyIndex;
+        while (tried.size < groqApiKeys.length) {
+            if (tried.has(keyIdx)) break;
+            tried.add(keyIdx);
+            const activeKey = groqApiKeys[keyIdx] || groqApiKeys[0];
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 45000);
+            let res;
+            try {
+                res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
+                    body: JSON.stringify({
+                        model: 'llama-3.3-70b-versatile',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userMsg }
+                        ],
+                        temperature: temperature,
+                        max_tokens: maxTokens
+                    }),
+                    signal: controller.signal
+                });
+            } finally {
+                clearTimeout(tid);
+            }
+            if (res.status === 429 || res.status === 503) {
+                keyIdx = (keyIdx + 1) % groqApiKeys.length;
+                continue;
+            }
+            if (!res.ok) throw new Error(`API error ${res.status}`);
+            const data = await res.json();
+            responseText = data.choices?.[0]?.message?.content || null;
+            break;
+        }
+        if (!responseText) throw new Error('RATE_LIMITED');
+        return responseText;
+    }
+
+    // ─── Copy plain text to clipboard with toast feedback ───
+    function pearlyCopyText(btn, encodedText) {
+        const text = decodeURIComponent(encodedText);
+        navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            showToast('Copied — ready to paste in Slack', 'success');
+            setTimeout(() => { btn.textContent = orig; }, 1800);
+        }).catch(() => {
+            showToast('Copy failed — select and copy manually', 'error');
+        });
+    }
+
+    // ─── 📝 Generate Management Summary (formal, Slack-ready prose) ───
+    const MANAGEMENT_SUMMARY_SYSTEM_PROMPT = `You are an HR analyst preparing a candidate shortlist summary for senior management at BeamX TechLabs. Write in a formal, concise, professional business tone. Do NOT use emojis, slang, or informal language.
+
+Structure the response EXACTLY as plain text (no markdown symbols like #, *, or backticks) in this format:
+
+Subject: Candidate Screening Summary – [Position, if inferable from data, else "Open Role"]
+
+Overview:
+2-3 sentences covering total candidates screened, overall pool quality, and the top recommendation.
+
+Shortlist Highlights:
+One short line per top candidate (max top 5, ordered by match score) covering name, match score, and a one-line reason (strength or concern).
+
+Recommendation:
+1-2 sentences on next steps (e.g., who to schedule for interviews, who to hold, who to reject).
+
+Keep the entire output under 200 words. This text will be pasted directly into Slack, so use plain text formatting only — no markdown.
+
+Candidate data:
+`;
+
+    async function generateManagementSummary() {
+        if (!analysisResults || analysisResults.length === 0) {
+            showToast('No candidates analyzed yet', 'error');
+            return;
+        }
+        if (!groqApiKeys || groqApiKeys.length === 0) {
+            showToast('Add a Groq API key in Settings first', 'error');
+            return;
+        }
+        const btn = event?.target;
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+        document.getElementById('pearly-chips').style.display = 'none';
+        pearlyAppendMsg('Generate a management summary for Slack', true);
+        pearlyShowTyping();
+
+        try {
+            const context = pearlyBuildContext();
+            const systemPrompt = MANAGEMENT_SUMMARY_SYSTEM_PROMPT + context;
+            const summaryText = await _callGroqOnce(systemPrompt, 'Generate the summary now.', 600, 0.3);
+
+            pearlyHideTyping();
+            const escaped = summaryText
+                .replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .trim();
+            const encoded = encodeURIComponent(summaryText.trim());
+            const html = `<div class="pearly-summary-pre">${escaped}</div>`
+                + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${encoded}')">📋 Copy for Slack</button>`;
+            pearlyAppendMsg(html, false);
+        } catch (err) {
+            pearlyHideTyping();
+            const msg = err.message === 'NO_KEY'
+                ? 'Add a Groq API key in Settings first 🥺'
+                : err.message === 'RATE_LIMITED'
+                    ? 'All Groq keys are rate limited right now — try again shortly.'
+                    : `Something went wrong — ${err.message || 'unknown error'}. Try again?`;
+            pearlyAppendMsg(msg, false);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '📝 Management Summary'; }
+        }
+    }
+
+    // ─── 📋 Generate Candidate Table (Name, Location, Notice, Current CTC, Expected CTC) ───
+    function generateCandidateTable() {
+        if (!analysisResults || analysisResults.length === 0) {
+            showToast('No candidates analyzed yet', 'error');
+            return;
+        }
+        document.getElementById('pearly-chips').style.display = 'none';
+        pearlyAppendMsg('Generate the candidate table for Slack', true);
+
+        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
+
+        // Build columns
+        const headers = ['Name', 'Location', 'Notice Period', 'Current CTC', 'Expected CTC'];
+        const rows = sorted.map(r => [
+            r.name || 'Unknown',
+            r.location || '—',
+            r.notice_period || '—',
+            r.current_ctc || '—',
+            r.expected_ctc || '—'
+        ]);
+
+        // Plain-text table for Slack (aligned with padding, monospace-friendly)
+        const colWidths = headers.map((h, i) =>
+            Math.max(h.length, ...rows.map(row => String(row[i]).length))
+        );
+        const padRow = (cols) => cols.map((c, i) => String(c).padEnd(colWidths[i])).join('  |  ');
+        const separator = colWidths.map(w => '-'.repeat(w)).join('--|--');
+        const plainLines = [padRow(headers), separator, ...rows.map(padRow)];
+        const plainText = plainLines.join('\n');
+
+        // HTML table for display in chat
+        const theadHtml = `<tr>${headers.map(h => `<th style="text-align:left;padding:4px 8px;border-bottom:1px solid rgba(192,132,252,0.3);color:#d8b4fe;">${h}</th>`).join('')}</tr>`;
+        const rowsHtml = rows.map(row =>
+            `<tr>${row.map(c => `<td style="padding:4px 8px;border-bottom:1px solid rgba(192,132,252,0.1);">${String(c).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`).join('')}</tr>`
+        ).join('');
+        const tableHtml = `<table style="font-size:0.7rem;border-collapse:collapse;width:100%;">${theadHtml}${rowsHtml}</table>`;
+
+        const encoded = encodeURIComponent(plainText);
+        const html = tableHtml
+            + `<button class="pearly-copy-btn" onclick="pearlyCopyText(this, '${encoded}')">📋 Copy for Slack</button>`;
+        pearlyAppendMsg(html, false);
     }
 
 </script>
