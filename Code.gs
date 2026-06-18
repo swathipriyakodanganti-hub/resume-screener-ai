@@ -967,12 +967,41 @@ function pushCandidatesToSheet(data) {
     if (!targetSheetId) throw new Error('Missing targetSheetId');
     if (!candidates || !candidates.length) throw new Error('No candidates provided');
 
-    const ss = SpreadsheetApp.openById(targetSheetId.trim());
+    let ss;
+    try {
+      ss = SpreadsheetApp.openById(targetSheetId.trim());
+    } catch (openErr) {
+      throw new Error(
+        'Could not open the target spreadsheet. Either the Sheet ID/URL is wrong, or it is not shared ' +
+        'with the Google account that owns this Apps Script deployment. Share the sheet with that account ' +
+        '(Editor access) and try again. Original error: ' + (openErr.message || openErr)
+      );
+    }
 
     // Use specified tab name, or fall back to first sheet (the main Strix sheet)
     const sheetName = (tabName || '').trim();
-    const sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
-    if (!sheet) throw new Error('Tab "' + sheetName + '" not found in the spreadsheet. Check the tab name.');
+    const STRIX_HEADERS = [
+      'Date','Job Portal','Job Code','Position','Name','Mobile','Email',
+      'Recruiter','Recruiter Feedback','Education','Experience','Relevant Experience',
+      'Current CTC','Expected CTC','Notice Period','Location','Resume',
+      'Interview Timing','L1 Panel','L1 Status','L2 Panel','L2 Status',
+      'Final Round','Meet Link','AI Score','Score Reasons','Screen Status',
+      'Form Sent','Form Filled','Resume Text','L1 Feedback Status','L2 Feedback Status',
+      'L3 Scheduled','CEO Notified','L1 Feedback Form ID','L2 Feedback Form ID',
+      'Form Sent Date','Form Link','Form ID','L1 Schedule','L2 Schedule',
+      'Preferred Location','LinkedIn','Status','Column 1','Column 2','Why do you want to join BeamX'
+    ];
+    let sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
+    let createdNewTab = false;
+    if (!sheet && sheetName) {
+      // Tab doesn't exist yet — create it with the standard Strix header row instead of failing
+      sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(STRIX_HEADERS);
+      sheet.getRange(1, 1, 1, STRIX_HEADERS.length).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+      createdNewTab = true;
+    }
+    if (!sheet) throw new Error('No sheet tab available to push into. Check the spreadsheet has at least one tab.');
 
     // ── Exact Strix column order ──
     // Date | Job Portal | Job Code | Position | Name | Mobile | Email |
@@ -1069,7 +1098,8 @@ function pushCandidatesToSheet(data) {
       pushed: rows.length,
       sheetName: sheet.getName(),
       spreadsheetName: ss.getName(),
-      spreadsheetUrl: ss.getUrl()
+      spreadsheetUrl: ss.getUrl(),
+      createdNewTab: createdNewTab
     });
 
   } catch (err) {
