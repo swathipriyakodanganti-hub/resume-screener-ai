@@ -3426,6 +3426,17 @@
                     </div>
                     <button onclick="openAddResumesModal()" title="Add more resumes to current results" style="flex-shrink:0;padding:0.28rem 0.65rem;font-size:0.7rem;font-weight:700;background:rgba(0,220,255,0.08);color:var(--accent);border:1px solid rgba(0,220,255,0.25);border-radius:6px;cursor:pointer;white-space:nowrap;transition:background 0.15s;" onmouseover="this.style.background='rgba(0,220,255,0.16)'" onmouseout="this.style.background='rgba(0,220,255,0.08)'">＋ Add</button>
                 </div>
+                <div class="main-sidebar-search" style="padding:0 0.7rem 0.6rem;flex-shrink:0;">
+                    <div style="position:relative;">
+                        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:0.72rem;opacity:0.45;pointer-events:none;">🔎</span>
+                        <input type="text" id="candidateSearchInput" placeholder="Search skills, keywords, name…"
+                            oninput="filterMainCandidates(this.value)"
+                            style="width:100%;box-sizing:border-box;padding:0.4rem 1.7rem 0.4rem 1.9rem;font-size:0.72rem;font-family:inherit;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:7px;color:var(--text-primary, #e6edf3);outline:none;transition:border-color 0.15s;"
+                            onfocus="this.style.borderColor='rgba(0,220,255,0.35)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+                        <span id="candidateSearchClear" onclick="clearCandidateSearch()" title="Clear search" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:0.7rem;opacity:0.5;cursor:pointer;padding:2px;">✕</span>
+                    </div>
+                    <div id="candidateSearchSummary" style="display:none;font-size:0.65rem;color:var(--text-muted);margin-top:0.35rem;padding-left:0.1rem;"></div>
+                </div>
                 <div class="main-candidate-list" id="mainCandidateList">
                     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--text-muted);text-align:center;padding:1rem;">
                         <div style="font-size:2rem;opacity:0.2;margin-bottom:0.5rem;">📭</div>
@@ -6005,6 +6016,7 @@ Rules:
             newResult.file_type      = r.file_type;
             newResult.drive_link     = r.drive_link;
             newResult.resume_pdf_b64 = r.resume_pdf_b64;
+            newResult.resumeText     = text;
             if (!newResult.name) newResult.name = (r.name || r.filename || '').replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
             _enrichCandidate(newResult);
             analysisResults[rawIdx] = newResult;
@@ -6273,6 +6285,7 @@ Rules:
                 result.filename  = file.name;
                 result.file_type = ext;
                 if (!result.name) result.name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+                result.resumeText = text;
                 try { result.resume_pdf_b64 = await fileToBase64(file); } catch {}
                 _enrichCandidate(result);
 
@@ -6325,6 +6338,7 @@ Rules:
                 result.filename        = driveEntry.name;
                 result.drive_link      = driveEntry.driveLink;
                 result.resume_pdf_b64  = pdfBase64;
+                result.resumeText      = text;
                 if (!result.name) result.name = driveEntry.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
                 _enrichCandidate(result);
 
@@ -6522,17 +6536,71 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             ${cards}`;
     }
 
+    // ─── Candidate keyword/skills search ───
+    let _candidateSearchQuery = '';
+
+    function _candidateSearchHaystack(r) {
+        if (r._searchHaystack) return r._searchHaystack;
+        const parts = [
+            r.name, r.location, r.summary, r.rating_reason,
+            ...(r.key_skills || []), ...(r.skills_present || []), ...(r.skills_missing || []),
+            ...(r.highlights || []),
+            ...((r.roles || []).map(role => `${role.title || ''} ${role.company || ''}`)),
+            r.resumeText
+        ];
+        const haystack = parts.filter(Boolean).join(' \u241F ').toLowerCase();
+        r._searchHaystack = haystack;
+        return haystack;
+    }
+
+    function _candidateMatchesSearch(r, query) {
+        if (!query) return true;
+        // Support comma/space-separated terms — candidate must match every term (AND)
+        const terms = query.toLowerCase().split(/[,]+/).map(t => t.trim()).filter(Boolean);
+        if (!terms.length) return true;
+        const haystack = _candidateSearchHaystack(r);
+        return terms.every(term => haystack.includes(term));
+    }
+
+    function filterMainCandidates(query) {
+        _candidateSearchQuery = (query || '').trim();
+        const clearBtn = document.getElementById('candidateSearchClear');
+        if (clearBtn) clearBtn.style.display = _candidateSearchQuery ? 'block' : 'none';
+        renderMainPanels();
+    }
+
+    function clearCandidateSearch() {
+        const input = document.getElementById('candidateSearchInput');
+        if (input) input.value = '';
+        filterMainCandidates('');
+        if (input) input.focus();
+    }
+
+    function _highlightSearchTerms(text, query) {
+        if (!query || !text) return text;
+        const terms = query.toLowerCase().split(/[,]+/).map(t => t.trim()).filter(Boolean);
+        let out = text;
+        terms.forEach(term => {
+            if (!term) return;
+            const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            out = out.replace(new RegExp(`(${escaped})`, 'ig'), '<mark style="background:rgba(0,220,255,0.28);color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
+        });
+        return out;
+    }
+
     // ─── Render three-panel main UI ───
     function renderMainPanels() {
         const listEl   = document.getElementById('mainCandidateList');
         const metaEl   = document.getElementById('mainSidebarMeta');
         const detailEl = document.getElementById('mainDetailContent');
+        const searchSummaryEl = document.getElementById('candidateSearchSummary');
 
         const dcCount = document.getElementById('resultsDcCount');
         if (!analysisResults.length) {
             listEl.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--text-muted);text-align:center;padding:1rem;"><div style="font-size:2rem;opacity:0.2;margin-bottom:0.5rem;">📭</div><div style="font-size:0.75rem;">Analyze resumes to see candidates</div></div>`;
             metaEl.textContent = 'No results yet';
             if (dcCount) dcCount.textContent = '0 candidates';
+            if (searchSummaryEl) searchSummaryEl.style.display = 'none';
             detailEl.innerHTML = `<div class="main-detail-empty" id="mainDetailEmpty"><div class="main-detail-empty-icon">👈</div><h3>Select a candidate</h3><p>Click any candidate to view their analysis</p></div>`;
             return;
         }
@@ -6542,17 +6610,34 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         metaEl.textContent = `${analysisResults.length} candidates · Avg ${avg}% · Top ${top}%`;
         if (dcCount) dcCount.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
 
-        // Sidebar candidate list
+        const query = _candidateSearchQuery;
+        const matchFlags = analysisResults.map(r => _candidateMatchesSearch(r, query));
+        const matchCount = matchFlags.filter(Boolean).length;
+
+        if (searchSummaryEl) {
+            if (query) {
+                searchSummaryEl.style.display = 'block';
+                searchSummaryEl.textContent = matchCount
+                    ? `${matchCount} of ${analysisResults.length} match "${query}"`
+                    : `No candidates match "${query}"`;
+            } else {
+                searchSummaryEl.style.display = 'none';
+            }
+        }
+
+        // Sidebar candidate list — indices stay stable; non-matches are hidden, not removed
         listEl.innerHTML = analysisResults.map((r, i) => {
             const rankLabel = i === 0 ? '01' : i === 1 ? '02' : i === 2 ? '03' : String(i+1).padStart(2,'0');
             const isShortlisted = _selectedCards.has(i);
             const sColor = r.match_score >= 75 ? '#00e5a0' : r.match_score >= 50 ? '#f5a623' : '#ff5c5c';
             const fCls   = fillClass(r.match_score);
+            const hidden = query && !matchFlags[i];
+            const displayName = query ? _highlightSearchTerms(r.name || r.filename || '—', query) : (r.name || r.filename || '—');
             return `
-            <div class="main-cand-item${_selectedMainIdx === i ? ' active' : ''}${isShortlisted ? ' shortlisted-glow' : ''}" onclick="selectMainCandidate(${i})" id="main-cand-item-${i}">
+            <div class="main-cand-item${_selectedMainIdx === i ? ' active' : ''}${isShortlisted ? ' shortlisted-glow' : ''}" onclick="selectMainCandidate(${i})" id="main-cand-item-${i}" ${hidden ? 'style="display:none;"' : ''}>
                 <div class="main-cand-rank-col">${rankLabel}</div>
                 <div class="main-cand-info">
-                    <div class="main-cand-name">${r.name || r.filename || '—'}</div>
+                    <div class="main-cand-name">${displayName}</div>
                     <div class="main-cand-meta">${r.location || '—'} · ${_fmtExp(r.experience_years)}</div>
                 </div>
                 <div class="main-cand-score-col">
@@ -6565,7 +6650,9 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <button class="cand-reanalyze-btn" id="reanalyze-btn-${i}" onclick="event.stopPropagation(); reAnalyzeCandidate(${i})" title="Re-analyse">↺</button>
                 <div class="main-cand-rank"></div>
             </div>`;
-        }).join('');
+        }).join('') + (query && matchCount === 0
+            ? `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:140px;color:var(--text-muted);text-align:center;padding:1rem;"><div style="font-size:1.6rem;opacity:0.25;margin-bottom:0.4rem;">🔎</div><div style="font-size:0.72rem;">No candidates match this search</div></div>`
+            : '');
 
         // If a candidate was selected, re-render their detail panel too
         if (_selectedMainIdx !== null && _selectedMainIdx < analysisResults.length) {
@@ -7604,7 +7691,10 @@ main.addEventListener('scroll',()=>{
             return;
         }
 
-        const candidates = _setCandidatesToPush();
+        const candidates = _setCandidatesToPush().map(c => {
+            const { resume_pdf_b64, resumeText, _searchHaystack, ...slim } = c;
+            return slim;
+        });
         if (!candidates.length) {
             _showPushStatus('error', _pushScope === 'shortlisted'
                 ? '⚠️ No shortlisted candidates. Use the Shortlist checkbox on candidate cards.'
@@ -7637,8 +7727,11 @@ main.addEventListener('scroll',()=>{
             });
             const data = await res.json();
             if (data.success) {
+                const tabNote = data.createdNewTab
+                    ? ` <span style="color:#a5b4fc;">(created new tab — it didn\'t exist yet)</span>`
+                    : '';
                 _showPushStatus('success',
-                    `✅ ${data.pushed} candidate(s) pushed to <strong>"${data.sheetName}"</strong> in <strong>${data.spreadsheetName}</strong>!` +
+                    `✅ ${data.pushed} candidate(s) pushed to <strong>"${data.sheetName}"</strong>${tabNote} in <strong>${data.spreadsheetName}</strong>!` +
                     (data.spreadsheetUrl ? ` <a href="${data.spreadsheetUrl}" target="_blank" style="color:#6ee7b7;text-decoration:underline;">Open Sheet ↗</a>` : '')
                 );
                 document.getElementById('pushBtnIcon').textContent = '✅';
@@ -7860,10 +7953,12 @@ main.addEventListener('scroll',()=>{
         btn.textContent = 'Saving…';
 
         try {
-            // Strip PDF blobs before sending — they can be 500KB+ each and blow the payload
+            // Strip PDF blobs and raw resume text before sending — they can be 500KB+ each and blow the payload
             const slimCandidates = analysisResults.map(c => {
                 const copy = Object.assign({}, c);
                 delete copy.resume_pdf_b64;
+                delete copy.resumeText;
+                delete copy._searchHaystack;
                 return copy;
             });
             const res = await fetch(appsScriptUrl, {
@@ -7981,6 +8076,8 @@ main.addEventListener('scroll',()=>{
             const slimCandidates = analysisResults.map(c => {
                 const copy = Object.assign({}, c);
                 delete copy.resume_pdf_b64;
+                delete copy.resumeText;
+                delete copy._searchHaystack;
                 return copy;
             });
             await fetch(appsScriptUrl, {
@@ -8195,16 +8292,23 @@ main.addEventListener('scroll',()=>{
         // Uploaded-file candidates have no drive_link, so we must keep their base64 — it's the
         // only way to display the resume on the share page without Firebase.
         // For Firebase mode: always keep all data (Firebase handles large payloads separately).
+        // resumeText/_searchHaystack are internal-only (used for the sidebar search box) and are
+        // never needed on the share page, so they're dropped in both modes.
+        const _stripInternal = (c) => {
+            const { resumeText, _searchHaystack, ...rest } = c;
+            return rest;
+        };
         const candidatesForUrl = candidates.map(c => {
-            if (c.drive_link) {
+            const slim = _stripInternal(c);
+            if (slim.drive_link) {
                 // Drive-sourced: drive_link is enough; drop the large base64
-                const { resume_pdf_b64, ...rest } = c;
+                const { resume_pdf_b64, ...rest } = slim;
                 return rest;
             }
             // Uploaded-file: no drive_link, keep resume_pdf_b64 so the share page can render it
-            return c;
+            return slim;
         });
-        const candidatesForFirebase = candidates; // includes resume_pdf_b64
+        const candidatesForFirebase = candidates.map(_stripInternal); // includes resume_pdf_b64
 
         const baseUrl = window.location.origin + window.location.pathname;
         let shareLink;
