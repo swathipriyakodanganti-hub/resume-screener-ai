@@ -562,30 +562,85 @@
         .progress-wrap { display: none; margin-top: 0.75rem; }
         .progress-wrap.visible { display: block; }
         .progress-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }
-        /* Design 5 — Pearly Animated Dots 🌸 */
-        .progress-bar { padding: 5px 0; display: flex; align-items: center; gap: 4px; background: none; }
-        .progress-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(249,168,212,0.12); flex-shrink: 0; transition: background 0.3s ease; }
-        .progress-dot.dot-active { background: linear-gradient(135deg, #f9a8d4, #c084fc); animation: dotPop 1s ease-in-out infinite; box-shadow: 0 0 4px rgba(192,132,252,0.4); }
-        .progress-dot.dot-active:nth-child(1)  { animation-delay: 0.00s; }
-        .progress-dot.dot-active:nth-child(2)  { animation-delay: 0.07s; }
-        .progress-dot.dot-active:nth-child(3)  { animation-delay: 0.14s; }
-        .progress-dot.dot-active:nth-child(4)  { animation-delay: 0.21s; }
-        .progress-dot.dot-active:nth-child(5)  { animation-delay: 0.28s; }
-        .progress-dot.dot-active:nth-child(6)  { animation-delay: 0.35s; }
-        .progress-dot.dot-active:nth-child(7)  { animation-delay: 0.42s; }
-        .progress-dot.dot-active:nth-child(8)  { animation-delay: 0.49s; }
-        .progress-dot.dot-active:nth-child(9)  { animation-delay: 0.56s; }
-        .progress-dot.dot-active:nth-child(10) { animation-delay: 0.63s; }
-        .progress-dot.dot-active:nth-child(11) { animation-delay: 0.70s; }
-        .progress-dot.dot-active:nth-child(12) { animation-delay: 0.77s; }
-        .progress-dot.dot-active:nth-child(13) { animation-delay: 0.84s; }
-        .progress-dot.dot-active:nth-child(14) { animation-delay: 0.91s; }
-        .progress-dot.dot-active:nth-child(15) { animation-delay: 0.98s; }
-        .progress-dot.dot-pulse { background: #fbcfe8 !important; box-shadow: 0 0 0 0 rgba(249,168,212,0.6) !important; animation: dotPulse 0.7s ease-in-out infinite !important; }
-        @keyframes dotPop   { 0%,100% { opacity:0.65; transform:scale(1); } 50% { opacity:1; transform:scale(1.45); } }
-        @keyframes dotPulse { 0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(249,168,212,0.6); } 50% { transform:scale(1.65); box-shadow:0 0 0 6px rgba(249,168,212,0); } }
+        /* Design — Terminal Reader 🖥️ */
+        .progress-bar { padding: 0; background: none; display: block; }
+        /* legacy dot classes kept as no-ops so updateProgressDots() calls don't error */
+        .progress-dot { display: none; }
+        .progress-dot.dot-active, .progress-dot.dot-pulse { display: none; }
+        @keyframes dotPop   { 0%,100% { opacity:1; } }
+        @keyframes dotPulse { 0%,100% { opacity:1; } }
         /* progress-fill kept as invisible shim so JS width sets don't error */
         .progress-fill { display: none; }
+
+        /* Terminal reader shell */
+        .term-reader {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(3, 8, 16, 0.7);
+            border: 1px solid rgba(167,139,250,0.12);
+            border-radius: 7px;
+            padding: 7px 11px;
+            height: 38px;
+            overflow: hidden;
+            position: relative;
+        }
+        .term-cursor {
+            width: 6px;
+            height: 14px;
+            background: #a78bfa;
+            border-radius: 1px;
+            flex-shrink: 0;
+            animation: termBlink 0.8s step-end infinite;
+        }
+        @keyframes termBlink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+        .term-rows {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .term-row {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            font-family: 'Fira Mono', 'Courier New', monospace;
+            font-size: 9.5px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .term-key  { color: #475569; flex-shrink: 0; }
+        .term-sep  { color: #334155; flex-shrink: 0; }
+        .term-val  {
+            overflow: hidden;
+            white-space: nowrap;
+            width: 0;
+            border-right: 1.5px solid transparent;
+            animation: termType 3s steps(18) infinite;
+        }
+        /* each row staggers */
+        .term-row:nth-child(1) .term-val { animation-delay: 0s;    border-right-color: #a78bfa; color: #c4b5fd; }
+        .term-row:nth-child(2) .term-val { animation-delay: 0.55s; border-right-color: #60a5fa; color: #93c5fd; }
+        .term-row:nth-child(3) .term-val { animation-delay: 1.1s;  border-right-color: #4ade80; color: #86efac; }
+        @keyframes termType {
+            0%        { width: 0;    opacity: 0.7; }
+            8%        { opacity: 1; }
+            55%, 90%  { width: 160px; opacity: 1; }
+            100%      { width: 0;    opacity: 0.5; }
+        }
+        /* subtle scanline shimmer across the whole bar */
+        .term-reader::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg,
+                rgba(167,139,250,0.03) 0%,
+                transparent 50%,
+                rgba(167,139,250,0.03) 100%);
+            pointer-events: none;
+        }
 
         /* Analyze button */
         .btn-analyze {
@@ -3225,27 +3280,38 @@
             </div>
         </div>
         <div class="progress-bar" id="progressDots">
-            <!-- 20 dots — filled dynamically by updateProgressDots() -->
-            <div class="progress-dot" data-i="0"></div>
-            <div class="progress-dot" data-i="1"></div>
-            <div class="progress-dot" data-i="2"></div>
-            <div class="progress-dot" data-i="3"></div>
-            <div class="progress-dot" data-i="4"></div>
-            <div class="progress-dot" data-i="5"></div>
-            <div class="progress-dot" data-i="6"></div>
-            <div class="progress-dot" data-i="7"></div>
-            <div class="progress-dot" data-i="8"></div>
-            <div class="progress-dot" data-i="9"></div>
-            <div class="progress-dot" data-i="10"></div>
-            <div class="progress-dot" data-i="11"></div>
-            <div class="progress-dot" data-i="12"></div>
-            <div class="progress-dot" data-i="13"></div>
-            <div class="progress-dot" data-i="14"></div>
-            <div class="progress-dot" data-i="15"></div>
-            <div class="progress-dot" data-i="16"></div>
-            <div class="progress-dot" data-i="17"></div>
-            <div class="progress-dot" data-i="18"></div>
-            <div class="progress-dot" data-i="19"></div>
+            <!-- Terminal Reader animation — dots hidden, kept for JS compat -->
+            <div class="progress-dot" data-i="0"></div><div class="progress-dot" data-i="1"></div>
+            <div class="progress-dot" data-i="2"></div><div class="progress-dot" data-i="3"></div>
+            <div class="progress-dot" data-i="4"></div><div class="progress-dot" data-i="5"></div>
+            <div class="progress-dot" data-i="6"></div><div class="progress-dot" data-i="7"></div>
+            <div class="progress-dot" data-i="8"></div><div class="progress-dot" data-i="9"></div>
+            <div class="progress-dot" data-i="10"></div><div class="progress-dot" data-i="11"></div>
+            <div class="progress-dot" data-i="12"></div><div class="progress-dot" data-i="13"></div>
+            <div class="progress-dot" data-i="14"></div><div class="progress-dot" data-i="15"></div>
+            <div class="progress-dot" data-i="16"></div><div class="progress-dot" data-i="17"></div>
+            <div class="progress-dot" data-i="18"></div><div class="progress-dot" data-i="19"></div>
+            <!-- Terminal reader UI -->
+            <div class="term-reader">
+                <div class="term-cursor"></div>
+                <div class="term-rows" id="termRows">
+                    <div class="term-row">
+                        <span class="term-key">name</span>
+                        <span class="term-sep">›</span>
+                        <span class="term-val" id="termName">reading…</span>
+                    </div>
+                    <div class="term-row">
+                        <span class="term-key">exp </span>
+                        <span class="term-sep">›</span>
+                        <span class="term-val" id="termExp">scanning…</span>
+                    </div>
+                    <div class="term-row">
+                        <span class="term-key">fit </span>
+                        <span class="term-sep">›</span>
+                        <span class="term-val" id="termFit">computing score…</span>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="progress-fill" id="progressFill" style="display:none;"></div>
     </div>
@@ -6192,13 +6258,7 @@ Rules:
         if (stopFab) { stopFab.style.display = 'block'; stopFab.textContent = '⏹ Stop Analysis'; stopFab.style.pointerEvents = 'auto'; stopFab.style.opacity = '1'; }
         const stopFabDots = document.getElementById('stopFabDots');
         if (stopFabDots) {
-            stopFabDots.innerHTML = '';
-            for (let d = 0; d < 20; d++) {
-                const dot = document.createElement('div');
-                dot.className = 'progress-dot';
-                dot.dataset.fab = d;
-                stopFabDots.appendChild(dot);
-            }
+            stopFabDots.innerHTML = '<span style="font-family:monospace;font-size:9px;color:#a78bfa;letter-spacing:.04em;" id="fabTermLabel">⬛ reading resume…</span>';
             stopFabDots.style.display = 'flex';
         }
         pw.classList.add('visible');
@@ -6266,6 +6326,15 @@ Rules:
             fileStatuses[file.name] = 'analyzing';
             renderResumeDropdown();
             pt.textContent = `Analyzing: ${truncate(file.name, 22)}`;
+            // ── Terminal reader: seed rows with filename-derived values ──
+            (function seedTerminal(fname) {
+                const baseName = fname.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+                const el = id => document.getElementById(id);
+                if (el('termName')) el('termName').textContent = baseName || 'reading…';
+                if (el('termExp'))  el('termExp').textContent  = 'scanning experience…';
+                if (el('termFit'))  el('termFit').textContent  = 'computing score…';
+                if (el('fabTermLabel')) el('fabTermLabel').textContent = '⬛ ' + (baseName || 'reading…');
+            })(file.name);
 
             try {
                 let text = '';
@@ -6328,6 +6397,14 @@ Rules:
             fileStatuses[driveEntry.name] = 'analyzing';
             renderResumeDropdown();
             pt.textContent = `Fetching: ${truncate(driveEntry.driveLink, 22)}`;
+            // ── Terminal reader: seed rows for drive entry ──
+            (function seedTerminal(ename) {
+                const baseName = ename.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+                const el = id => document.getElementById(id);
+                if (el('termName')) el('termName').textContent = baseName || 'fetching…';
+                if (el('termExp'))  el('termExp').textContent  = 'scanning experience…';
+                if (el('termFit'))  el('termFit').textContent  = 'computing score…';
+            })(driveEntry.name);
 
             try {
                 const { file: pdfFile, base64: pdfBase64 } = await fetchDrivePdf(driveEntry);
