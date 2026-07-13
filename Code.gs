@@ -414,92 +414,43 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, ur
   const count  = candidates.length;
   const isAsap = urgency === 'asap';
 
-  // Build per-candidate score bar rows
+  // Plain text candidate list: "Name — XX%"
   const candidateRows = candidates.map(function(c) {
     const s = c.match_score || 0;
-    const barColor   = s >= 75 ? 'linear-gradient(90deg,#1D9E75,#34d399)' : s >= 50 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : 'linear-gradient(90deg,#ef4444,#f87171)';
-    const scoreColor = s >= 75 ? '#1D9E75' : s >= 50 ? '#b45309' : '#dc2626';
-    return '<tr><td style="padding-bottom:12px;">' +
-      '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      '<td></td>' +
-      '<td align="right" style="font-size:13px;font-weight:800;color:' + scoreColor + ';white-space:nowrap;padding-left:12px;">' + s + '%</td>' +
-      '</tr><tr><td colspan="2" style="padding-top:5px;">' +
-      '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      '<td style="background:#f1f5f9;border-radius:4px;height:6px;">' +
-      '<div style="width:' + s + '%;height:6px;background:' + barColor + ';border-radius:4px;"></div>' +
-      '</td></tr></table></td></tr></table>' +
-      '</td></tr>';
+    return '<p style="margin:0 0 8px;font-size:13.5px;color:#111827;line-height:1.6;">' +
+      (c.name || 'Candidate') + ' \u2014 <strong>' + s + '%</strong>' +
+    '</p>';
   }).join('');
 
-  // Steps box — step 3 varies by urgency
-  const step3Text = isAsap
-    ? '<strong>Share your feedback as soon as you can</strong> \u2014 so I can get the interview schedule in place without delay.'
-    : '<strong>Share your feedback</strong> whenever it suits you \u2014 there\'s no hard deadline on this one.';
-
-  const stepsBox =
-    '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:20px;"><tr><td style="padding:14px 18px;">' +
-    '<p style="margin:0 0 10px;font-size:12px;color:#475569;font-style:italic;">To make it easy, here\'s how I\'d suggest going through them:</p>' +
-    '<table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-bottom:9px;">' +
-      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">1</div>' +
-    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;padding-bottom:9px;"><strong>Open the profiles</strong> \u2014 each one has the candidate\'s background, relevant skills, and a brief summary.</td></tr>' +
-    '<tr><td style="vertical-align:top;padding-bottom:9px;">' +
-      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">2</div>' +
-    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;padding-bottom:9px;"><strong>Mark your preference</strong> \u2014 shortlist, maybe, or pass. Even a quick note on each helps a lot.</td></tr>' +
-    '<tr><td style="vertical-align:top;">' +
-      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">3</div>' +
-    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;">' + step3Text + '</td></tr></table>' +
-    '</td></tr></table>';
-
-  // Closing paragraph — varies by urgency
-  const closeBg   = isAsap ? '#fff7ed' : '#f0fdf4';
-  const closeBdr  = isAsap ? '#f59e0b' : '#34d399';
-  const closeText = isAsap
-    ? 'We\'re hoping to move quickly on this one \u2014 if you could share your thoughts soon, that would be a huge help. Of course, reach out anytime if you\'d like to talk through any of the candidates.'
-    : 'No rush at all \u2014 take your time and review when it suits you. If you have questions or want more context on any of the candidates, just say the word. Happy to help!';
-  const closePara = '<p style="margin:0 0 22px;font-size:12.5px;color:#475569;line-height:1.8;background:' + closeBg + ';border-left:3px solid ' + closeBdr + ';padding:10px 14px;border-radius:0 6px 6px 0;">' + closeText + '</p>';
+  const closingLine = isAsap
+    ? 'Hoping to move quickly on this one \u2014 would appreciate your thoughts soon.'
+    : 'No rush at all \u2014 take your time and review whenever it suits you.';
 
   return '<!DOCTYPE html>' +
 '<html lang="en">' +
 '<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Shortlist</title></head>' +
-'<body style="margin:0;padding:0;background:#f0f4f8;font-family:\'Segoe UI\',Arial,sans-serif;color:#1a1a2e;">' +
-'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">' +
+'<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;color:#111827;">' +
+'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">' +
 '<tr><td align="center">' +
-'<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">' +
+'<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;">' +
 
-'<!-- Accent top stripe -->' +
-'<tr><td style="background:linear-gradient(90deg,#1a56db 0%,#0c447c 50%,#1D9E75 100%);height:5px;border-radius:14px 14px 0 0;"></td></tr>' +
-
-'<!-- Body -->' +
-'<tr><td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:26px 32px 30px;">' +
-  '<p style="margin:0 0 4px;font-size:15px;color:#0f172a;">Hi <strong>' + interviewerName + '</strong>,</p>' +
-  '<p style="margin:0 0 14px;font-size:13px;color:#475569;line-height:1.8;">Hope your week is going well!</p>' +
-  '<p style="margin:0 0 20px;font-size:13px;color:#475569;line-height:1.8;">' +
-    'I\'ve gone through the applications for <strong style="color:#0f172a;">' + position + '</strong> and put together a shortlist of ' +
-    '<strong style="color:#0f172a;">' + count + ' candidate' + (count > 1 ? 's' : '') + '</strong> I think are genuinely worth a closer look. ' +
-    'I\'m sharing them with you so you can review before we decide who to move forward with.' +
-  '</p>' +
-  stepsBox +
-  '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px;">' +
-    candidateRows +
-  '</table>' +
-  closePara +
-  '<div style="text-align:center;margin-bottom:8px;">' +
-    '<a href="' + shareLink + '" target="_blank" style="display:inline-block;padding:14px 36px;background:#0c447c;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 14px rgba(12,68,124,0.25);">' +
-      'View Profiles &amp; Resumes \u2192' +
-    '</a>' +
-  '</div>' +
-  '<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px;">Open each profile, review the resume, and leave your preference</p>' +
+'<!-- Top: greeting + compact score list -->' +
+'<tr><td style="padding:22px 26px 8px;">' +
+  '<p style="margin:0 0 2px;font-size:14px;color:#111827;">Hi <strong>' + interviewerName + '</strong>,</p>' +
+  '<p style="margin:0;font-size:12.5px;color:#6b7280;">' + count + ' shortlisted candidate' + (count > 1 ? 's' : '') + ' for <strong style="color:#111827;">' + position + '</strong></p>' +
 '</td></tr>' +
 
-'<!-- Footer -->' +
-'<tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;padding:16px 32px;">' +
-  '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
-    '<td>' +
-      '<div style="font-size:12px;font-weight:700;color:#1e293b;">Talent Acquisition Team</div>' +
-      '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">This email is confidential and intended only for the recipient.</div>' +
-    '</td>' +
-    '<td align="right"><div style="font-size:13px;font-weight:800;color:#0c447c;letter-spacing:0.04em;">Pearl Hire</div></td>' +
-  '</tr></table>' +
+'<tr><td style="padding:14px 26px 4px;">' +
+  candidateRows +
+'</td></tr>' +
+
+'<!-- Bottom: plain text link + sign-off -->' +
+'<tr><td style="padding:14px 26px 24px;border-top:1px solid #f3f4f6;">' +
+  '<p style="margin:14px 0 0;font-size:13.5px;">' +
+    '<a href="' + shareLink + '" style="color:#2563eb;text-decoration:underline;">View profiles &amp; resumes \u2192</a>' +
+  '</p>' +
+  '<p style="margin:12px 0 0;font-size:12.5px;color:#6b7280;line-height:1.7;">' + closingLine + '</p>' +
+  '<p style="margin:16px 0 0;font-size:12.5px;color:#6b7280;">Thanks,<br>Talent Acquisition Team</p>' +
 '</td></tr>' +
 
 '</table></td></tr></table>' +
@@ -510,79 +461,35 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, ur
 // Single candidate email
 // ───────────────────────────────────────────────────────────────
 function buildEmailHtml(interviewerName, candidateName, position, shareLink, matchScore) {
-  const scoreColor = matchScore >= 75 ? '#1D9E75' : matchScore >= 50 ? '#BA7517' : '#A32D2D';
-  const scoreBg    = matchScore >= 75 ? '#E1F5EE' : matchScore >= 50 ? '#FAEEDA' : '#FCEBEB';
-  const scoreLabel = matchScore >= 75 ? 'Strong Match' : matchScore >= 50 ? 'Good Match' : 'Low Match';
+  const s = matchScore || 0;
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Profile</title></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 16px;">
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;color:#111827;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
-        <tr>
-          <td style="background:#0C447C;border-radius:12px 12px 0 0;padding:24px 28px;">
-            <div style="font-size:10px;color:#85B7EB;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:5px;">Talent Acquisition · Candidate Profile</div>
-            <div style="font-size:20px;font-weight:700;color:#E6F1FB;">${position}</div>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:28px 28px 20px;">
-            <p style="margin:0 0 4px;font-size:14px;color:#1a1a2e;">Hi <strong>${interviewerName}</strong>,</p>
-            <p style="margin:0 0 24px;font-size:13px;color:#64748b;line-height:1.7;">
-              Please find the screened candidate profile below for <strong>${position}</strong>.
-              Click the button to view the complete profile with resume and detailed analysis.
-            </p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:20px;">
-              <tr>
-                <td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
-                  <table width="100%" cellpadding="0" cellspacing="0"><tr>
-                    <td style="vertical-align:middle;">
-                      <div style="font-size:16px;font-weight:700;color:#1a1a2e;">${candidateName}</div>
-                      <div style="font-size:12px;color:#64748b;margin-top:4px;">Candidate Profile &middot; ${position}</div>
-                    </td>
-                    <td align="right" style="vertical-align:middle;">
-                      <div style="display:inline-block;background:${scoreBg};border-radius:20px;padding:5px 14px;">
-                        <span style="font-size:16px;font-weight:700;color:${scoreColor};">${matchScore}%</span>
-                        <span style="font-size:10px;font-weight:600;color:${scoreColor};text-transform:uppercase;letter-spacing:0.05em;margin-left:4px;">${scoreLabel}</span>
-                      </div>
-                    </td>
-                  </tr></table>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
-                  <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:6px;">AI Match Score</div>
-                  <table width="100%" cellpadding="0" cellspacing="0"><tr>
-                    <td style="background:#f1f5f9;border-radius:4px;height:8px;">
-                      <div style="width:${matchScore}%;height:8px;background:${scoreColor};border-radius:4px;"></div>
-                    </td>
-                  </tr></table>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:24px 20px;background:#f8fafc;text-align:center;">
-                  <a href="${shareLink}" target="_blank"
-                     style="display:inline-block;padding:14px 32px;background:#0C447C;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 12px rgba(12,68,124,0.3);">
-                    View Complete Profile &amp; Resume &rarr;
-                  </a>
-                  <div style="margin-top:12px;font-size:11px;color:#94a3b8;">Access full candidate details, skills analysis, and resume</div>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#0C447C;border-radius:0 0 12px 12px;padding:16px 28px;">
-            <table width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td>
-                <div style="font-size:12px;font-weight:700;color:#E6F1FB;">Talent Acquisition Team</div>
-                <div style="font-size:11px;color:#85B7EB;margin-top:2px;">This email is confidential and intended only for the recipient.</div>
-              </td>
-              <td align="right"><div style="font-size:10px;color:#85B7EB;">Pearl Hire</div></td>
-            </tr></table>
-          </td>
-        </tr>
+      <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;">
+
+        <!-- Top: greeting + compact score -->
+        <tr><td style="padding:22px 26px 8px;">
+          <p style="margin:0 0 2px;font-size:14px;color:#111827;">Hi <strong>${interviewerName}</strong>,</p>
+          <p style="margin:0;font-size:12.5px;color:#6b7280;">Candidate profile for <strong style="color:#111827;">${position}</strong></p>
+        </td></tr>
+
+        <tr><td style="padding:14px 26px 4px;">
+          <p style="margin:0 0 8px;font-size:13.5px;color:#111827;line-height:1.6;">
+            ${candidateName} &mdash; <strong>${s}%</strong>
+          </p>
+        </td></tr>
+
+        <!-- Bottom: plain text link + sign-off -->
+        <tr><td style="padding:14px 26px 24px;border-top:1px solid #f3f4f6;">
+          <p style="margin:14px 0 0;font-size:13.5px;">
+            <a href="${shareLink}" style="color:#2563eb;text-decoration:underline;">View complete profile &amp; resume &rarr;</a>
+          </p>
+          <p style="margin:16px 0 0;font-size:12.5px;color:#6b7280;">Thanks,<br>Talent Acquisition Team</p>
+        </td></tr>
+
       </table>
     </td></tr>
   </table>
