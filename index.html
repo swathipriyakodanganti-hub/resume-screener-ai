@@ -3647,15 +3647,21 @@
                     <div class="dc-card cyan-glow">
                         <div class="dc-provider-block">
                             <span class="dc-provider-led"></span>
-                            <span class="dc-provider-name">⚡ Groq<span class="dc-provider-tag">Fast · Free</span></span>
+                            <span class="dc-provider-name" id="providerBlockName">⚡ Groq<span class="dc-provider-tag">Fast · Free</span></span>
                         </div>
-                        <div class="provider-toggle" style="display:none;">
+                        <div class="provider-toggle" style="display:flex;gap:0.4rem;margin-bottom:0.85rem;">
                             <button class="provider-btn active" id="btnGroq" onclick="switchProvider('groq')">⚡ Groq</button>
+                            <button class="provider-btn" id="btnGemini" onclick="switchProvider('gemini')">✨ Gemini</button>
                         </div>
                         <div id="groqFields">
                             <label class="dc-label" for="groqKey">Groq API Key</label>
                             <input type="password" id="groqKey" class="dc-input cyan" placeholder="gsk_…" onchange="saveGroqKey()" style="margin-bottom:0.35rem;">
                             <div class="dc-hint">Free key → <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> · 30 RPM. Multiple keys comma-separated.</div>
+                        </div>
+                        <div id="geminiFields" style="display:none;">
+                            <label class="dc-label" for="geminiKey">Gemini API Key</label>
+                            <input type="password" id="geminiKey" class="dc-input cyan" placeholder="AIza…" onchange="saveGeminiKey()" style="margin-bottom:0.35rem;">
+                            <div class="dc-hint">Free key → <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a> · ~1,500 req/day free, no card. Multiple keys comma-separated.</div>
                         </div>
                     </div>
 
@@ -3714,7 +3720,7 @@
                             <div class="dc-stat">
                                 <div class="dc-stat-label">API Delay</div>
                                 <div class="dc-stat-value" id="delayStatVal">—</div>
-                                <div class="dc-stat-sub">Groq: keep ≥ 2s</div>
+                                <div class="dc-stat-sub" id="delayStatSub">Groq: keep ≥ 2s</div>
                             </div>
                             <div class="dc-stat">
                                 <div class="dc-stat-label">Token Budget</div>
@@ -3724,7 +3730,7 @@
                         </div>
                         <div style="margin-bottom:0.75rem;">
                             <label class="dc-label" for="apiDelay">API Call Delay (seconds)</label>
-                            <input type="number" id="apiDelay" class="dc-input" min="0.5" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay();updateDelayStatDisplay()">
+                            <input type="number" id="apiDelay" class="dc-input" min="0" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay();updateDelayStatDisplay()">
                             <div class="dc-hint" id="delayHint" style="margin-top:0.28rem;">Groq: keep ≥ 2s (30 RPM free tier)</div>
                         </div>
                         <div>
@@ -3732,8 +3738,8 @@
                                 <label class="dc-label" style="margin:0;">Token Budget <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
                                 <button class="dc-btn-sm" onclick="setDefaultTokenBudgets();updateBudgetStatDisplay()" style="padding:0.16rem 0.45rem;font-size:0.63rem;">Free-Tier Defaults</button>
                             </div>
-                            <input type="number" id="groqTokenLimit" class="dc-input" min="0" step="1" placeholder="Groq token/min" onchange="updateBudgetStatDisplay()" style="max-width:55%;">
-                            <div class="dc-hint" style="margin-top:0.28rem;">Groq: <strong>6,000</strong> /min</div>
+                            <input type="number" id="providerTokenLimit" class="dc-input" min="0" step="1" placeholder="Token/min" onchange="saveTokenBudget(selectedProvider);updateBudgetStatDisplay()" style="max-width:55%;">
+                            <div class="dc-hint" id="tokenBudgetHint" style="margin-top:0.28rem;">Groq: <strong>6,000</strong> /min</div>
                         </div>
                     </div>
 
@@ -3758,7 +3764,7 @@
 
                     <div style="margin-bottom:0.9rem;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
-                            <label class="dc-label" style="margin:0;">📋 Analysis Prompt <span style="font-size:0.63rem;color:var(--text-muted);font-weight:400;">(Groq)</span></label>
+                            <label class="dc-label" style="margin:0;">📋 Analysis Prompt <span style="font-size:0.63rem;color:var(--text-muted);font-weight:400;" id="analysisPromptProviderTag">(Groq)</span></label>
                             <button class="dc-btn-sm" onclick="saveAnalysisPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
                         </div>
                         <textarea id="analysisPromptInput" class="dc-textarea" rows="10"
@@ -4194,8 +4200,46 @@
     let groqKeyIndex        = parseInt(localStorage.getItem('groqKeyIndex') || '0', 10);
     if (!Number.isInteger(groqKeyIndex) || groqKeyIndex < 0) groqKeyIndex = 0;
     let groqApiKey          = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
+    let geminiApiKeys     = parseApiKeys(localStorage.getItem('geminiApiKeys') || localStorage.getItem('geminiApiKey') || '');
+    let geminiKeyIndex    = parseInt(localStorage.getItem('geminiKeyIndex') || '0', 10);
+    if (!Number.isInteger(geminiKeyIndex) || geminiKeyIndex < 0) geminiKeyIndex = 0;
+    let geminiApiKey      = geminiApiKeys[geminiKeyIndex] || geminiApiKeys[0] || '';
     let driveApiKey         = localStorage.getItem('driveApiKey') || '';
     let selectedProvider    = localStorage.getItem('selectedProvider') || 'groq';
+    if (selectedProvider !== 'groq' && selectedProvider !== 'gemini') selectedProvider = 'groq';
+
+    // ─── AI Provider registry — add a new provider here and it's wired everywhere ───
+    const PROVIDER_CONFIG = {
+        groq: {
+            label: 'Groq',
+            emoji: '⚡',
+            tag: 'Fast · Free',
+            endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+            model: 'llama-3.3-70b-versatile',
+            defaultDelayMs: 2000,
+            rpmHint: '30 RPM free tier',
+            budgetHint: '6,000 /min',
+            defaultBudget: 6000,
+            getKeys: () => groqApiKeys,
+            getIndex: () => groqKeyIndex,
+            setIndex: (i) => { groqKeyIndex = i; localStorage.setItem('groqKeyIndex', String(i)); }
+        },
+        gemini: {
+            label: 'Gemini',
+            emoji: '✨',
+            tag: 'Free · Frontier',
+            endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+            model: 'gemini-2.5-flash',
+            defaultDelayMs: 4500,
+            rpmHint: '~15 RPM / ~1,500 requests per day (free tier)',
+            budgetHint: 'Gemini free tier is request-capped, not token-capped — this budget is just an optional extra guard rail',
+            defaultBudget: 0,
+            getKeys: () => geminiApiKeys,
+            getIndex: () => geminiKeyIndex,
+            setIndex: (i) => { geminiKeyIndex = i; localStorage.setItem('geminiKeyIndex', String(i)); }
+        }
+    };
+    function providerCfg(p) { return PROVIDER_CONFIG[p] || PROVIDER_CONFIG.groq; }
     let sheetsId           = localStorage.getItem('sheetsId') || '';
     let sheetsUrl          = localStorage.getItem('sheetsUrl') || '';
     let sheetSnapshotData  = null;
@@ -4212,11 +4256,12 @@
     })();
     let _linkedSheetMap    = {}; // normalized email/phone → { current_ctc, expected_ctc, notice_period }
     let tokenUsage = _parseStoredJson('tokenUsage', {
-        groq: { prompt: 0, completion: 0, total: 0 }
+        groq: { prompt: 0, completion: 0, total: 0 },
+        gemini: { prompt: 0, completion: 0, total: 0 }
     });
-    let tokenBudgets = _parseStoredJson('tokenBudgets', { groq: 0 });
-    let _tokenWindowStart = { groq: 0 };
-    let _rateLimitUntil   = { groq: 0 };
+    let tokenBudgets = _parseStoredJson('tokenBudgets', { groq: 0, gemini: 0 });
+    let _tokenWindowStart = { groq: 0, gemini: 0 };
+    let _rateLimitUntil   = { groq: 0, gemini: 0 };
     let _countdownTimer   = null; // setInterval handle for the live UI ticker
     let extraRequirements  = localStorage.getItem('extraRequirements') || '';
     let resumeDropOpen = false;
@@ -4234,18 +4279,19 @@
     }
 
     function updateTokenUsageInfo() {
-        ensureUsageShape('groq');
+        const p = selectedProvider;
+        ensureUsageShape(p);
         const info = document.getElementById('tokenUsageInfo');
         if (!info) return;
 
-        const p         = 'groq';
-        const label     = 'Groq ⚡';
+        const cfg       = providerCfg(p);
+        const label     = `${cfg.label} ${cfg.emoji}`;
         const used      = tokenUsage[p].total;
         const prompt    = tokenUsage[p].prompt;
         const completion= tokenUsage[p].completion;
         const budget    = _numOrZero(tokenBudgets[p]);
         const remaining = budget ? Math.max(0, budget - used) : null;
-        const keyCount  = groqApiKeys.length;
+        const keyCount  = cfg.getKeys().length;
         const now       = Date.now();
 
         // ── Token window countdown (rolling 1-min) ──
@@ -4300,29 +4346,32 @@
     }
 
     function saveTokenBudget(provider) {
-        const input = document.getElementById('groqTokenLimit');
+        const input = document.getElementById('providerTokenLimit');
         if (!input) return;
+        const cfg = providerCfg(provider);
         tokenBudgets[provider] = _numOrZero(input.value);
         localStorage.setItem('tokenBudgets', JSON.stringify(tokenBudgets));
         updateTokenUsageInfo();
-        showToast(`Groq token budget ${tokenBudgets[provider] ? 'saved' : 'cleared'}`, tokenBudgets[provider] ? 'success' : 'error');
+        showToast(`${cfg.label} token budget ${tokenBudgets[provider] ? 'saved' : 'cleared'}`, tokenBudgets[provider] ? 'success' : 'error');
     }
 
-    // Free-tier defaults: Groq = 6,000 TPM
+    // Applies each provider's recommended free/default budget for the ACTIVE provider
     function setDefaultTokenBudgets() {
-        tokenBudgets.groq = 6000;
+        const cfg = providerCfg(selectedProvider);
+        tokenBudgets[selectedProvider] = cfg.defaultBudget;
         localStorage.setItem('tokenBudgets', JSON.stringify(tokenBudgets));
-        const g = document.getElementById('groqTokenLimit');
-        if (g) g.value = 6000;
+        const inp = document.getElementById('providerTokenLimit');
+        if (inp) inp.value = cfg.defaultBudget || '';
         updateTokenUsageInfo();
-        showToast('Free-tier token budget applied (Groq: 6,000 TPM)', 'success');
+        showToast(cfg.defaultBudget ? `Default budget applied (${cfg.label}: ${cfg.defaultBudget.toLocaleString()} TPM)` : `${cfg.label} has no fixed free-tier budget — cleared`, 'success');
     }
 
     function resetTokenUsage(provider) {
-        tokenUsage['groq'] = { prompt: 0, completion: 0, total: 0 };
+        const cfg = providerCfg(provider);
+        tokenUsage[provider] = { prompt: 0, completion: 0, total: 0 };
         localStorage.setItem('tokenUsage', JSON.stringify(tokenUsage));
         updateTokenUsageInfo();
-        showToast('Groq token usage reset', 'success');
+        showToast(`${cfg.label} token usage reset`, 'success');
     }
 
     function recordTokenUsage(provider, usageMeta = {}) {
@@ -4348,19 +4397,23 @@
     }
 
     function normalizeProviderKeyState(provider) {
-        if (!groqApiKeys.length) { groqKeyIndex = 0; groqApiKey = ''; return; }
-        groqKeyIndex = groqKeyIndex % groqApiKeys.length;
-        groqApiKey = groqApiKeys[groqKeyIndex];
-        localStorage.setItem('groqKeyIndex', String(groqKeyIndex));
+        const cfg = providerCfg(provider);
+        const keys = cfg.getKeys();
+        if (!keys.length) { cfg.setIndex(0); return; }
+        let idx = cfg.getIndex() % keys.length;
+        if (idx < 0) idx = 0;
+        cfg.setIndex(idx);
     }
 
     function getProviderKeys(provider) {
-        return groqApiKeys;
+        return providerCfg(provider).getKeys();
     }
 
     function getActiveProviderKey(provider) {
         normalizeProviderKeyState(provider);
-        return groqApiKey;
+        const cfg = providerCfg(provider);
+        const keys = cfg.getKeys();
+        return keys[cfg.getIndex()] || keys[0] || '';
     }
 
     function hasProviderKey(provider) {
@@ -4368,36 +4421,46 @@
     }
 
     function hasAnyApiKey() {
-        return hasProviderKey('groq');
+        return hasProviderKey(selectedProvider);
     }
 
     function rotateProviderKey(provider, reason = 'limit') {
-        const keys = groqApiKeys;
+        const cfg = providerCfg(provider);
+        const keys = cfg.getKeys();
         if (keys.length <= 1) return false;
-        groqKeyIndex = (groqKeyIndex + 1) % keys.length;
-        groqApiKey = keys[groqKeyIndex];
-        localStorage.setItem('groqKeyIndex', String(groqKeyIndex));
+        const idx = (cfg.getIndex() + 1) % keys.length;
+        cfg.setIndex(idx);
         updateConnStatus(true);
-        showToast(`Switched to Groq key ${groqKeyIndex + 1}/${keys.length} (${reason})`, 'success');
+        showToast(`Switched to ${cfg.label} key ${idx + 1}/${keys.length} (${reason})`, 'success');
         return true;
     }
 
-    function saveGroqKeys(parsedKeys, showMessage = true) {
-        groqApiKeys = parsedKeys;
-        localStorage.setItem('groqApiKeys', groqApiKeys.join('\n'));
-        localStorage.setItem('groqApiKey', groqApiKeys[0] || ''); // backward compatibility
-        if (groqKeyIndex >= groqApiKeys.length) groqKeyIndex = 0;
-        normalizeProviderKeyState('groq');
+    function saveProviderKeys(provider, parsedKeys, showMessage = true) {
+        const cfg = providerCfg(provider);
+        if (provider === 'groq') {
+            groqApiKeys = parsedKeys;
+            localStorage.setItem('groqApiKeys', groqApiKeys.join('\n'));
+            localStorage.setItem('groqApiKey', groqApiKeys[0] || ''); // backward compatibility
+        } else if (provider === 'gemini') {
+            geminiApiKeys = parsedKeys;
+            localStorage.setItem('geminiApiKeys', geminiApiKeys.join('\n'));
+            localStorage.setItem('geminiApiKey', geminiApiKeys[0] || '');
+        }
+        normalizeProviderKeyState(provider);
         updateConnStatus(hasProviderKey(selectedProvider));
         if (showMessage) {
+            const n = cfg.getKeys().length;
             showToast(
-                groqApiKeys.length
-                    ? `Saved ${groqApiKeys.length} Groq key${groqApiKeys.length !== 1 ? 's' : ''} (auto-rotation enabled)`
-                    : 'Groq keys cleared',
-                groqApiKeys.length ? 'success' : 'error'
+                n ? `Saved ${n} ${cfg.label} key${n !== 1 ? 's' : ''} (auto-rotation enabled)` : `${cfg.label} keys cleared`,
+                n ? 'success' : 'error'
             );
         }
         updateTokenUsageInfo();
+    }
+
+    // Kept for backward compatibility with any inline handlers referencing the old name
+    function saveGroqKeys(parsedKeys, showMessage = true) {
+        saveProviderKeys('groq', parsedKeys, showMessage);
     }
 
     // ─── Init ───
@@ -4417,12 +4480,12 @@
         const savedFbUrl = localStorage.getItem('firebaseDbUrl') || '';
         if (savedFbUrl) document.getElementById('firebaseDbUrlInput').value = savedFbUrl;
 
-        // Restore provider selection
+        if (groqApiKeys.length) document.getElementById('groqKey').value = groqApiKeys.join(', ');
+        if (geminiApiKeys.length) document.getElementById('geminiKey').value = geminiApiKeys.join(', ');
+
+        // Restore provider selection (also restores the token-budget input for the active provider)
         switchProvider(selectedProvider, true);
 
-        if (groqApiKeys.length) document.getElementById('groqKey').value = groqApiKeys.join(', ');
-        const _groqBudgetIn = document.getElementById('groqTokenLimit');
-        if (_groqBudgetIn) _groqBudgetIn.value = _numOrZero(tokenBudgets.groq) || '';
         if (driveApiKey)  document.getElementById('driveApiKey').value = driveApiKey;
         updateConnStatus(hasProviderKey(selectedProvider));
         loadPromptEditorUI();
@@ -4452,7 +4515,7 @@
         // Live countdown ticker — updates the token window and rate-limit timers every second
         if (_countdownTimer) clearInterval(_countdownTimer);
         _countdownTimer = setInterval(() => {
-            const p = 'groq';
+            const p = selectedProvider;
             const now = Date.now();
 
             // Update window countdown text + bar in-place (avoid full re-render flicker)
@@ -4495,48 +4558,70 @@
     
     // ─── Provider Switch ───
     function switchProvider(p, silent) {
-        selectedProvider = 'groq';
-        localStorage.setItem('selectedProvider', 'groq');
+        if (!PROVIDER_CONFIG[p]) p = 'groq';
+        selectedProvider = p;
+        localStorage.setItem('selectedProvider', p);
+        const cfg = providerCfg(p);
 
+        // Toggle button active state
+        const btnGroq = document.getElementById('btnGroq');
+        const btnDs   = document.getElementById('btnGemini');
+        if (btnGroq) btnGroq.classList.toggle('active', p === 'groq');
+        if (btnDs)   btnDs.classList.toggle('active', p === 'gemini');
+
+        // Toggle field visibility
         const gf = document.getElementById('groqFields');
-        if (gf) gf.style.display = 'block';
+        const df = document.getElementById('geminiFields');
+        if (gf) gf.style.display = (p === 'groq') ? 'block' : 'none';
+        if (df) df.style.display = (p === 'gemini') ? 'block' : 'none';
 
-        // Set sensible default delay
-        const providerDefault = 2000;
-        if (!localStorage.getItem('apiDelayMs')) {
-            API_DELAY_MS = providerDefault;
-        } else {
-            API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs'));
-        }
+        // Header chip
+        const nameEl = document.getElementById('providerBlockName');
+        if (nameEl) nameEl.innerHTML = `${cfg.emoji} ${cfg.label}<span class="dc-provider-tag">${cfg.tag}</span>`;
+
+        // Analysis-prompt tag
+        const tagEl = document.getElementById('analysisPromptProviderTag');
+        if (tagEl) tagEl.textContent = `(${cfg.label})`;
+
+        // Per-provider delay: use a saved override if present, else the provider's sane default
+        const savedDelay = localStorage.getItem('apiDelayMs_' + p) || localStorage.getItem('apiDelayMs');
+        API_DELAY_MS = savedDelay ? parseInt(savedDelay) : cfg.defaultDelayMs;
         const delayInput = document.getElementById('apiDelay');
         if (delayInput) delayInput.value = (API_DELAY_MS / 1000).toFixed(1);
-
         rateLimiter.updateDelay(API_DELAY_MS);
+
+        // Token budget input reflects the active provider's stored budget
+        const budgetInput = document.getElementById('providerTokenLimit');
+        if (budgetInput) budgetInput.value = _numOrZero(tokenBudgets[p]) || '';
 
         const key = getActiveProviderKey(p);
         updateConnStatus(!!key);
         updateRateLimitInfo();
         updateTokenUsageInfo();
-        if (!silent) showToast('Switched to Groq ⚡', 'success');
+        updateBudgetStatDisplay();
+        if (!silent) showToast(`Switched to ${cfg.label} ${cfg.emoji}`, 'success');
     }
 
     function updateRateLimitInfo() {
         const info = document.getElementById('rateLimitInfo');
         const hint = document.getElementById('delayHint');
+        const sub  = document.getElementById('delayStatSub');
+        const budgetHintEl = document.getElementById('tokenBudgetHint');
         if (!info) return;
+        const cfg = providerCfg(selectedProvider);
         const delayS = (API_DELAY_MS / 1000).toFixed(1);
-        const reqPerMin = Math.floor(60000 / API_DELAY_MS);
-        const limitRPM = 30;
-        const safe = reqPerMin <= limitRPM - 2;
+        const reqPerMin = API_DELAY_MS > 0 ? Math.floor(60000 / API_DELAY_MS) : Infinity;
 
         info.innerHTML = `
             Each API call is delayed by <strong>${delayS}s</strong> to prevent rate limit errors.
             <span style="color:var(--text-muted);display:block;margin-top:0.25rem;">
-                ⚡ Groq free tier: ${limitRPM} RPM &nbsp;·&nbsp;
-                Current: ~${reqPerMin} req/min &nbsp;${safe ? '<span style="color:var(--success)">✓ Safe</span>' : '<span style="color:var(--danger)">⚠️ Too fast!</span>'}
+                ${cfg.emoji} ${cfg.label}: ${cfg.rpmHint} &nbsp;·&nbsp;
+                Current: ~${Number.isFinite(reqPerMin) ? reqPerMin + ' req/min' : 'no delay'}
             </span>
         `;
-        if (hint) hint.textContent = 'Groq: keep ≥ 2s (30 RPM)';
+        if (hint) hint.textContent = `${cfg.label}: ${cfg.rpmHint}`;
+        if (sub) sub.textContent = `${cfg.label}: ${cfg.rpmHint}`;
+        if (budgetHintEl) budgetHintEl.innerHTML = cfg.budgetHint;
     }
 
     // ─── Sidebar Toggles ───
@@ -4572,7 +4657,12 @@
     // ─── API Keys ───
     function saveGroqKey() {
         const raw = document.getElementById('groqKey').value.trim();
-        saveGroqKeys(parseApiKeys(raw), true);
+        saveProviderKeys('groq', parseApiKeys(raw), true);
+    }
+
+    function saveGeminiKey() {
+        const raw = document.getElementById('geminiKey').value.trim();
+        saveProviderKeys('gemini', parseApiKeys(raw), true);
     }
 
     function saveExtraRequirements() {
@@ -4581,10 +4671,13 @@
     }
 
     // ─── Prompt Editor ───
-    const DEFAULT_ANALYSIS_PROMPT = `You are a senior technical recruiter. Analyze the resume vs the job description. Return ONLY valid JSON (no markdown, no extra text).
+    const DEFAULT_ANALYSIS_PROMPT = `You are a skeptical, detail-oriented senior technical recruiter. Give an HONEST, evidence-based assessment — most resumes are mediocre matches, so reserve high scores for resumes that clearly prove what the JD asks for. Do not inflate scores to be polite. Return ONLY valid JSON (no markdown, no commentary before or after).
 Today's date: \${_todayLabel}. Use this exact date when a role says "Present" or "Current".
 
-SKILLS RULE: A skill only counts if used in WORK EXPERIENCE/RESPONSIBILITIES — not just listed in a Skills/Competencies section. Penalize skills listed only without job context.
+STEP 1 — From the JD below, mentally separate MUST-HAVE requirements from NICE-TO-HAVE ones before you score anything.
+
+STEP 2 — Read the FULL resume, not just the skills list.
+SKILLS RULE: A skill counts as demonstrated only if it appears in a work-experience bullet, project, or achievement describing what the candidate actually DID with it — not just listed in a Skills/Technologies section with zero supporting context. Recognize common synonyms/aliases as the same skill (e.g. JS = JavaScript, Postgres = PostgreSQL, React.js = React, GCP = Google Cloud Platform). Treat skills that only appear in a buzzword list — with no matching work described anywhere else on the resume — as unverified; do not give them full credit.
 
 JD: \${jd}
 
@@ -4592,19 +4685,22 @@ Filters: Exp \${filters.minExpDecimal !== null ? (filters.minExpDecimal < 1 ? Ma
 
 Resume: \${resumeText.slice(0, 15000)}
 
-SCORING (each 0–100):
-• skills_score (40%): demonstrated skills from work exp matching JD
-• experience_score (25%): Find the Work Experience / Employment History section. For EACH role listed:
-  1. Extract: role title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if title explicitly says Intern/Internship/Trainee/Industrial Training).
-  2. Return these raw dates in the "roles" array — do NOT compute durations yourself.
-  3. For experience_score: estimate if total professional time meets JD requirement. 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant.
-  NOTE: experience_years and internship_months will be calculated by the system — set them to 0 in your response.
-• education_score (15%): degree/field vs JD
-• achievements_score (10%): quantified results
-• culture_score (10%): soft skills/leadership signals
-match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
+STEP 3 — Score each dimension 0–100. Use these anchors — do not default every candidate into the 60–80 range:
+• skills_score (40%): weighted mainly on MUST-HAVE skills demonstrated with real evidence (nice-to-haves count for less). 90-100=nearly all must-haves clearly proven · 70-89=most proven, 1-2 real gaps · 50-69=roughly half proven, notable gaps · 20-49=few must-haves proven · 0-19=fundamental mismatch.
+• experience_score (25%): find the Work Experience / Employment History section. For EACH role: extract title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if the title explicitly says Intern/Internship/Trainee/Industrial Training). Return these raw dates in the "roles" array — do NOT compute durations yourself (experience_years and internship_months are calculated by the system; set both to 0 here).
+  Score this dimension: 100=clearly exceeds JD requirement in a relevant domain · 75=meets it · 50=somewhat under, or right years but in an adjacent/unrelated domain · 25=significantly under or mostly unrelated work · 0=no relevant experience at all.
+• education_score (15%): 100=exceeds JD's stated requirement · 70=meets it exactly · 40=related field but not an exact match · 15=unrelated field · 0=JD explicitly requires a degree/certification the candidate does not have.
+• achievements_score (10%): quantified, verifiable impact (numbers, %, scale, revenue, users, etc.) stated in bullets — not generic duty statements. Score 0 if the resume has zero quantified results anywhere.
+• culture_score (10%): concrete evidence of leadership, ownership, mentorship, or collaboration actually described on the resume — do not assume this just because of a job title.
+match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10) — the system recalculates this from your score_breakdown for consistency, so make score_breakdown your true, considered assessment.
 
-Return exactly:
+STEP 4 — skills_missing must list EVERY must-have JD skill that is not demonstrated (not just one or two examples). skills_present should only include skills that pass the SKILLS RULE above.
+
+STEP 5 — rating_reason and summary must cite something SPECIFIC from THIS resume (a real project, employer, number, or gap) — never generic filler like "strong candidate with relevant background."
+
+STEP 6 — extra_requirements_feedback: for each extra screening item listed in Filters above, return one string starting with exactly "Meets: " or "Missing: " followed by the specific evidence or reason from the resume. One string per item, in the same order given. Return an empty array if no extra screening items were given.
+
+Return exactly this JSON shape:
 {"name":"","email":null,"phone":null,"linkedin_url":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","company":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
 
     const DEFAULT_PEARLY_PROMPT = `You are Pearly 🌸 — BeamX's witty, warm, and unapologetically opinionated AI talent sidekick, made with love by Team SPY. You're sharp, occasionally sassy, and always grounded in data. When a recruiter asks about a candidate, you reference their actual scores, skills, gaps, and experience — not vague impressions. You give real takes: "This one's a stretch hire 😬", "Look at that skills_score — absolute chef's kiss 🍳", "Compare them on experience and Candidate A wins, not even close 💅."
@@ -4630,10 +4726,13 @@ IMPORTANT: Whenever you introduce yourself or someone asks who you are — alway
 
         if (!customAnalysisPrompt) {
             // Build default prompt directly — no eval, no template tricks
-            return `You are a senior technical recruiter. Analyze the resume vs the job description. Return ONLY valid JSON (no markdown, no extra text).
+            return `You are a skeptical, detail-oriented senior technical recruiter. Give an HONEST, evidence-based assessment — most resumes are mediocre matches, so reserve high scores for resumes that clearly prove what the JD asks for. Do not inflate scores to be polite. Return ONLY valid JSON (no markdown, no commentary before or after).
 Today's date: ${_todayLabel}. Use this exact date when a role says "Present" or "Current".
 
-SKILLS RULE: A skill only counts if used in WORK EXPERIENCE/RESPONSIBILITIES — not just listed in a Skills/Competencies section. Penalize skills listed only without job context.
+STEP 1 — From the JD below, mentally separate MUST-HAVE requirements from NICE-TO-HAVE ones before you score anything.
+
+STEP 2 — Read the FULL resume, not just the skills list.
+SKILLS RULE: A skill counts as demonstrated only if it appears in a work-experience bullet, project, or achievement describing what the candidate actually DID with it — not just listed in a Skills/Technologies section with zero supporting context. Recognize common synonyms/aliases as the same skill (e.g. JS = JavaScript, Postgres = PostgreSQL, React.js = React, GCP = Google Cloud Platform). Treat skills that only appear in a buzzword list — with no matching work described anywhere else on the resume — as unverified; do not give them full credit.
 
 JD: ${jd}
 
@@ -4641,19 +4740,22 @@ Filters: Exp ${minExpStr}–${maxExpStr}, Location: ${filters.location || 'any'}
 
 Resume: ${resumeText.slice(0, 15000)}
 
-SCORING (each 0–100):
-• skills_score (40%): demonstrated skills from work exp matching JD
-• experience_score (25%): Find the Work Experience / Employment History section. For EACH role listed:
-  1. Extract: role title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if title explicitly says Intern/Internship/Trainee/Industrial Training).
-  2. Return these raw dates in the "roles" array — do NOT compute durations yourself.
-  3. For experience_score: estimate if total professional time meets JD requirement. 100=clearly exceeds, 75=meets, 50=slightly under, 25=significantly under, 0=none relevant.
-  NOTE: experience_years and internship_months will be calculated by the system — set them to 0 in your response.
-• education_score (15%): degree/field vs JD
-• achievements_score (10%): quantified results
-• culture_score (10%): soft skills/leadership signals
-match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10)
+STEP 3 — Score each dimension 0–100. Use these anchors — do not default every candidate into the 60–80 range:
+• skills_score (40%): weighted mainly on MUST-HAVE skills demonstrated with real evidence (nice-to-haves count for less). 90-100=nearly all must-haves clearly proven · 70-89=most proven, 1-2 real gaps · 50-69=roughly half proven, notable gaps · 20-49=few must-haves proven · 0-19=fundamental mismatch.
+• experience_score (25%): find the Work Experience / Employment History section. For EACH role: extract title, start (as "YYYY-MM" or "MM/YYYY" or "Mon YYYY"), end (same format, or "present" if ongoing), and classify as "professional" or "internship" (internship ONLY if the title explicitly says Intern/Internship/Trainee/Industrial Training). Return these raw dates in the "roles" array — do NOT compute durations yourself (experience_years and internship_months are calculated by the system; set both to 0 here).
+  Score this dimension: 100=clearly exceeds JD requirement in a relevant domain · 75=meets it · 50=somewhat under, or right years but in an adjacent/unrelated domain · 25=significantly under or mostly unrelated work · 0=no relevant experience at all.
+• education_score (15%): 100=exceeds JD's stated requirement · 70=meets it exactly · 40=related field but not an exact match · 15=unrelated field · 0=JD explicitly requires a degree/certification the candidate does not have.
+• achievements_score (10%): quantified, verifiable impact (numbers, %, scale, revenue, users, etc.) stated in bullets — not generic duty statements. Score 0 if the resume has zero quantified results anywhere.
+• culture_score (10%): concrete evidence of leadership, ownership, mentorship, or collaboration actually described on the resume — do not assume this just because of a job title.
+match_score = round(skills*0.40 + exp*0.25 + edu*0.15 + ach*0.10 + culture*0.10) — the system recalculates this from your score_breakdown for consistency, so make score_breakdown your true, considered assessment.
 
-Return exactly:
+STEP 4 — skills_missing must list EVERY must-have JD skill that is not demonstrated (not just one or two examples). skills_present should only include skills that pass the SKILLS RULE above.
+
+STEP 5 — rating_reason and summary must cite something SPECIFIC from THIS resume (a real project, employer, number, or gap) — never generic filler like "strong candidate with relevant background."
+
+STEP 6 — extra_requirements_feedback: for each extra screening item listed in Filters above, return one string starting with exactly "Meets: " or "Missing: " followed by the specific evidence or reason from the resume. One string per item, in the same order given. Return an empty array if no extra screening items were given.
+
+Return exactly this JSON shape:
 {"name":"","email":null,"phone":null,"linkedin_url":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","company":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
         }
 
@@ -4765,8 +4867,7 @@ Return exactly:
         const roleInput = document.getElementById('jdGenRoleInput');
         const role = roleInput.value.trim();
         if (!role) { showToast('Enter a job title / role first', 'error'); roleInput.focus(); return; }
-        const activeKey = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
-        if (!activeKey) { showToast('Configure your Groq API key in Settings first', 'error'); return; }
+        if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key in Settings first`, 'error'); return; }
 
         const btn = document.getElementById('jdGenBtn');
         btn.disabled = true;
@@ -4787,19 +4888,7 @@ Structure the JD with these sections (use plain text, no markdown symbols):
 Write in a professional tone. Be specific and realistic for this role. Do not include salary, company name, or benefits.`;
 
         try {
-            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
-                body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.5, max_tokens: 1800 })
-            });
-            if (!res.ok) throw new Error(`Groq error ${res.status}`);
-            const data = await res.json();
-            recordTokenUsage('groq', {
-                promptTokens: data?.usage?.prompt_tokens,
-                completionTokens: data?.usage?.completion_tokens,
-                totalTokens: data?.usage?.total_tokens
-            });
-            const jdText = data?.choices?.[0]?.message?.content?.trim();
+            const jdText = (await callAIProvider([{ role: 'user', content: prompt }], { maxTokens: 1800, temperature: 0.5 }))?.trim();
             if (!jdText) throw new Error('Empty response from AI');
             const editBox = document.getElementById('jdEditBox');
             editBox.value = jdText;
@@ -4820,8 +4909,7 @@ Write in a professional tone. Be specific and realistic for this role. Do not in
     async function getJdRecommendations() {
         const jd = document.getElementById('jdEditBox').value.trim();
         if (!jd) { showToast('Paste or select a Job Description first', 'error'); return; }
-        const activeKey = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
-        if (!activeKey) { showToast('Configure your Groq API key first', 'error'); return; }
+        if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key first`, 'error'); return; }
 
         const btn   = document.getElementById('jdRecBtn');
         const panel = document.getElementById('jdRecPanel');
@@ -4851,22 +4939,7 @@ Rules:
 - Keep descriptions concise (max 2 sentences)`;
 
         try {
-            let raw;
-            {
-                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
-                    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 1200 })
-                });
-                if (!res.ok) throw new Error(`Groq error ${res.status}`);
-                const data = await res.json();
-                recordTokenUsage('groq', {
-                    promptTokens: data?.usage?.prompt_tokens,
-                    completionTokens: data?.usage?.completion_tokens,
-                    totalTokens: data?.usage?.total_tokens
-                });
-                raw = data?.choices?.[0]?.message?.content;
-            }
+            const raw = await callAIProvider([{ role: 'user', content: prompt }], { maxTokens: 1200, temperature: 0.3 });
 
             if (!raw) throw new Error('Empty response from AI');
             const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
@@ -5274,15 +5347,16 @@ Rules:
 
     function saveApiDelay() {
         const delaySeconds = parseFloat(document.getElementById('apiDelay').value);
-        if (delaySeconds >= 0.5 && delaySeconds <= 10) {
+        if (delaySeconds >= 0 && delaySeconds <= 10) {
             API_DELAY_MS = Math.round(delaySeconds * 1000);
-            localStorage.setItem('apiDelayMs', API_DELAY_MS);
+            localStorage.setItem('apiDelayMs_' + selectedProvider, API_DELAY_MS);
+            localStorage.setItem('apiDelayMs', API_DELAY_MS); // legacy fallback
             rateLimiter.updateDelay(API_DELAY_MS); // Update rate limiter
             updateRateLimitInfo(); // Update info banner
             updateDelayStatDisplay();
             showToast(`Delay set to ${delaySeconds.toFixed(1)}s`, 'success');
         } else {
-            showToast('Delay must be between 0.5 and 10 seconds', 'error');
+            showToast('Delay must be between 0 and 10 seconds', 'error');
             document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
         }
     }
@@ -5295,15 +5369,16 @@ Rules:
     function updateBudgetStatDisplay() {
         const el = document.getElementById('budgetStatVal');
         if (!el) return;
-        const v = document.getElementById('groqTokenLimit');
+        const v = document.getElementById('providerTokenLimit');
         el.textContent = v && v.value ? Number(v.value).toLocaleString() : '—';
     }
 
     function updateConnStatus(active) {
         const badge = document.getElementById('connBadge');
         const railDot = document.getElementById('railConnDot');
+        const cfg = providerCfg(selectedProvider);
         badge.className = 'conn-badge' + (active ? ' connected' : '');
-        badge.innerHTML = `<span class="conn-dot"></span>${active ? '⚡ Groq connected' : 'Not connected'}`;
+        badge.innerHTML = `<span class="conn-dot"></span>${active ? `${cfg.emoji} ${cfg.label} connected` : 'Not connected'}`;
         if (railDot) railDot.className = 'rail-conn-dot' + (active ? ' connected' : '');
     }
 
@@ -5750,7 +5825,7 @@ Rules:
     }
 
     // ─── ROBUST Rate Limiting System ───
-    let API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs')) || 2000; // Groq default 2s (30 RPM)
+    let API_DELAY_MS = parseInt(localStorage.getItem('apiDelayMs_' + selectedProvider) || localStorage.getItem('apiDelayMs')) || providerCfg(selectedProvider).defaultDelayMs;
     
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -5829,99 +5904,102 @@ Rules:
         throw lastError;
     }
 
+    // ─── Shared AI caller — handles key rotation, rate-limit backoff, and token accounting
+    //     for WHICHEVER provider is currently selected (Groq or Gemini). Every AI call
+    //     site in this app routes through here so the provider toggle actually works everywhere. ───
+    async function callAIProvider(messages, { maxTokens = 1500, temperature = 0.2, signal = null } = {}) {
+        const provider = selectedProvider;
+        const cfg = providerCfg(provider);
+        const keys = cfg.getKeys();
+        if (!keys.length) throw new Error(`No ${cfg.label} API key configured`);
+
+        const triedIndexes = new Set();
+        while (triedIndexes.size < keys.length) {
+            const keyIndex = cfg.getIndex();
+            if (triedIndexes.has(keyIndex)) break;
+            triedIndexes.add(keyIndex);
+            const activeKey = getActiveProviderKey(provider);
+
+            let res;
+            try {
+                res = await fetch(cfg.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${activeKey}`
+                    },
+                    signal: signal || undefined,
+                    body: JSON.stringify({
+                        model: cfg.model,
+                        messages,
+                        temperature,
+                        max_tokens: maxTokens
+                    })
+                });
+            } catch (err) {
+                if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
+                throw new Error(`Network error reaching ${cfg.label} API`);
+            }
+
+            if (!res.ok) {
+                let errMsg = `HTTP ${res.status}`;
+                try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
+                if (res.status === 401) {
+                    if (rotateProviderKey(provider, 'invalid key')) continue;
+                    throw new Error(`${cfg.label} API key invalid`);
+                }
+                if (res.status === 429) {
+                    const retryAfterSec = parseInt(res.headers.get('retry-after') || '0', 10);
+                    if (retryAfterSec > 0 && retryAfterSec <= 65 && !triedIndexes.has(String(keyIndex) + '_waited')) {
+                        triedIndexes.add(String(keyIndex) + '_waited');
+                        _rateLimitUntil[provider] = Date.now() + (retryAfterSec * 1000) + 500;
+                        updateTokenUsageInfo();
+                        showToast(`${cfg.label} key ${keyIndex+1} rate limited — waiting ${retryAfterSec}s…`, 'warning');
+                        await sleepInterruptible(retryAfterSec * 1000 + 500);
+                        _rateLimitUntil[provider] = 0;
+                        triedIndexes.delete(keyIndex);
+                        continue;
+                    }
+                    if (rotateProviderKey(provider, 'rate limit')) continue;
+                    _rateLimitUntil[provider] = Date.now() + 60000;
+                    updateTokenUsageInfo();
+                    throw new Error(`RATE_LIMIT:${cfg.label} rate limit hit — all configured keys are exhausted`);
+                }
+                throw new Error(`${cfg.label} error: ${errMsg}`);
+            }
+
+            const data = await res.json();
+            recordTokenUsage(provider, {
+                promptTokens: data?.usage?.prompt_tokens,
+                completionTokens: data?.usage?.completion_tokens,
+                totalTokens: data?.usage?.total_tokens
+            });
+            const raw = data?.choices?.[0]?.message?.content;
+            if (!raw) throw new Error(`${cfg.label} returned empty response`);
+            return raw;
+        }
+
+        throw new Error(`RATE_LIMIT:${cfg.label} keys exhausted — add a fresh key and resume`);
+    }
+
     async function analyzeWithProvider(resumeText, jd, filters) {
-        const provider = 'groq';
-        const keys = groqApiKeys;
-        const providerLabel = 'Groq';
-        if (!keys.length) throw new Error(`No ${providerLabel} API key configured`);
+        const cfg = providerCfg(selectedProvider);
+        if (!cfg.getKeys().length) throw new Error(`No ${cfg.label} API key configured`);
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
         if (_stopSignal) throw new Error('STOP_REQUESTED');
 
         await rateLimiter.waitForSlot();
         if (_stopSignal) throw new Error('STOP_REQUESTED');
 
-        const _todayLabel = (() => { const d = new Date(); return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }); })();
         const prompt = buildAnalysisPrompt(resumeText, jd, filters);
-        let raw;
-        let controller = null;
-        const triedIndexes = new Set();
+        const controller = new AbortController();
+        _activeApiAbortController = controller;
 
-        while (triedIndexes.size < keys.length) {
-            const keyIndex = groqKeyIndex;
-            if (triedIndexes.has(keyIndex)) break;
-            triedIndexes.add(keyIndex);
-            const activeKey = getActiveProviderKey(provider);
-
-            controller = new AbortController();
-            _activeApiAbortController = controller;
-
-            {
-                // ─── Groq (OpenAI-compatible) ───
-                const apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-                const model = 'llama-3.3-70b-versatile';
-                let res;
-                try {
-                    res = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${activeKey}`
-                        },
-                        signal: controller.signal,
-                        body: JSON.stringify({
-                            model,
-                            messages: [{ role: 'user', content: prompt }],
-                            temperature: 0.2,
-                            max_tokens: 1500
-                        })
-                    });
-                } catch (err) {
-                    if (err?.name === 'AbortError') throw new Error('STOP_REQUESTED');
-                    throw new Error(`Network error reaching ${providerLabel} API`);
-                }
-
-                if (!res.ok) {
-                    let errMsg = `HTTP ${res.status}`;
-                    try { const e = await res.json(); errMsg = e?.error?.message || errMsg; } catch {}
-                    if (res.status === 401) {
-                        if (rotateProviderKey(provider, 'invalid key')) continue;
-                        throw new Error(`${providerLabel} API key invalid`);
-                    }
-                    if (res.status === 429) {
-                        const retryAfterSec = parseInt(res.headers.get('retry-after') || '0', 10);
-                        if (retryAfterSec > 0 && retryAfterSec <= 65 && !triedIndexes.has(String(keyIndex) + '_waited')) {
-                            triedIndexes.add(String(keyIndex) + '_waited');
-                            _rateLimitUntil[provider] = Date.now() + (retryAfterSec * 1000) + 500;
-                            updateTokenUsageInfo();
-                            showToast(`${providerLabel} key ${keyIndex+1} rate limited — waiting ${retryAfterSec}s…`, 'warning');
-                            await sleepInterruptible(retryAfterSec * 1000 + 500);
-                            _rateLimitUntil[provider] = 0;
-                            triedIndexes.delete(keyIndex);
-                            continue;
-                        }
-                        if (rotateProviderKey(provider, 'rate limit')) continue;
-                        _rateLimitUntil[provider] = Date.now() + 60000;
-                        updateTokenUsageInfo();
-                        throw new Error(`RATE_LIMIT:${providerLabel} rate limit hit — all configured keys are exhausted`);
-                    }
-                    throw new Error(`${providerLabel} error: ${errMsg}`);
-                }
-
-                const data = await res.json();
-                recordTokenUsage(provider, {
-                    promptTokens: data?.usage?.prompt_tokens,
-                    completionTokens: data?.usage?.completion_tokens,
-                    totalTokens: data?.usage?.total_tokens
-                });
-                raw = data?.choices?.[0]?.message?.content;
-                if (!raw) throw new Error(`${providerLabel} returned empty response`);
-                break;
-            }
-        }
-
-        if (!raw) {
-            throw new Error(`RATE_LIMIT:${providerLabel} keys exhausted — add a fresh key and resume`);
-        }
+        const raw = await callAIProvider([{ role: 'user', content: prompt }], {
+            maxTokens: 1500,
+            temperature: 0.2,
+            signal: controller.signal
+        });
 
         try {
             // ─── Parse JSON from either provider ───
@@ -5972,6 +6050,19 @@ Rules:
                 }
                 parsed.experience_years  = Math.round((profMonths / 12) * 100) / 100;
                 parsed.internship_months = internMonths;
+            }
+
+            // ─── Recompute match_score from score_breakdown in JS (AI arithmetic drifts under JSON constraints) ───
+            const sb = parsed.score_breakdown;
+            if (sb && typeof sb === 'object') {
+                const n = (v) => { const x = Number(v); return Number.isFinite(x) ? Math.max(0, Math.min(100, x)) : 0; };
+                parsed.match_score = Math.round(
+                    n(sb.skills_score)       * 0.40 +
+                    n(sb.experience_score)   * 0.25 +
+                    n(sb.education_score)    * 0.15 +
+                    n(sb.achievements_score) * 0.10 +
+                    n(sb.culture_score)      * 0.10
+                );
             }
 
             return parsed;
@@ -6034,8 +6125,10 @@ Rules:
         }
         // Sync latest key values from inputs in case onchange hasn't fired yet
         const _groqIn = document.getElementById('groqKey');
-        if (_groqIn?.value.trim()) saveGroqKeys(parseApiKeys(_groqIn.value), false);
-        if (!hasAnyApiKey()) { showToast('Configure your Groq API key first', 'error'); return; }
+        if (_groqIn?.value.trim()) saveProviderKeys('groq', parseApiKeys(_groqIn.value), false);
+        const _dsIn = document.getElementById('geminiKey');
+        if (_dsIn?.value.trim()) saveProviderKeys('gemini', parseApiKeys(_dsIn.value), false);
+        if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key first`, 'error'); return; }
         document.getElementById('resumeBanner').style.display = 'none';
         renderPendingProfilesPanel();
         await _runAnalysisLoop(_pendingUploadedFiles.splice(0), _pendingDriveFiles.splice(0), _savedFilters, _savedTotal, _savedDone, true);
@@ -6100,8 +6193,7 @@ Rules:
     }
 
     async function analyzeResumes() {
-        if (!hasAnyApiKey()) { showToast('Configure your API key first', 'error'); return; }
-        if (!hasProviderKey('groq')) { showToast('Configure your Groq API key first', 'error'); return; }
+        if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key first`, 'error'); return; }
         if (!uploadedFiles.length && !driveFiles.length) { showToast('Upload a resume or paste a Drive link first', 'error'); return; }
         const jdEditBox = document.getElementById('jdEditBox');
         if (jdEditBox && jdEditBox.value.trim()) currentJD = jdEditBox.value.trim();
@@ -6463,8 +6555,7 @@ Rules:
         const btn = document.getElementById(btnId);
         if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating…'; }
 
-        const activeKey = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
-        if (!activeKey) { showToast('Configure your Groq API key first', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '🎤 Generate Questions'; } return; }
+        if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key first`, 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '🎤 Generate Questions'; } return; }
 
         const prompt = `You are a senior recruiter. Generate exactly 5 personalised screening interview questions for this candidate applying for this role.
 Return ONLY valid JSON (no markdown fences).
@@ -6489,22 +6580,7 @@ Return exactly this JSON:
 IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified skill, 1 on a specific past experience from their background, 1 soft skill/culture fit, 1 curveball based on a gap or inconsistency.`;
 
         try {
-            let raw;
-            {
-                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
-                    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 1400 })
-                });
-                if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
-                const data = await res.json();
-                recordTokenUsage('groq', {
-                    promptTokens: data?.usage?.prompt_tokens,
-                    completionTokens: data?.usage?.completion_tokens,
-                    totalTokens: data?.usage?.total_tokens
-                });
-                raw = data?.choices?.[0]?.message?.content;
-            }
+            const raw = await callAIProvider([{ role: 'user', content: prompt }], { maxTokens: 1400, temperature: 0.3 });
             if (!raw) throw new Error('Empty response from AI');
             const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
             const match = cleaned.match(/\{[\s\S]*\}/);
@@ -6555,8 +6631,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const btn = document.getElementById(btnId);
         if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Researching…'; }
 
-        const activeKey = groqApiKeys[groqKeyIndex] || groqApiKeys[0] || '';
-        if (!activeKey) { showToast('Configure your Groq API key first', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Research'; } return; }
+        if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key first`, 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Research'; } return; }
 
         const _rolesText = (r.roles || [])
             .filter(ro => ro.company || ro.title)
@@ -6565,18 +6640,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const prompt = `You are a recruitment research analyst. Research each company this candidate has worked at.\n\nCandidate: ${r.name}\nWork History:\n${_rolesText}\nSummary: ${r.summary || ''}\nHighlights: ${(r.highlights || []).join('; ')}\n\nReturn ONLY valid JSON (no markdown fences).\n{\n  "companies": [\n    {\n      "name": "Exact company name",\n      "industry": "e.g. FinTech / SaaS / IT Services",\n      "size": "e.g. Startup / Mid-size / Large / Enterprise",\n      "what_they_do": "One sentence on what the company does",\n      "employer_reputation": "Brief note on culture or brand if known",\n      "relevance": "How this experience is relevant to the current role"\n    }\n  ]\n}\nRULES: Use exact company names from work history. If a company name is missing, infer from context or label as "Previous Employer". Always return at least one entry — do not return an empty array. Max 5. Keep each field to 1-2 sentences.`;
 
         try {
-            let raw;
-            {
-                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
-                    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.2, max_tokens: 1000 })
-                });
-                if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
-                const data = await res.json();
-                recordTokenUsage('groq', { promptTokens: data?.usage?.prompt_tokens, completionTokens: data?.usage?.completion_tokens, totalTokens: data?.usage?.total_tokens });
-                raw = data?.choices?.[0]?.message?.content;
-            }
+            const raw = await callAIProvider([{ role: 'user', content: prompt }], { maxTokens: 1000, temperature: 0.2 });
             if (!raw) throw new Error('Empty response from AI');
             const cleaned = raw.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/i,'').trim();
             const match = cleaned.match(/\{[\s\S]*\}/);
@@ -9544,56 +9608,32 @@ main.addEventListener('scroll',()=>{
         try {
             const context = pearlyBuildContext();
             const systemPrompt = buildPearlySystemPrompt(context);
+            const cfg = providerCfg(selectedProvider);
 
-            // Pearly uses Groq (llama-3.3-70b) with key rotation
-            if (!groqApiKeys || groqApiKeys.length === 0) {
+            if (!cfg.getKeys().length) {
                 pearlyHideTyping();
-                pearlyAppendMsg(`I need a Groq API key to chat! 🥺 Pop one in Settings → get it free at console.groq.com bestie~`, false);
+                pearlyAppendMsg(`I need a ${cfg.label} API key to chat! 🥺 Pop one in Settings bestie~`, false);
                 return;
             }
 
-            let responseText = null;
-            const triedPearly = new Set();
-            let pearlyKeyIdx = groqKeyIndex;
-
-            while (triedPearly.size < groqApiKeys.length) {
-                if (triedPearly.has(pearlyKeyIdx)) break;
-                triedPearly.add(pearlyKeyIdx);
-                const activeKey = groqApiKeys[pearlyKeyIdx] || groqApiKeys[0];
-                const controller = new AbortController();
-                const tid = setTimeout(() => controller.abort(), 30000);
-                let res;
-                try {
-                    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
-                        body: JSON.stringify({
-                            model: 'llama-3.3-70b-versatile',
-                            messages: [
-                                { role: 'system', content: systemPrompt },
-                                { role: 'user', content: msg }
-                            ],
-                            temperature: 0.75,
-                            max_tokens: 400
-                        }),
-                        signal: controller.signal
-                    });
-                } finally {
-                    clearTimeout(tid);
-                }
-                if (res.status === 429 || res.status === 503) {
-                    pearlyKeyIdx = (pearlyKeyIdx + 1) % groqApiKeys.length;
-                    continue;
-                }
-                if (!res.ok) throw new Error(`API error ${res.status}`);
-                const data = await res.json();
-                responseText = data.choices?.[0]?.message?.content || null;
-                break;
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 30000);
+            let responseText;
+            try {
+                responseText = await callAIProvider(
+                    [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: msg }
+                    ],
+                    { maxTokens: 400, temperature: 0.75, signal: controller.signal }
+                );
+            } finally {
+                clearTimeout(tid);
             }
 
             if (!responseText) {
                 pearlyHideTyping();
-                pearlyAppendMsg(`All my Groq keys are rate limited rn 😅 — wait a minute and try again, or add more keys in Settings bestie~`, false);
+                pearlyAppendMsg(`All my ${cfg.label} keys are rate limited rn 😅 — wait a minute and try again, or add more keys in Settings bestie~`, false);
                 return;
             }
 
@@ -9607,7 +9647,7 @@ main.addEventListener('scroll',()=>{
         } catch (err) {
             pearlyHideTyping();
             const errMsg = err.name === 'AbortError'
-                ? `Request timed out ⏱️ — Groq might be slow rn. Give it another shot bestie~`
+                ? `Request timed out ⏱️ — the AI might be slow rn. Give it another shot bestie~`
                 : `Oof, something went sideways on my end 😬 — ${err.message || 'mystery error'}. Give it another shot?`;
             pearlyAppendMsg(errMsg, false);
         } finally {
@@ -9670,50 +9710,30 @@ main.addEventListener('scroll',()=>{
         }
     }
 
-    // ─── Shared Groq caller (key rotation) for one-off generation tasks ───
+    // ─── Shared one-off caller (kept name for backward compat) — now routes through
+    //     callAIProvider so it honours whichever provider (Groq / Gemini) is selected ───
     async function _callGroqOnce(systemPrompt, userMsg, maxTokens, temperature) {
-        if (!groqApiKeys || groqApiKeys.length === 0) {
+        if (!providerCfg(selectedProvider).getKeys().length) {
             throw new Error('NO_KEY');
         }
-        let responseText = null;
-        const tried = new Set();
-        let keyIdx = groqKeyIndex;
-        while (tried.size < groqApiKeys.length) {
-            if (tried.has(keyIdx)) break;
-            tried.add(keyIdx);
-            const activeKey = groqApiKeys[keyIdx] || groqApiKeys[0];
-            const controller = new AbortController();
-            const tid = setTimeout(() => controller.abort(), 45000);
-            let res;
-            try {
-                res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` },
-                    body: JSON.stringify({
-                        model: 'llama-3.3-70b-versatile',
-                        messages: [
-                            { role: 'system', content: systemPrompt },
-                            { role: 'user', content: userMsg }
-                        ],
-                        temperature: temperature,
-                        max_tokens: maxTokens
-                    }),
-                    signal: controller.signal
-                });
-            } finally {
-                clearTimeout(tid);
-            }
-            if (res.status === 429 || res.status === 503) {
-                keyIdx = (keyIdx + 1) % groqApiKeys.length;
-                continue;
-            }
-            if (!res.ok) throw new Error(`API error ${res.status}`);
-            const data = await res.json();
-            responseText = data.choices?.[0]?.message?.content || null;
-            break;
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 45000);
+        try {
+            const responseText = await callAIProvider(
+                [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userMsg }
+                ],
+                { maxTokens, temperature, signal: controller.signal }
+            );
+            if (!responseText) throw new Error('RATE_LIMITED');
+            return responseText;
+        } catch (err) {
+            if (typeof err.message === 'string' && err.message.startsWith('RATE_LIMIT')) throw new Error('RATE_LIMITED');
+            throw err;
+        } finally {
+            clearTimeout(tid);
         }
-        if (!responseText) throw new Error('RATE_LIMITED');
-        return responseText;
     }
 
     // ─── Build a candidate table (TSV for Excel/Slack + HTML for display) ───
@@ -9798,8 +9818,8 @@ Candidate data:
             showToast('No candidates analyzed yet', 'error');
             return;
         }
-        if (!groqApiKeys || groqApiKeys.length === 0) {
-            showToast('Add a Groq API key in Settings first', 'error');
+        if (!hasAnyApiKey()) {
+            showToast(`Add a ${providerCfg(selectedProvider).label} API key in Settings first`, 'error');
             return;
         }
         const btn = event?.target;
@@ -9841,9 +9861,9 @@ Candidate data:
         } catch (err) {
             pearlyHideTyping();
             const msg = err.message === 'NO_KEY'
-                ? 'Add a Groq API key in Settings first 🥺'
+                ? `Add a ${providerCfg(selectedProvider).label} API key in Settings first 🥺`
                 : err.message === 'RATE_LIMITED'
-                    ? 'All Groq keys are rate limited right now — try again shortly.'
+                    ? `All ${providerCfg(selectedProvider).label} keys are rate limited right now — try again shortly.`
                     : `Something went wrong — ${err.message || 'unknown error'}. Try again?`;
             pearlyAppendMsg(msg, false);
         } finally {
