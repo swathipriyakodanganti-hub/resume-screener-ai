@@ -572,28 +572,53 @@
         /* progress-fill kept as invisible shim so JS width sets don't error */
         .progress-fill { display: none; }
 
-        /* Terminal reader shell */
+        /* Terminal reader shell — RGB Glitch Scan */
         .term-reader {
             display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(3, 8, 16, 0.7);
-            border: 1px solid rgba(167,139,250,0.12);
+            flex-direction: column;
+            justify-content: center;
+            gap: 3px;
+            background: #050a12;
+            border: 1px solid rgba(77,159,255,0.15);
             border-radius: 7px;
-            padding: 7px 11px;
-            height: 38px;
+            padding: 6px 11px;
+            height: 52px;
             overflow: hidden;
             position: relative;
+            animation: glitchBoxFlicker 3.2s infinite;
+        }
+        .term-label {
+            font-family: 'Fira Mono', 'Courier New', monospace;
+            font-size: 8px;
+            letter-spacing: 0.06em;
+            color: #4d9fff;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            animation: glitchLabelFlicker 2.4s infinite;
         }
         .term-cursor {
-            width: 6px;
-            height: 14px;
-            background: #a78bfa;
+            width: 5px;
+            height: 10px;
+            background: #4d9fff;
             border-radius: 1px;
             flex-shrink: 0;
             animation: termBlink 0.8s step-end infinite;
         }
         @keyframes termBlink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+        @keyframes glitchLabelFlicker {
+            0%, 88%, 100% { opacity: 1; text-shadow: none; }
+            90% { opacity: 0.4; text-shadow: -1px 0 #ff4d6d, 1px 0 #4dfff0; }
+            92% { opacity: 1; text-shadow: 1px 0 #ff4d6d, -1px 0 #4dfff0; }
+            94% { opacity: 0.6; text-shadow: none; }
+        }
+        @keyframes glitchBoxFlicker {
+            0%, 94%, 100% { border-color: rgba(77,159,255,0.15); }
+            95% { border-color: rgba(255,77,109,0.4); transform: translateX(-1px); }
+            97% { border-color: rgba(77,255,240,0.4); transform: translateX(1px); }
+            98% { border-color: rgba(77,159,255,0.15); transform: translateX(0); }
+        }
         .term-rows {
             flex: 1;
             display: flex;
@@ -618,17 +643,24 @@
             white-space: nowrap;
             width: 0;
             border-right: 1.5px solid transparent;
-            animation: termType 3s steps(18) infinite;
+            animation: termType 3s steps(18) infinite, glitchJitter 3s infinite;
         }
-        /* each row staggers */
-        .term-row:nth-child(1) .term-val { animation-delay: 0s;    border-right-color: #a78bfa; color: #c4b5fd; }
-        .term-row:nth-child(2) .term-val { animation-delay: 0.55s; border-right-color: #60a5fa; color: #93c5fd; }
-        .term-row:nth-child(3) .term-val { animation-delay: 1.1s;  border-right-color: #4ade80; color: #86efac; }
+        /* each row staggers, RGB-tinted per field */
+        .term-row:nth-child(1) .term-val { animation-delay: 0s, 0s;       border-right-color: #7dd3fc; color: #7dd3fc; }
+        .term-row:nth-child(2) .term-val { animation-delay: 0.55s, 0.4s;  border-right-color: #4d9fff; color: #93c5fd; }
+        .term-row:nth-child(3) .term-val { animation-delay: 1.1s, 0.8s;  border-right-color: #4ade80; color: #86efac; }
         @keyframes termType {
             0%        { width: 0;    opacity: 0.7; }
             8%        { opacity: 1; }
             55%, 90%  { width: 160px; opacity: 1; }
             100%      { width: 0;    opacity: 0.5; }
+        }
+        @keyframes glitchJitter {
+            0%, 91%, 100% { transform: translate(0,0); text-shadow: none; }
+            92% { transform: translate(-2px, 1px); text-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; }
+            93% { transform: translate(2px, -1px); text-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; }
+            94% { transform: translate(-1px, 0);   text-shadow: -1px 0 #ff4d6d, 1px 0 #4dfff0; }
+            95% { transform: translate(0,0);        text-shadow: none; }
         }
         /* subtle scanline shimmer across the whole bar */
         .term-reader::after {
@@ -636,9 +668,9 @@
             position: absolute;
             inset: 0;
             background: linear-gradient(180deg,
-                rgba(167,139,250,0.03) 0%,
+                rgba(77,159,255,0.04) 0%,
                 transparent 50%,
-                rgba(167,139,250,0.03) 100%);
+                rgba(77,159,255,0.04) 100%);
             pointer-events: none;
         }
 
@@ -3291,9 +3323,9 @@
             <div class="progress-dot" data-i="14"></div><div class="progress-dot" data-i="15"></div>
             <div class="progress-dot" data-i="16"></div><div class="progress-dot" data-i="17"></div>
             <div class="progress-dot" data-i="18"></div><div class="progress-dot" data-i="19"></div>
-            <!-- Terminal reader UI -->
+            <!-- Terminal reader UI — RGB Glitch Scan -->
             <div class="term-reader">
-                <div class="term-cursor"></div>
+                <div class="term-label"><span class="term-cursor"></span>ANALYZING_RESUME.exe</div>
                 <div class="term-rows" id="termRows">
                     <div class="term-row">
                         <span class="term-key">name</span>
