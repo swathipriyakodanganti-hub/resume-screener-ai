@@ -4129,6 +4129,7 @@
                 Your talent BFF · always here!
             </div>
         </div>
+        <button class="pearly-refresh" id="pearly-link-btn" onclick="pearlyCopySessionLink()" title="Copy this session's link">🔗</button>
         <button class="pearly-refresh" id="pearly-refresh-btn" onclick="pearlyReset(event)" title="Clear chat">↺</button>
         <button class="pearly-close" onclick="pearlyToggle()">✕</button>
     </div>
@@ -4467,6 +4468,8 @@
     window.onload = function () {
         // ─── Check for shared candidate link first ───
         initCandidateShareView();
+        // ─── Check for a Pearly session transcript link ───
+        initPearlySessionView();
 
         // Restore Apps Script URL
         const savedScriptUrl = localStorage.getItem('appsScriptUrl') || '';
@@ -4770,9 +4773,12 @@ Return exactly this JSON shape:
             .replace(/\$\{extraRequirements[^}]+\}/g, extraStr);
     }
 
-    function buildPearlySystemPrompt(context) {
+    function buildPearlySystemPrompt(context, memoryText) {
         const base = customPearlyPrompt || DEFAULT_PEARLY_PROMPT;
-        return base + '\n\nCurrent candidate data:\n' + context;
+        const memoryBlock = memoryText
+            ? '\n\nWhat you remember from earlier chats (from the Sheet log — use only if relevant, don\'t force it in):\n' + memoryText
+            : '';
+        return base + memoryBlock + '\n\nCurrent candidate data:\n' + context;
     }
 
     function loadPromptEditorUI() {
@@ -9465,7 +9471,109 @@ main.addEventListener('scroll',()=>{
     // ═══════════════════════════════════════════════════════
 
     let _pearlyOpen = false;
+    // ─── Sheet-backed memory + per-session transcript link ───
+    // New session id each page load / each "clear chat" — the session link is only valid until then.
+    let _pearlySessionId   = 'PS-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+    let _pearlyMessages    = [];   // in-session conversation, sent to the AI each turn for real multi-turn memory
+    let _pearlyMemoryText  = null; // cross-session recall pulled from the Sheet (fetched once, lazily)
+    let _pearlyMemoryFetch = null; // in-flight promise guard
     let _pearlyThinking = false;
+
+    // Fetch recent cross-session memory from the Sheet (once per page load, cached)
+    function _pearlyFetchMemory() {
+        if (_pearlyMemoryFetch) return _pearlyMemoryFetch;
+        if (!appsScriptUrl) { _pearlyMemoryText = ''; return Promise.resolve(''); }
+
+        _pearlyMemoryFetch = fetch(`${appsScriptUrl}?action=getPearlyMemory&limit=30`)
+            .then(r => r.json())
+            .then(res => {
+                const msgs = (res && res.messages) || [];
+                _pearlyMemoryText = msgs
+                    .filter(m => m.sessionId !== _pearlySessionId) // don't echo back the live session
+                    .map(m => `${m.role === 'user' ? 'Swathi' : 'Pearly'}: ${m.message}`)
+                    .join('\n') || '';
+                return _pearlyMemoryText;
+            })
+            .catch(() => { _pearlyMemoryText = ''; return ''; });
+
+        return _pearlyMemoryFetch;
+    }
+
+    // Fire-and-forget: append one message to the Sheet chat log
+    function _pearlyLogMessage(role, message) {
+        if (!appsScriptUrl) return;
+        fetch(appsScriptUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'logPearlyMessage', sessionId: _pearlySessionId, role, message })
+        }).catch(() => { /* non-fatal */ });
+    }
+
+    // Copy/open this session's shareable transcript link
+    function pearlyCopySessionLink() {
+        const baseUrl = window.location.origin + window.location.pathname;
+        const link = `${baseUrl}?pearlySession=${encodeURIComponent(_pearlySessionId)}`;
+        navigator.clipboard.writeText(link)
+            .then(() => showToast('Session link copied 🔗 — valid until you reload or clear chat', 'success'))
+            .catch(() => showToast(link, 'success'));
+    }
+
+    // ─── Renders a read-only transcript when the page is opened with ?pearlySession=ID ───
+    function initPearlySessionView() {
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('pearlySession');
+        if (!sessionId) return;
+
+        const appShell = document.querySelector('.app-shell');
+        if (appShell) appShell.style.display = 'none';
+        const pearlyFab = document.getElementById('pearly-fab');
+        const pearlyTip = document.getElementById('pearly-tooltip');
+        if (pearlyFab) pearlyFab.style.display = 'none';
+        if (pearlyTip) pearlyTip.style.display = 'none';
+
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'max-width:640px;margin:2.5rem auto;padding:0 1rem;font-family:"Outfit",sans-serif;';
+        wrap.innerHTML = `
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;">
+                <div style="font-size:1.6rem;">🌸</div>
+                <div>
+                    <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary,#111827);">Pearly — session transcript</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted,#6b7280);">${sessionId}</div>
+                </div>
+            </div>
+            <div id="pearlySessionViewList" style="display:flex;flex-direction:column;gap:0.6rem;">
+                <div style="color:var(--text-muted,#6b7280);font-size:0.85rem;">Loading…</div>
+            </div>`;
+        document.body.appendChild(wrap);
+
+        if (!appsScriptUrl) {
+            document.getElementById('pearlySessionViewList').innerHTML =
+                '<div style="color:var(--danger,#dc2626);font-size:0.85rem;">No Apps Script URL configured — can\'t load this transcript.</div>';
+            return;
+        }
+
+        fetch(`${appsScriptUrl}?action=getPearlySession&sessionId=${encodeURIComponent(sessionId)}`)
+            .then(r => r.json())
+            .then(res => {
+                const msgs = (res && res.messages) || [];
+                const list = document.getElementById('pearlySessionViewList');
+                if (!msgs.length) {
+                    list.innerHTML = '<div style="color:var(--text-muted,#6b7280);font-size:0.85rem;">No messages found for this session — the link may have expired or the sheet log is empty.</div>';
+                    return;
+                }
+                list.innerHTML = msgs.map(m => {
+                    const isUser = m.role === 'user';
+                    return `<div style="align-self:${isUser ? 'flex-end' : 'flex-start'};max-width:80%;">
+                        <div style="font-size:0.65rem;color:var(--text-muted,#9ca3af);margin-bottom:2px;text-align:${isUser ? 'right' : 'left'};">${isUser ? 'Swathi' : 'Pearly'} · ${m.timestamp}</div>
+                        <div style="padding:0.6rem 0.85rem;border-radius:10px;font-size:0.85rem;line-height:1.5;background:${isUser ? '#111827' : '#f3f4f6'};color:${isUser ? '#ffffff' : '#111827'};">${String(m.message).replace(/</g,'&lt;')}</div>
+                    </div>`;
+                }).join('');
+            })
+            .catch(err => {
+                document.getElementById('pearlySessionViewList').innerHTML =
+                    `<div style="color:var(--danger,#dc2626);font-size:0.85rem;">Could not load transcript — ${err.message}</div>`;
+            });
+    }
 
     function pearlyReset(e) {
         // Sparkle burst from button
@@ -9498,6 +9606,10 @@ main.addEventListener('scroll',()=>{
         const chips = document.getElementById('pearly-chips');
         if (chips) chips.style.display = 'flex';
         _pearlyThinking = false;
+        // Fresh session — old session link stops updating, new one starts
+        _pearlySessionId   = 'PS-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+        _pearlyMessages    = [];
+        _pearlyMemoryFetch = null; // let memory be re-fetched fresh (will include the session just cleared)
         showToast('Pearly chat cleared 🌸', 'success');
     }
 
@@ -9606,8 +9718,9 @@ main.addEventListener('scroll',()=>{
         pearlyShowTyping();
 
         try {
+            const memoryText = await _pearlyFetchMemory();
             const context = pearlyBuildContext();
-            const systemPrompt = buildPearlySystemPrompt(context);
+            const systemPrompt = buildPearlySystemPrompt(context, memoryText);
             const cfg = providerCfg(selectedProvider);
 
             if (!cfg.getKeys().length) {
@@ -9616,6 +9729,11 @@ main.addEventListener('scroll',()=>{
                 return;
             }
 
+            // In-session memory: send the real conversation so far, not just this one message
+            _pearlyMessages.push({ role: 'user', content: msg });
+            const MAX_TURNS = 20; // ~10 exchanges of context
+            if (_pearlyMessages.length > MAX_TURNS) _pearlyMessages = _pearlyMessages.slice(-MAX_TURNS);
+
             const controller = new AbortController();
             const tid = setTimeout(() => controller.abort(), 30000);
             let responseText;
@@ -9623,7 +9741,7 @@ main.addEventListener('scroll',()=>{
                 responseText = await callAIProvider(
                     [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: msg }
+                        ..._pearlyMessages
                     ],
                     { maxTokens: 400, temperature: 0.75, signal: controller.signal }
                 );
@@ -9634,8 +9752,13 @@ main.addEventListener('scroll',()=>{
             if (!responseText) {
                 pearlyHideTyping();
                 pearlyAppendMsg(`All my ${cfg.label} keys are rate limited rn 😅 — wait a minute and try again, or add more keys in Settings bestie~`, false);
+                _pearlyMessages.pop(); // don't keep an unanswered turn in context
                 return;
             }
+
+            _pearlyMessages.push({ role: 'assistant', content: responseText });
+            _pearlyLogMessage('user', msg);
+            _pearlyLogMessage('assistant', responseText);
 
             pearlyHideTyping();
             // Sanitize and render
