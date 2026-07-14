@@ -80,6 +80,16 @@ function testGetFile() {
 function doGet(e) {
   const action = e && e.parameter && e.parameter.action;
 
+  // ── Pearly: recent cross-session memory ──
+  if (action === 'getPearlyMemory') {
+    return getPearlyMemory(e);
+  }
+
+  // ── Pearly: full transcript for one session (session link) ──
+  if (action === 'getPearlySession') {
+    return getPearlySession(e);
+  }
+
   // ── List all PDF files in a Google Drive folder ──
   if (action === 'listFolder') {
     try {
@@ -365,6 +375,11 @@ function doPost(e) {
     // ── Prompt change log ──
     if (data.action === 'logPromptChange') {
       return logPromptChange(data);
+    }
+
+    // ── Pearly chat message log (Sheet-backed memory) ──
+    if (data.action === 'logPearlyMessage') {
+      return logPearlyMessage(data);
     }
 
     // ── Push candidates to a target spreadsheet ──
@@ -1016,6 +1031,89 @@ function pushCandidatesToSheet(data) {
 }
 
 
+
+// ───────────────────────────────────────────────────────────────
+// Pearly Chat — Sheet-backed memory + per-session transcript
+// ───────────────────────────────────────────────────────────────
+function logPearlyMessage(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+
+    let sheet = ss.getSheetByName('Pearly Chat Log');
+    if (!sheet) {
+      sheet = ss.insertSheet('Pearly Chat Log');
+      const headers = ['Timestamp', 'Session ID', 'Role', 'Message'];
+      sheet.appendRow(headers);
+      const headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setColumnWidth(1, 180);
+      sheet.setColumnWidth(2, 220);
+      sheet.setColumnWidth(3, 80);
+      sheet.setColumnWidth(4, 600);
+      sheet.setFrozenRows(1);
+    }
+
+    const ts = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    sheet.appendRow([ts, data.sessionId || 'unknown', data.role || 'user', data.message || '']);
+
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, 4).setWrap(true);
+
+    return jsonResponse({ success: true });
+  } catch (err) {
+    Logger.log('logPearlyMessage error: ' + err.message);
+    return jsonResponse({ success: false, error: err.message });
+  }
+}
+
+// Recent cross-session memory (last N messages) — gives Pearly recall of past chats, even after a reload
+function getPearlyMemory(e) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName('Pearly Chat Log');
+    if (!sheet || sheet.getLastRow() < 2) {
+      return jsonResponse({ success: true, messages: [] });
+    }
+
+    const limit = parseInt((e && e.parameter && e.parameter.limit) || '30', 10);
+    const lastRow = sheet.getLastRow();
+    const firstRow = Math.max(2, lastRow - limit + 1);
+    const numRows = lastRow - firstRow + 1;
+    const values = sheet.getRange(firstRow, 1, numRows, 4).getValues();
+
+    const messages = values.map(function(row) {
+      return { timestamp: row[0], sessionId: row[1], role: row[2], message: row[3] };
+    });
+
+    return jsonResponse({ success: true, messages: messages });
+  } catch (err) {
+    Logger.log('getPearlyMemory error: ' + err.message);
+    return jsonResponse({ success: false, error: err.message, messages: [] });
+  }
+}
+
+// Full transcript for one specific session — backs the "session link" feature
+function getPearlySession(e) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName('Pearly Chat Log');
+    const sessionId = e && e.parameter && e.parameter.sessionId;
+    if (!sheet || !sessionId || sheet.getLastRow() < 2) {
+      return jsonResponse({ success: true, sessionId: sessionId || '', messages: [] });
+    }
+
+    const lastRow = sheet.getLastRow();
+    const values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    const messages = values
+      .filter(function(row) { return row[1] === sessionId; })
+      .map(function(row) { return { timestamp: row[0], role: row[2], message: row[3] }; });
+
+    return jsonResponse({ success: true, sessionId: sessionId, messages: messages });
+  } catch (err) {
+    Logger.log('getPearlySession error: ' + err.message);
+    return jsonResponse({ success: false, error: err.message, messages: [] });
+  }
+}
 
 function logPromptChange(data) {
   try {
