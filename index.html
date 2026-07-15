@@ -370,6 +370,11 @@
             background: rgba(0, 220, 255, 0.07);
             box-shadow: 0 0 20px rgba(0, 220, 255, 0.1);
         }
+        .upload-zone.dragover { animation: dropZoneGlitch 1.4s infinite; }
+        @keyframes dropZoneGlitch {
+            0%, 100% { border-color: var(--accent); }
+            50% { border-color: #ff4d6d; }
+        }
 
         .upload-zone input[type="file"] { display: none; }
         .upload-icon { font-size: 1.75rem; opacity: 0.5; display: block; margin-bottom: 0.35rem; }
@@ -459,9 +464,15 @@
 
         .resume-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-right: 6px; }
         .status-pending   { background: var(--text-muted); }
-        .status-analyzing { background: var(--amber); animation: pulse 0.8s ease-in-out infinite; }
+        .status-analyzing { background: #4d9fff; animation: pulse 0.8s ease-in-out infinite, dotGlitchFlicker 2.6s infinite; }
         .status-done      { background: #22c55e; animation: blink-green-glow 1.2s ease-in-out infinite; }
         .status-error     { background: var(--danger); }
+        @keyframes dotGlitchFlicker {
+            0%, 88%, 100% { box-shadow: none; }
+            90% { box-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; }
+            93% { box-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; }
+            95% { box-shadow: none; }
+        }
         @keyframes blink-green-glow {
             0%, 100% { opacity: 1; box-shadow: 0 0 4px 2px rgba(34,197,94,0.8), 0 0 10px 4px rgba(34,197,94,0.4); }
             50%       { opacity: 0.35; box-shadow: none; }
@@ -708,16 +719,20 @@
 
         .spinner {
             display: inline-block;
-            width: 13px; height: 13px;
-            border: 2px solid rgba(216, 245, 255, 0.3);
-            border-top-color: #d8f5ff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
+            width: 8px; height: 13px;
+            background: #4d9fff;
+            border-radius: 1px;
+            animation: termBlink 0.8s step-end infinite, spinnerGlitchFlicker 2.6s infinite;
             vertical-align: middle;
             margin-right: 6px;
         }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes spinnerGlitchFlicker {
+            0%, 88%, 100% { box-shadow: none; transform: translateX(0); }
+            90% { box-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; transform: translateX(-1px); }
+            93% { box-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; transform: translateX(1px); }
+            95% { box-shadow: none; transform: translateX(0); }
+        }
 
         /* ─── MAIN CONTENT ─── */
         .main-content { flex: 1; overflow: hidden; padding: 0; display: flex; flex-direction: column; }
@@ -982,13 +997,25 @@
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
         .result-card {
-            background: #080f1e;
+            background-color: #080f1e;
+            background-image: linear-gradient(180deg, transparent 0%, var(--card-accent-dim, rgba(0,220,255,0.07)) 45%, transparent 90%);
+            background-repeat: no-repeat;
+            background-size: 100% 45%;
             border: 1px solid rgba(255,255,255,0.07);
             border-radius: 14px;
             overflow: hidden;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: cardIn 0.45s ease-out backwards;
+            animation: cardIn 0.45s ease-out backwards, cardScanSweep 6s linear infinite, cardBorderGlitch 7s infinite;
             position: relative;
+        }
+        @keyframes cardScanSweep {
+            0%   { background-position: 0 -60%; }
+            100% { background-position: 0 160%; }
+        }
+        @keyframes cardBorderGlitch {
+            0%, 90%, 100% { border-color: rgba(255,255,255,0.07); }
+            92% { border-color: rgba(255,77,109,0.5); }
+            95% { border-color: rgba(77,255,240,0.5); }
         }
         .result-card.stripe-high { --card-accent: #00e5a0; --card-accent-glow: rgba(0,229,160,0.18); --card-accent-dim: rgba(0,229,160,0.08); }
         .result-card.stripe-mid  { --card-accent: #f5a623; --card-accent-glow: rgba(245,166,35,0.18); --card-accent-dim: rgba(245,166,35,0.08); }
@@ -1054,6 +1081,13 @@
             line-height: 1; letter-spacing: -0.04em;
             color: var(--card-accent, #00dcff);
             text-shadow: 0 0 20px var(--card-accent-glow, rgba(0,220,255,0.35));
+            animation: scoreBadgeGlitch 6s infinite;
+        }
+        @keyframes scoreBadgeGlitch {
+            0%, 88%, 100% { text-shadow: 0 0 20px var(--card-accent-glow, rgba(0,220,255,0.35)); }
+            90% { text-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; }
+            93% { text-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; }
+            96% { text-shadow: 0 0 20px var(--card-accent-glow, rgba(0,220,255,0.35)); }
         }
         .score-badge::after { content: '%'; font-size: 0.7em; opacity: 0.6; }
         .score-high, .score-mid, .score-low { color: var(--card-accent, #00dcff); text-shadow: 0 0 20px var(--card-accent-glow); }
@@ -1124,6 +1158,16 @@
             border: 1px solid rgba(255,255,255,0.08);
             color: #6b7a8d;
             transition: all 0.15s;
+            animation: tagGlitch 5s infinite;
+        }
+        .skill-tag:nth-child(2) { animation-delay: 1s; }
+        .skill-tag:nth-child(3) { animation-delay: 2s; }
+        .skill-tag:nth-child(4) { animation-delay: 3s; }
+        @keyframes tagGlitch {
+            0%, 85%, 100% { text-shadow: none; }
+            87% { text-shadow: -1px 0 #ff4d6d, 1px 0 #4dfff0; }
+            90% { text-shadow: 1px 0 #ff4d6d, -1px 0 #4dfff0; }
+            93% { text-shadow: none; }
         }
         .result-card:hover .skill-tag { border-color: rgba(255,255,255,0.12); color: #8892a4; }
         .more-tag {
@@ -1210,6 +1254,13 @@
             border-radius: 6px;
             border-left: 2px solid var(--card-accent, #00dcff);
             font-family: 'Space Grotesk', sans-serif;
+            animation: textGlitchGentle 9s infinite;
+        }
+        .overlay-text, .detail-text { animation: textGlitchGentle 9s infinite; }
+        @keyframes textGlitchGentle {
+            0%, 95%, 100% { text-shadow: none; }
+            96.5% { text-shadow: -1px 0 #ff4d6d, 1px 0 #4dfff0; }
+            98% { text-shadow: none; }
         }
         .contact-row { display: flex; gap: 1rem; flex-wrap: wrap; }
         .contact-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #4a5568; }
@@ -1398,6 +1449,13 @@
         .toast.show {
             transform: translateX(-50%) translateY(0) scale(1); opacity: 1;
             animation: toastGlow 2s ease-in-out infinite;
+        }
+        .toast.show span { display: inline-block; animation: toastGlitchIn 0.6s ease-out; }
+        @keyframes toastGlitchIn {
+            0% { opacity: 0; text-shadow: none; }
+            12% { opacity: 1; text-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; }
+            25% { text-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; }
+            40%, 100% { text-shadow: none; opacity: 1; }
         }
         .toast.success {
             border-color: rgba(249,168,212,0.45); color: #f0abfc;
@@ -2517,6 +2575,19 @@
             letter-spacing: 0.04em; white-space: nowrap; margin-right: 0.5rem;
             font-family: 'Space Grotesk', 'Outfit', sans-serif;
             text-transform: uppercase;
+            animation: logoGlitch 5s infinite;
+        }
+        .tb-logo::before {
+            content: ''; display: inline-block; width: 6px; height: 6px;
+            border-radius: 50%; background: var(--accent); margin-right: 8px;
+            box-shadow: 0 0 6px var(--accent);
+            animation: termBlink 1.3s step-end infinite;
+        }
+        @keyframes logoGlitch {
+            0%, 90%, 100% { text-shadow: none; transform: translate(0,0); }
+            91% { text-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; transform: translate(-1px,0); }
+            93% { text-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; transform: translate(1px,0); }
+            95% { text-shadow: none; transform: translate(0,0); }
         }
         .tb-logo-icon { display: none; }
         .tb-logo-tagline { font-size: 0.62rem; font-weight: 400; color: rgba(255,255,255,0.45); letter-spacing: 0.02em; margin-left: 0.6rem; font-family: 'Outfit', sans-serif; text-transform: none; white-space: nowrap; }
@@ -2533,12 +2604,28 @@
             user-select: none;
         }
         .tb-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.04); }
-        .tb-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+        .tb-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); position: relative; }
+        .tb-tab.active::after {
+            content: ''; position: absolute; left: 0.5rem; right: 0.5rem; bottom: -2px; height: 2px;
+            background: var(--accent);
+            animation: tabUnderlineGlitch 4s infinite;
+        }
+        @keyframes tabUnderlineGlitch {
+            0%, 88%, 100% { box-shadow: none; opacity: 1; }
+            90% { box-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; opacity: 0.6; }
+            93% { box-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; opacity: 1; }
+        }
         .tb-tab-badge {
             background: var(--accent); color: #fff;
             font-size: 0.6rem; font-weight: 700;
             padding: 1px 5px; border-radius: 10px;
             line-height: 1.4;
+            animation: tabBadgeGlitch 3.5s infinite;
+        }
+        @keyframes tabBadgeGlitch {
+            0%, 80%, 100% { transform: scale(1); box-shadow: none; }
+            82% { transform: scale(1.15); box-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; }
+            86% { transform: scale(1); box-shadow: none; }
         }
         .tb-right {
             display: flex; align-items: center; gap: 0.5rem;
@@ -2599,6 +2686,13 @@
             white-space: nowrap;
         }
         #connBadge.conn-badge.connected { color: var(--success); border-color: rgba(86,211,100,0.25); background: rgba(86,211,100,0.06); }
+        #connBadge.conn-badge.connected { animation: badgeGlitch 4s infinite; }
+        @keyframes badgeGlitch {
+            0%, 86%, 100% { text-shadow: none; }
+            88% { text-shadow: -1px 0 #ff4d6d, 1px 0 #4dfff0; }
+            91% { text-shadow: 1px 0 #ff4d6d, -1px 0 #4dfff0; }
+            94% { text-shadow: none; }
+        }
         .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
         /* ── App pages ── */
@@ -2645,8 +2739,13 @@
         .dc-card.amber-glow { box-shadow:inset 0 1px 0 rgba(251,191,36,0.1); }
         .dc-card.cyan-glow { box-shadow:inset 0 1px 0 rgba(0,220,255,0.1); }
         .dc-label { display:block; font-size:0.68rem; font-weight:600; color:#64748b; letter-spacing:0.03em; margin-bottom:0.35rem; }
-        .dc-input { width:100%; padding:0.55rem 0.75rem; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-primary); font-size:0.78rem; font-family:var(--font-sans); outline:none; transition:border-color 0.2s, box-shadow 0.2s; }
-        .dc-input:focus { border-color:rgba(244,114,182,0.45); box-shadow:0 0 0 3px rgba(244,114,182,0.07); }
+        .dc-input { width:100%; padding:0.55rem 0.75rem; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-primary); font-size:0.78rem; font-family:var(--font-sans); outline:none; transition:border-color 0.2s, box-shadow 0.2s; animation: inputGlitch 5s infinite; }
+        .dc-input:focus { border-color:rgba(244,114,182,0.45); box-shadow:0 0 0 3px rgba(244,114,182,0.07); animation: none; }
+        @keyframes inputGlitch {
+            0%, 90%, 100% { border-color: rgba(255,255,255,0.08); }
+            92% { border-color: rgba(255,77,109,0.4); }
+            95% { border-color: rgba(77,255,240,0.4); }
+        }
         .dc-input.green:focus { border-color:rgba(52,211,153,0.45); box-shadow:0 0 0 3px rgba(52,211,153,0.07); }
         .dc-input.cyan:focus { border-color:rgba(0,220,255,0.45); box-shadow:0 0 0 3px rgba(0,220,255,0.07); }
         .dc-select { width:100%; padding:0.55rem 0.75rem; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--text-primary); font-size:0.78rem; font-family:var(--font-sans); outline:none; cursor:pointer; }
@@ -2668,6 +2767,8 @@
         .dc-btn-sm.pink:hover { background:rgba(244,114,182,0.15); }
         .dc-btn-sm.green { background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.25); color:#6ee7b7; }
         .dc-btn-sm.green:hover { background:rgba(52,211,153,0.15); }
+        #jdGenBtn, #jdRecBtn { animation: btnGlitch 4.5s infinite; }
+        #jdRecBtn { animation-delay: 1.5s; }
         .dc-btn-sm.cyan { background:rgba(0,220,255,0.08); border-color:rgba(0,220,255,0.25); color:#67e8f9; }
         .dc-btn-sm.danger { background:rgba(248,81,73,0.08); border-color:rgba(248,81,73,0.25); color:#fca5a5; }
         .dc-row { display:flex; gap:0.4rem; align-items:flex-start; }
@@ -2687,7 +2788,13 @@
         .dc-stat-label { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.1em; color:#475569; margin-bottom:0.2rem; }
         .dc-stat-value { font-size:0.88rem; font-weight:700; color:var(--text-primary); }
         .dc-stat-sub { font-size:0.61rem; color:#64748b; margin-top:0.12rem; }
-        .btn-dc-analyze { width:100%; padding:0.82rem; border-radius:10px; font-size:0.88rem; font-weight:700; border:none; cursor:pointer; background:linear-gradient(90deg,#f472b6 0%,#a855f7 50%,#6366f1 100%); color:#fff; letter-spacing:0.01em; position:relative; overflow:hidden; box-shadow:0 2px 16px rgba(168,85,247,0.25); transition:transform 0.25s, box-shadow 0.25s; }
+        .btn-dc-analyze { width:100%; padding:0.82rem; border-radius:10px; font-size:0.88rem; font-weight:700; border:none; cursor:pointer; background:linear-gradient(90deg,#f472b6 0%,#a855f7 50%,#6366f1 100%); color:#fff; letter-spacing:0.01em; position:relative; overflow:hidden; box-shadow:0 2px 16px rgba(168,85,247,0.25); transition:transform 0.25s, box-shadow 0.25s; animation: btnGlitch 4.5s infinite; }
+        @keyframes btnGlitch {
+            0%, 88%, 100% { text-shadow: none; }
+            90% { text-shadow: -2px 0 #ff4d6d, 2px 0 #4dfff0; }
+            93% { text-shadow: 2px 0 #ff4d6d, -2px 0 #4dfff0; }
+            96% { text-shadow: none; }
+        }
         .btn-dc-analyze::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent); transition:left 0.5s; }
         .btn-dc-analyze:hover::before { left:100%; }
         .btn-dc-analyze:hover { transform:translateY(-2px); box-shadow:0 4px 24px rgba(168,85,247,0.4); }
@@ -3000,11 +3107,22 @@
 
         /* ─── COMPANY RESEARCH ─── */
         .comp-card {
-            background: rgba(56,139,253,0.06);
+            background-color: rgba(56,139,253,0.06);
+            background-image: linear-gradient(180deg, transparent 0%, rgba(56,139,253,0.1) 45%, transparent 90%);
+            background-repeat: no-repeat;
+            background-size: 100% 45%;
             border: 1px solid rgba(56,139,253,0.18);
             border-radius: 9px;
             padding: 0.65rem 0.85rem;
             margin-bottom: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            animation: cardScanSweep 6s linear infinite, compCardBorderGlitch 7s infinite;
+        }
+        @keyframes compCardBorderGlitch {
+            0%, 90%, 100% { border-color: rgba(56,139,253,0.18); }
+            92% { border-color: rgba(255,77,109,0.5); }
+            95% { border-color: rgba(77,255,240,0.5); }
         }
         .comp-card-name { font-weight: 700; font-size: 0.82rem; color: #79c0ff; margin-bottom: 0.3rem; }
         .comp-card-body { font-size: 0.75rem; color: #c9d1d9; line-height: 1.55; }
@@ -3015,6 +3133,21 @@
             margin-right: 4px; margin-bottom: 3px;
         }
         .comp-card-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 0.35rem; }
+
+        /* Generic AI-generated content scan card (screening questions, etc.) */
+        .ai-scan-card {
+            background-image: linear-gradient(180deg, transparent 0%, rgba(167,139,250,0.1) 45%, transparent 90%);
+            background-repeat: no-repeat;
+            background-size: 100% 45%;
+            position: relative;
+            overflow: hidden;
+            animation: cardScanSweep 6s linear infinite, aiScanCardBorderGlitch 7s infinite;
+        }
+        @keyframes aiScanCardBorderGlitch {
+            0%, 90%, 100% { border-color: rgba(167,139,250,0.2); }
+            92% { border-color: rgba(255,77,109,0.5); }
+            95% { border-color: rgba(77,255,240,0.5); }
+        }
 
         /* ═══════════════════════════════════════════════════
            PEARLY — AI Talent Chatbot (Design A)
@@ -3035,6 +3168,22 @@
             transition: transform 0.2s ease;
         }
         #pearly-fab:hover { transform: scale(1.12); }
+        #pearly-fab::before {
+            content: ''; position: absolute; inset: -3px; border-radius: 50%;
+            border: 1.5px solid #4d9fff;
+            animation: fabRingPulse 2.4s ease-out infinite;
+            pointer-events: none;
+        }
+        .pf-dot {
+            position: absolute; top: 4px; right: 4px;
+            width: 9px; height: 9px; border-radius: 50%;
+            background: #4d9fff; box-shadow: 0 0 6px #4d9fff;
+            animation: termBlink 1.3s step-end infinite;
+        }
+        @keyframes fabRingPulse {
+            0%   { transform: scale(0.92); opacity: 0.7; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
         #pearly-fab .pf-flower {
             font-size: 1.75rem; display: block; line-height: 1;
             animation: pearlyFlowerSpin 8s linear infinite;
@@ -3665,7 +3814,7 @@
                     <div>
                         <div class="dc-eyebrow">Pearl Hire · Settings</div>
                         <div class="dc-title">Configuration</div>
-                        <div class="dc-sub">AI provider, API keys, integrations, and rate limits.</div>
+                        <div class="dc-sub">AI provider, API keys, and integrations.</div>
                     </div>
                 </div>
 
@@ -3724,99 +3873,50 @@
                     </div>
                 </div>
 
-                <!-- Section 2: Candidate Data Sheets -->
+                <!-- Section 2: Prompt Editor -->
                 <div class="dc-section-head" style="margin-bottom:0.75rem;">
-                    <div class="dc-section-num amber">2</div>
-                    <div class="dc-section-label">Candidate Data Sheets</div>
-                    <div class="dc-section-line"></div>
-                </div>
-                <div class="dc-card amber-glow" style="margin-bottom:1.25rem;">
-                    <div class="dc-hint" style="font-size:0.74rem;line-height:1.55;margin-bottom:0.8rem;">Link Google Sheets containing CTC / Notice Period data. Each sheet is matched by <strong>Email</strong> or <strong>Phone</strong> — you can add multiple sheets; data is merged automatically.</div>
-                    <div class="dc-row" style="margin-bottom:0.5rem;">
-                        <input type="text" id="linkedSheetUrlInput" class="dc-input" placeholder="Google Sheets URL or ID" style="flex:1;">
-                        <button class="dc-btn-sm pink" onclick="addLinkedSheetUrl()" style="white-space:nowrap;">＋ Add &amp; Load</button>
-                    </div>
-                    <div id="linkedSheetList" style="display:flex;flex-direction:column;gap:0.28rem;margin-bottom:0.4rem;"></div>
-                    <div class="dc-hint">Required columns: <strong>Email</strong> or <strong>Phone</strong> · <strong>Current CTC</strong> · <strong>Expected CTC</strong> · <strong>Notice Period</strong></div>
-                </div>
-
-                <!-- Section 3: Rate + Token -->
-                <div class="dc-section-head" style="margin-bottom:0.75rem;">
-                    <div class="dc-section-num muted">3</div>
-                    <div class="dc-section-label">Rate Limits &amp; Token Usage</div>
-                    <div class="dc-section-line"></div>
-                </div>
-                <div class="dc-grid-2" style="margin-bottom:1.25rem;">
-                    <div class="dc-card">
-                        <div class="dc-grid-2" style="gap:0.6rem;margin-bottom:0.9rem;">
-                            <div class="dc-stat">
-                                <div class="dc-stat-label">API Delay</div>
-                                <div class="dc-stat-value" id="delayStatVal">—</div>
-                                <div class="dc-stat-sub" id="delayStatSub">Groq: keep ≥ 2s</div>
-                            </div>
-                            <div class="dc-stat">
-                                <div class="dc-stat-label">Token Budget</div>
-                                <div class="dc-stat-value" id="budgetStatVal">—</div>
-                                <div class="dc-stat-sub">tokens / min</div>
-                            </div>
-                        </div>
-                        <div style="margin-bottom:0.75rem;">
-                            <label class="dc-label" for="apiDelay">API Call Delay (seconds)</label>
-                            <input type="number" id="apiDelay" class="dc-input" min="0" max="10" step="0.1" placeholder="2.0" onchange="saveApiDelay();updateDelayStatDisplay()">
-                            <div class="dc-hint" id="delayHint" style="margin-top:0.28rem;">Groq: keep ≥ 2s (30 RPM free tier)</div>
-                        </div>
-                        <div>
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
-                                <label class="dc-label" style="margin:0;">Token Budget <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
-                                <button class="dc-btn-sm" onclick="setDefaultTokenBudgets();updateBudgetStatDisplay()" style="padding:0.16rem 0.45rem;font-size:0.63rem;">Free-Tier Defaults</button>
-                            </div>
-                            <input type="number" id="providerTokenLimit" class="dc-input" min="0" step="1" placeholder="Token/min" onchange="saveTokenBudget(selectedProvider);updateBudgetStatDisplay()" style="max-width:55%;">
-                            <div class="dc-hint" id="tokenBudgetHint" style="margin-top:0.28rem;">Groq: <strong>6,000</strong> /min</div>
-                        </div>
-                    </div>
-
-                    <div class="dc-card">
-                        <div style="padding:0.75rem;border:1px solid rgba(255,255,255,0.06);border-radius:9px;background:rgba(0,0,0,0.2);margin-bottom:0.8rem;">
-                            <div id="tokenUsageInfo" style="font-size:0.73rem;color:var(--text-secondary);line-height:1.5;">Token usage will appear after API calls.</div>
-                        </div>
-                        <div style="display:flex;justify-content:flex-end;">
-                            <button class="dc-btn-sm" onclick="resetTokenUsage(selectedProvider)" style="font-size:0.7rem;">↺ Reset Active Usage</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section 4: Prompt Editor -->
-                <div class="dc-section-head" style="margin-bottom:0.75rem;">
-                    <div class="dc-section-num" style="background:rgba(192,132,252,0.1);color:#c084fc;border-color:rgba(192,132,252,0.25);">4</div>
+                    <div class="dc-section-num" style="background:rgba(192,132,252,0.1);color:#c084fc;border-color:rgba(192,132,252,0.25);">2</div>
                     <div class="dc-section-label">AI Prompt Editor</div>
                     <div class="dc-section-line"></div>
                 </div>
                 <div class="dc-card" style="border-color:rgba(192,132,252,0.12);">
-                    <p style="font-size:0.73rem;color:var(--text-muted);margin:0 0 1rem;line-height:1.5;">Edit the prompts sent to the AI. Every save is logged with a timestamp to the <strong style="color:var(--text-secondary);">Prompt History</strong> tab in your Sheet.</p>
+                    <p style="font-size:0.73rem;color:var(--text-muted);margin:0 0 1rem;line-height:1.5;">The prompts sent to the AI. Every save is logged with a timestamp to the <strong style="color:var(--text-secondary);">Prompt History</strong> tab in your Sheet.</p>
 
                     <div style="margin-bottom:0.9rem;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
                             <label class="dc-label" style="margin:0;">📋 Analysis Prompt <span style="font-size:0.63rem;color:var(--text-muted);font-weight:400;" id="analysisPromptProviderTag">(Groq)</span></label>
-                            <button class="dc-btn-sm" onclick="saveAnalysisPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
+                            <button class="dc-btn-sm" id="analysisPromptEditBtn" onclick="togglePromptEdit('analysis')" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">✏️ Edit</button>
                         </div>
-                        <textarea id="analysisPromptInput" class="dc-textarea" rows="10"
-                            style="font-family:monospace;font-size:0.72rem;"
-                            onfocus="this.style.borderColor='rgba(192,132,252,0.4)'"
-                            onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
-                            placeholder="Loading..."></textarea>
+                        <pre id="analysisPromptView" style="margin:0;font-family:monospace;font-size:0.72rem;color:var(--text-secondary);background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.65rem 0.8rem;max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;"></pre>
+                        <div id="analysisPromptEditWrap" style="display:none;">
+                            <div style="display:flex;justify-content:flex-end;margin-bottom:0.35rem;">
+                                <button class="dc-btn-sm" onclick="saveAnalysisPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
+                            </div>
+                            <textarea id="analysisPromptInput" class="dc-textarea" rows="10"
+                                style="font-family:monospace;font-size:0.72rem;"
+                                onfocus="this.style.borderColor='rgba(192,132,252,0.4)'"
+                                onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
+                                placeholder="Loading..."></textarea>
+                        </div>
                         <div class="dc-hint" style="margin-top:0.3rem;">Variables: <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${jd}</code> &nbsp;·&nbsp; <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${resumeText}</code> &nbsp;·&nbsp; <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${filters.*}</code> &nbsp;·&nbsp; <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${extraRequirements}</code></div>
                     </div>
 
                     <div style="margin-bottom:0.9rem;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;">
                             <label class="dc-label" style="margin:0;">🌸 Pearly Personality Prompt</label>
-                            <button class="dc-btn-sm" onclick="savePearlyPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
+                            <button class="dc-btn-sm" id="pearlyPromptEditBtn" onclick="togglePromptEdit('pearly')" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">✏️ Edit</button>
                         </div>
-                        <textarea id="pearlyPromptInput" class="dc-textarea" rows="5"
-                            style="font-family:monospace;font-size:0.72rem;"
-                            onfocus="this.style.borderColor='rgba(249,168,212,0.4)'"
-                            onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
-                            placeholder="Loading..."></textarea>
+                        <pre id="pearlyPromptView" style="margin:0;font-family:monospace;font-size:0.72rem;color:var(--text-secondary);background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.65rem 0.8rem;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;"></pre>
+                        <div id="pearlyPromptEditWrap" style="display:none;">
+                            <div style="display:flex;justify-content:flex-end;margin-bottom:0.35rem;">
+                                <button class="dc-btn-sm" onclick="savePearlyPrompt()" style="padding:0.22rem 0.6rem;font-size:0.7rem;white-space:nowrap;">💾 Save</button>
+                            </div>
+                            <textarea id="pearlyPromptInput" class="dc-textarea" rows="5"
+                                style="font-family:monospace;font-size:0.72rem;"
+                                onfocus="this.style.borderColor='rgba(249,168,212,0.4)'"
+                                onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
+                                placeholder="Loading..."></textarea>
+                        </div>
                         <div class="dc-hint" style="margin-top:0.3rem;">Pearly's personality, tone &amp; rules. Note: <code style="font-size:0.65rem;background:rgba(255,255,255,0.06);padding:0.05rem 0.3rem;border-radius:3px;">${context}</code> (candidate data) is always appended automatically.</div>
                     </div>
 
@@ -4149,6 +4249,7 @@
 
 <button id="pearly-fab" onclick="pearlyToggle()" title="Chat with Pearly">
     <span class="pf-flower">🌸</span>
+    <span class="pf-dot"></span>
 </button>
 
 <div id="pearly-window" style="display:none;">
@@ -4541,7 +4642,8 @@
             refreshBatchList(true).catch(() => {});
         }
 
-        document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
+        const _apiDelayEl = document.getElementById('apiDelay');
+        if (_apiDelayEl) _apiDelayEl.value = (API_DELAY_MS / 1000).toFixed(1);
         updateRateLimitInfo();
         updateTokenUsageInfo();
         updateDelayStatDisplay();
@@ -4816,8 +4918,36 @@ Return exactly this JSON shape:
     function loadPromptEditorUI() {
         const analysisEl = document.getElementById('analysisPromptInput');
         const pearlyEl   = document.getElementById('pearlyPromptInput');
-        if (analysisEl) analysisEl.value = customAnalysisPrompt || DEFAULT_ANALYSIS_PROMPT;
-        if (pearlyEl)   pearlyEl.value   = customPearlyPrompt   || DEFAULT_PEARLY_PROMPT;
+        const analysisText = customAnalysisPrompt || DEFAULT_ANALYSIS_PROMPT;
+        const pearlyText   = customPearlyPrompt   || DEFAULT_PEARLY_PROMPT;
+        if (analysisEl) analysisEl.value = analysisText;
+        if (pearlyEl)   pearlyEl.value   = pearlyText;
+        const analysisView = document.getElementById('analysisPromptView');
+        const pearlyView   = document.getElementById('pearlyPromptView');
+        if (analysisView) analysisView.textContent = analysisText;
+        if (pearlyView)   pearlyView.textContent   = pearlyText;
+    }
+
+    // Toggle a prompt between its read-only view and the editable textarea
+    function togglePromptEdit(which) {
+        const view    = document.getElementById(which + 'PromptView');
+        const editWrap= document.getElementById(which + 'PromptEditWrap');
+        const btn     = document.getElementById(which + 'PromptEditBtn');
+        if (!view || !editWrap) return;
+        const isEditing = editWrap.style.display !== 'none';
+        if (isEditing) {
+            // Cancel edit — revert to the last saved value shown in the view
+            view.style.display = '';
+            editWrap.style.display = 'none';
+            if (btn) btn.textContent = '✏️ Edit';
+            loadPromptEditorUI(); // discard any unsaved changes in the textarea
+        } else {
+            view.style.display = 'none';
+            editWrap.style.display = '';
+            if (btn) btn.textContent = '✕ Cancel';
+            const ta = document.getElementById(which + 'PromptInput');
+            if (ta) { ta.focus(); }
+        }
     }
 
     async function _logPromptToSheet(promptType, promptText) {
@@ -4843,6 +4973,11 @@ Return exactly this JSON shape:
         const status = document.getElementById('promptSaveStatus');
         if (status) { status.textContent = '✓ Analysis prompt saved'; setTimeout(() => status.textContent = '', 3000); }
         showToast('Analysis prompt saved ✓', 'success');
+        loadPromptEditorUI();
+        document.getElementById('analysisPromptView').style.display = '';
+        document.getElementById('analysisPromptEditWrap').style.display = 'none';
+        const btn = document.getElementById('analysisPromptEditBtn');
+        if (btn) btn.textContent = '✏️ Edit';
         await _logPromptToSheet('Analysis Prompt', val);
     }
 
@@ -4853,6 +4988,11 @@ Return exactly this JSON shape:
         const status = document.getElementById('promptSaveStatus');
         if (status) { status.textContent = '✓ Pearly prompt saved'; setTimeout(() => status.textContent = '', 3000); }
         showToast('Pearly prompt saved ✓', 'success');
+        loadPromptEditorUI();
+        document.getElementById('pearlyPromptView').style.display = '';
+        document.getElementById('pearlyPromptEditWrap').style.display = 'none';
+        const btn = document.getElementById('pearlyPromptEditBtn');
+        if (btn) btn.textContent = '✏️ Edit';
         await _logPromptToSheet('Pearly Prompt', val);
     }
 
@@ -4863,6 +5003,14 @@ Return exactly this JSON shape:
         localStorage.removeItem('customAnalysisPrompt');
         localStorage.removeItem('customPearlyPrompt');
         loadPromptEditorUI();
+        ['analysis', 'pearly'].forEach(which => {
+            const view = document.getElementById(which + 'PromptView');
+            const editWrap = document.getElementById(which + 'PromptEditWrap');
+            const btn = document.getElementById(which + 'PromptEditBtn');
+            if (view) view.style.display = '';
+            if (editWrap) editWrap.style.display = 'none';
+            if (btn) btn.textContent = '✏️ Edit';
+        });
         showToast('Prompts reset to defaults', 'success');
         await _logPromptToSheet('Analysis Prompt (reset)', DEFAULT_ANALYSIS_PROMPT);
         await _logPromptToSheet('Pearly Prompt (reset)', DEFAULT_PEARLY_PROMPT);
@@ -5384,7 +5532,9 @@ Rules:
     }
 
     function saveApiDelay() {
-        const delaySeconds = parseFloat(document.getElementById('apiDelay').value);
+        const _el = document.getElementById('apiDelay');
+        if (!_el) return; // Rate Limits UI was removed; delay is still set programmatically via switchProvider()
+        const delaySeconds = parseFloat(_el.value);
         if (delaySeconds >= 0 && delaySeconds <= 10) {
             API_DELAY_MS = Math.round(delaySeconds * 1000);
             localStorage.setItem('apiDelayMs_' + selectedProvider, API_DELAY_MS);
@@ -5395,7 +5545,7 @@ Rules:
             showToast(`Delay set to ${delaySeconds.toFixed(1)}s`, 'success');
         } else {
             showToast('Delay must be between 0 and 10 seconds', 'error');
-            document.getElementById('apiDelay').value = (API_DELAY_MS / 1000).toFixed(1);
+            _el.value = (API_DELAY_MS / 1000).toFixed(1);
         }
     }
     function updateDelayStatDisplay() {
@@ -6641,7 +6791,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
 
     function _renderQuestionsHTML(questions, idx) {
         const qItems = questions.map((sq, qi) => `
-            <div style="border:1px solid rgba(167,139,250,0.2);background:rgba(167,139,250,0.06);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">
+            <div class="ai-scan-card" style="border:1px solid rgba(167,139,250,0.2);background-color:rgba(167,139,250,0.06);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">
                 <div style="font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:0.25rem;">Q${qi+1}. ${sq.q}</div>
                 <div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;border-top:1px solid rgba(167,139,250,0.12);padding-top:0.25rem;margin-top:0.25rem;">💡 ${sq.why}</div>
                 ${sq.expected_answer ? `
