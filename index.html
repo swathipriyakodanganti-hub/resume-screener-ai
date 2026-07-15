@@ -6213,7 +6213,7 @@ Rules:
 
         const raw = await callAIProvider([{ role: 'user', content: prompt }], {
             maxTokens: 1500,
-            temperature: 0.2,
+            temperature: 0,
             signal: controller.signal
         });
 
