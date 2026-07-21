@@ -1374,6 +1374,15 @@
 
         .overlay-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
+        .hero-notes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+        .hero-notes-item { display: flex; flex-direction: column; gap: 0.2rem; }
+        .hero-notes-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .hero-notes-val { font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; }
+        .hero-notes-edit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+        @media (max-width: 560px) {
+            .hero-notes-grid, .hero-notes-edit-grid { grid-template-columns: 1fr; }
+        }
+
         .overlay-stat-box {
             padding: 0.5rem 0.4rem;
             background: rgba(4, 8, 20, 0.7);
@@ -4324,6 +4333,16 @@
 <!-- ─── END PEARLY ─── -->
 
 <script>
+    // Escapes text for safe injection into HTML attributes / text content (used by editable fields)
+    function escapeHtml(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function parseApiKeys(raw) {
         if (!raw) return [];
         const seen = new Set();
@@ -5329,6 +5348,7 @@ Rules:
 
     function _enrichCandidate(r) {
         if (!r || !Object.keys(_linkedSheetMap).length) return;
+        if (r._ctcManuallyEdited) return; // recruiter has typed their own values — sheet data shouldn't overwrite them
         const byEmail = r.email ? _linkedSheetMap[_normEmail(r.email)] : null;
         const byPhone = r.phone ? _linkedSheetMap[_normPhone(r.phone)] : null;
         const match   = byEmail || byPhone;
@@ -7077,6 +7097,34 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             <!-- Detail body -->
             <div style="padding:1rem 1.25rem 2rem;">
 
+                <div class="overlay-section" id="heroNotesSection-${idx}">
+                    <div class="overlay-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+                        <span>💼 Compensation &amp; Recruiter Notes</span>
+                        <button class="dc-btn-sm" id="heroNotesEditBtn-${idx}" onclick="toggleHeroNotesEdit(${idx})" style="padding:0.2rem 0.55rem;font-size:0.68rem;">✏️ Edit</button>
+                    </div>
+                    <div id="heroNotesView-${idx}">
+                        <div class="hero-notes-grid">
+                            <div class="hero-notes-item"><span class="hero-notes-label">Current CTC</span><span class="hero-notes-val">${r.current_ctc ? escapeHtml(r.current_ctc) : '—'}</span></div>
+                            <div class="hero-notes-item"><span class="hero-notes-label">Expected CTC</span><span class="hero-notes-val">${r.expected_ctc ? escapeHtml(r.expected_ctc) : '—'}</span></div>
+                            <div class="hero-notes-item"><span class="hero-notes-label">Notice Period</span><span class="hero-notes-val">${r.notice_period ? escapeHtml(r.notice_period) : '—'}</span></div>
+                        </div>
+                        <div class="overlay-text" style="margin-top:0.6rem;${r.recruiter_comments ? '' : 'color:var(--text-muted);font-style:italic;'}">${r.recruiter_comments ? escapeHtml(r.recruiter_comments) : 'No recruiter comments yet.'}</div>
+                    </div>
+                    <div id="heroNotesEdit-${idx}" style="display:none;">
+                        <div class="hero-notes-edit-grid">
+                            <div><label class="dc-label" style="font-size:0.68rem;">Current CTC</label><input type="text" class="dc-input" id="heroCurCtc-${idx}" value="${escapeHtml(r.current_ctc || '')}" placeholder="e.g. 12 LPA"></div>
+                            <div><label class="dc-label" style="font-size:0.68rem;">Expected CTC</label><input type="text" class="dc-input" id="heroExpCtc-${idx}" value="${escapeHtml(r.expected_ctc || '')}" placeholder="e.g. 16 LPA"></div>
+                            <div><label class="dc-label" style="font-size:0.68rem;">Notice Period</label><input type="text" class="dc-input" id="heroNotice-${idx}" value="${escapeHtml(r.notice_period || '')}" placeholder="e.g. 30 days"></div>
+                        </div>
+                        <label class="dc-label" style="font-size:0.68rem;margin-top:0.6rem;display:block;">Recruiter Comments</label>
+                        <textarea class="dc-textarea" id="heroComments-${idx}" rows="3" placeholder="Notes for senior management — interview feedback, concerns, negotiation notes...">${escapeHtml(r.recruiter_comments || '')}</textarea>
+                        <div style="display:flex;justify-content:flex-end;gap:0.4rem;margin-top:0.5rem;">
+                            <button class="dc-btn-sm" onclick="toggleHeroNotesEdit(${idx})" style="font-size:0.7rem;">Cancel</button>
+                            <button class="dc-btn-sm pink" onclick="saveHeroNotes(${idx})" style="font-size:0.7rem;">💾 Save</button>
+                        </div>
+                    </div>
+                </div>
+
                 ${r.summary ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title">👤 Profile Summary</div>
@@ -7260,6 +7308,40 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         frame.style.display = 'none';
         empty.style.display = 'flex';
         empty.innerHTML = `<div class="main-resume-empty-icon">📄</div><h3>No preview available</h3><p>Add a Google Drive link in the detail panel to view the resume</p>`;
+    }
+
+    // ─── Hero card: editable Compensation & Recruiter Notes ───
+    function toggleHeroNotesEdit(idx) {
+        const view = document.getElementById(`heroNotesView-${idx}`);
+        const edit = document.getElementById(`heroNotesEdit-${idx}`);
+        const btn  = document.getElementById(`heroNotesEditBtn-${idx}`);
+        if (!view || !edit) return;
+        const isEditing = edit.style.display !== 'none';
+        if (isEditing) {
+            // Cancel — discard unsaved changes, revert to the view
+            edit.style.display = 'none';
+            view.style.display = '';
+            if (btn) btn.textContent = '✏️ Edit';
+        } else {
+            view.style.display = 'none';
+            edit.style.display = '';
+            if (btn) btn.textContent = '✕ Cancel';
+            document.getElementById(`heroCurCtc-${idx}`)?.focus();
+        }
+    }
+
+    function saveHeroNotes(idx) {
+        const r = analysisResults[idx];
+        if (!r) return;
+
+        r.current_ctc       = document.getElementById(`heroCurCtc-${idx}`)?.value.trim() || '';
+        r.expected_ctc       = document.getElementById(`heroExpCtc-${idx}`)?.value.trim() || '';
+        r.notice_period      = document.getElementById(`heroNotice-${idx}`)?.value.trim() || '';
+        r.recruiter_comments = document.getElementById(`heroComments-${idx}`)?.value.trim() || '';
+        r._ctcManuallyEdited = true;
+
+        renderMainDetail(idx); // re-render the hero card with the saved values, back in view mode
+        showToast('Saved — hit "💾 Save Batch" to persist this to your Sheet', 'success');
     }
 
     // ─── Card Helpers ───
@@ -7920,7 +8002,7 @@ main.addEventListener('scroll',()=>{
         const headers = [
             'Name','Email','Phone','Location','Experience (yrs)','Match Score',
             'Recommendation',
-            'Current CTC','Expected CTC','Notice Period',
+            'Current CTC','Expected CTC','Notice Period','Recruiter Comments',
             'Skills Score','Experience Score','Education Score','Achievements Score','Soft Skills Score',
             'Skills Present','Skills Missing',
             'Key Highlights',
@@ -7938,7 +8020,7 @@ main.addEventListener('scroll',()=>{
                 esc(r.name), esc(r.email), esc(r.phone), esc(r.location),
                 r.experience_years, r.match_score,
                 rec,
-                esc(r.current_ctc), esc(r.expected_ctc), esc(r.notice_period),
+                esc(r.current_ctc), esc(r.expected_ctc), esc(r.notice_period), esc(r.recruiter_comments),
                 sb.skills_score ?? '', sb.experience_score ?? '', sb.education_score ?? '',
                 sb.achievements_score ?? '', sb.culture_score ?? '',
                 esc((r.skills_present || []).join(', ')),
@@ -9910,6 +9992,7 @@ main.addEventListener('scroll',()=>{
                 `Summary: ${r.summary || 'n/a'}`,
                 extra ? `Custom screening: ${extra}` : '',
                 r.current_ctc ? `CTC: current=${r.current_ctc}, expected=${r.expected_ctc || '?'}, notice=${r.notice_period || '?'}` : '',
+                r.recruiter_comments ? `Recruiter comments: ${r.recruiter_comments}` : '',
             ].filter(Boolean).join('\n');
         }).join('\n\n');
     }
