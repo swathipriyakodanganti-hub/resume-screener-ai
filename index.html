@@ -864,9 +864,10 @@
 
         /* ── Middle: Detail panel ── */
         .main-detail-panel {
-            width: 420px; min-width: 340px; max-width: 480px;
+            flex: 1 1 auto;
+            min-width: 300px;
             display: flex; flex-direction: column; overflow: hidden;
-            border-right: 1px solid var(--border); flex-shrink: 0;
+            border-right: 1px solid var(--border); flex-shrink: 1;
         }
         .main-detail-content {
             flex: 1; overflow-y: auto;
@@ -885,7 +886,8 @@
 
         /* ── Right: Resume viewer ── */
         .main-resume-panel {
-            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            flex: 0 0 50%; max-width: 50%; min-width: 320px;
+            display: flex; flex-direction: column; overflow: hidden;
             background: var(--bg-main);
         }
         .main-resume-header {
@@ -2923,89 +2925,56 @@
         /* Dossier header: full-bleed stamp aesthetic */
         .dh-card {
             position: relative; overflow: hidden;
-            background: #04080f;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: #050a12;
+            border-bottom: 1px solid rgba(77,159,255,0.15);
+            font-family: 'Fira Mono', 'JetBrains Mono', monospace;
+            padding: 1.1rem 1.25rem 1rem;
         }
 
-        /* Big faint rank watermark */
-        .dh-card::before {
-            content: attr(data-rank);
-            position: absolute; right: -0.5rem; top: -0.8rem;
-            font-size: 7rem; font-weight: 900; line-height: 1;
-            font-family: 'JetBrains Mono', monospace;
-            color: rgba(255,255,255,0.025);
-            pointer-events: none; user-select: none;
-            letter-spacing: -0.05em;
+        .dh-term-label {
+            font-size: 0.58rem; letter-spacing: 0.08em;
+            color: var(--accent); text-transform: uppercase;
+            margin-bottom: 0.7rem;
         }
 
-        .dh-top-band {
-            padding: 1.2rem 1.25rem 0;
-            display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;
+        .dh-term-top {
+            display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem;
+            margin-bottom: 0.75rem;
         }
-        .dh-avatar { display: none; }
         .dh-name-area { flex: 1; min-width: 0; }
-        .dh-name-label {
-            font-size: 0.55rem; font-weight: 700; letter-spacing: 0.18em;
-            text-transform: uppercase; color: #2e3f5c; margin-bottom: 4px;
-            font-family: 'JetBrains Mono', monospace;
-        }
+        .dh-name-label { display: none; }
+        .dh-avatar { display: none; }
+        .dh-sub { display: none; }
         .dh-name {
-            font-family: 'Space Grotesk', 'Outfit', sans-serif;
-            font-size: 1.25rem; font-weight: 800;
-            color: #e8edf5; line-height: 1.15;
-            letter-spacing: -0.025em;
+            font-size: 1.05rem; font-weight: 700;
+            color: #ffffff; letter-spacing: 0.01em;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .dh-sub { display: none; }
-
-        /* Arc score ring on the right */
-        .dh-score-block {
-            flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
-        }
-        .dh-score-arc {
-            width: 62px; height: 62px;
-            border-radius: 50%;
-            background: conic-gradient(var(--dh-arc-color, #00e5a0) calc(var(--dh-pct, 80) * 1%), rgba(255,255,255,0.06) 0%);
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
-        }
-        .dh-score-arc::after {
-            content: '';
-            position: absolute; inset: 7px;
-            border-radius: 50%;
-            background: #04080f;
-        }
+        .dh-score-block { flex-shrink: 0; }
+        .dh-score-arc { background: none; width: auto; height: auto; }
+        .dh-score-arc::after { display: none; }
         .dh-score-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem; font-weight: 700;
-            color: var(--dh-arc-color, #00e5a0);
-            position: relative; z-index: 1;
-            line-height: 1;
+            font-size: 1.35rem; font-weight: 700;
+            color: #4ade80;
+            font-family: 'Fira Mono', 'JetBrains Mono', monospace;
         }
-        .dh-score-num.dh-mid { color: #f5a623; }
-        .dh-score-num.dh-low { color: #ff5c5c; }
-        .dh-score-lbl {
-            font-size: 0.52rem; font-weight: 600; letter-spacing: 0.1em;
-            text-transform: uppercase; color: #2e3f5c;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .dh-score-lbl.dh-mid { color: #2e3f5c; }
-        .dh-score-lbl.dh-low { color: #2e3f5c; }
+        .dh-score-num.dh-mid { color: #fbbf24; }
+        .dh-score-num.dh-low { color: #f87171; }
+        .dh-score-lbl { display: none; }
 
-        /* Verdict bar — full width strip */
+        /* Verdict strip */
         .dh-rec-bar {
-            margin: 0.75rem 1.25rem 0;
             display: flex; align-items: center; gap: 8px;
             padding: 7px 12px; border-radius: 6px;
             font-size: 0.7rem; font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: 0.04em;
-            background: rgba(0,229,160,0.08);
-            border: 1px solid rgba(0,229,160,0.2);
-            color: #00e5a0;
+            letter-spacing: 0.02em;
+            background: rgba(74,222,128,0.08);
+            border: 1px solid rgba(74,222,128,0.3);
+            color: #4ade80;
+            margin-bottom: 0.75rem;
         }
-        .dh-rec-bar.dh-mid { background: rgba(245,166,35,0.08); border-color: rgba(245,166,35,0.2); color: #f5a623; }
-        .dh-rec-bar.dh-low { background: rgba(255,92,92,0.08); border-color: rgba(255,92,92,0.2); color: #ff5c5c; }
+        .dh-rec-bar.dh-mid { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); color: #fbbf24; }
+        .dh-rec-bar.dh-low { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.3); color: #f87171; }
         .dh-rec-dot {
             width: 6px; height: 6px; border-radius: 50%;
             background: currentColor; flex-shrink: 0;
@@ -3013,51 +2982,50 @@
         }
         @keyframes dhPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
 
-        /* Info grid — horizontal data rows instead of pill grid */
-        .dh-kv-list {
-            padding: 0.85rem 1.25rem 0.6rem;
-            display: flex; flex-direction: column; gap: 0;
-        }
-        .dh-kv {
-            display: flex; align-items: center; gap: 10px;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            font-size: 0.73rem; min-width: 0;
-        }
-        .dh-kv:last-child { border-bottom: none; }
+        /* key › value terminal lines */
+        .dh-kv-list { display: flex; flex-direction: column; gap: 5px; }
+        .dh-kv { display: flex; align-items: baseline; gap: 6px; font-size: 0.73rem; min-width: 0; }
         .dh-kv.full { grid-column: unset; }
-        .dh-kv-icon { font-size: 0.75rem; flex-shrink: 0; width: 18px; text-align: center; opacity: 0.7; }
+        .dh-kv-icon { display: none; }
+        .dh-kv-key {
+            color: #475569; flex-shrink: 0; width: 52px;
+            font-size: 0.68rem;
+        }
+        .dh-kv-sep { color: #334155; flex-shrink: 0; }
         .dh-kv-label { display: none; }
         .dh-kv-value {
-            color: #8892a4; font-weight: 500;
+            color: #93c5fd; font-weight: 500;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
-            font-family: 'Space Grotesk', sans-serif;
         }
-        .dh-kv-value.blue  { color: #5b9cf6; }
-        .dh-kv-value.amber { color: #f5a623; }
-        .dh-kv-value.green { color: #00e5a0; }
+        .dh-kv-value.blue  { color: #7dd3fc; }
+        .dh-kv-value.amber { color: #fbbf24; }
+        .dh-kv-value.green { color: #86efac; }
+        .dh-kv-value.purple { color: #c4b5fd; }
 
         /* Shortlist + reanalyze row */
-        .dh-actions { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1.25rem 0.9rem; }
+        .dh-actions {
+            display: flex; align-items: center; gap: 10px;
+            margin-top: 0.85rem; padding-top: 0.75rem;
+            border-top: 1px solid rgba(77,159,255,0.15);
+        }
         .dh-shortlist-wrap {
             display: flex; align-items: center; gap: 6px;
             cursor: pointer; user-select: none;
-            font-size: 0.68rem; color: #3a4a6a;
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem; color: #93c5fd;
         }
         .dh-shortlist-wrap input[type="checkbox"] {
-            width: 13px; height: 13px; accent-color: #00e5a0;
+            width: 13px; height: 13px; accent-color: var(--accent);
             cursor: pointer; flex-shrink: 0; margin: 0;
         }
         .dh-reanalyze-btn {
             margin-left: auto;
-            background: transparent; border: 1px solid rgba(255,255,255,0.07);
-            color: #3a4a6a; border-radius: 5px;
+            background: #0b0f16; border: 1px solid rgba(77,159,255,0.3);
+            color: #93c5fd; border-radius: 5px;
             padding: 0.28rem 0.65rem; font-size: 0.65rem;
             cursor: pointer; transition: all 0.15s;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Fira Mono', 'JetBrains Mono', monospace;
         }
-        .dh-reanalyze-btn:hover { border-color: rgba(0,220,255,0.3); color: var(--accent); background: rgba(0,220,255,0.06); }
+        .dh-reanalyze-btn:hover { border-color: rgba(77,159,255,0.6); color: #fff; background: rgba(77,159,255,0.1); }
         .dh-reanalyze-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
         /* Sidebar list items — redesigned as numbered rows */
@@ -7102,29 +7070,23 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const _rank     = analysisResults.indexOf(r) + 1;
         detailEl.innerHTML = `
             <!-- Hero -->
-            <div class="dh-card" data-rank="${String(_rank).padStart(2,'0')}" style="--dh-arc-color:${_arcColor};--dh-pct:${r.match_score};">
-                <div class="dh-top-band">
+            <div class="dh-card" data-rank="${String(_rank).padStart(2,'0')}">
+                <div class="dh-term-label">CANDIDATE_PROFILE.dat</div>
+                <div class="dh-term-top">
                     <div class="dh-name-area">
-                        <div class="dh-name-label">Candidate Profile</div>
                         <div class="dh-name">${r.name}</div>
                     </div>
                     <div class="dh-score-block">
-                        <div class="dh-score-arc">
-                            <div class="dh-score-num ${_scoreCls}">${r.match_score}%</div>
-                        </div>
-                        <div class="dh-score-lbl">AI Match</div>
+                        <div class="dh-score-num ${_scoreCls}">${r.match_score}%</div>
                     </div>
                 </div>
                 <div class="dh-rec-bar ${_scoreCls}"><span class="dh-rec-dot"></span>${_recTxt}</div>
                 <div class="dh-kv-list">
-                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-icon">📍</span><span class="dh-kv-value">${r.location}</span></div>` : ''}
-                    ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">💼</span><span class="dh-kv-value" style="color:var(--accent);">${_fmtExp(r.experience_years)}</span></div>` : ''}
-                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-icon">✉️</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-icon">📞</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
-                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">🎓</span><span class="dh-kv-value" style="color:#a78bfa;">${r.internship_months} mo internship</span></div>` : ''}
-                    ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">💰</span><span class="dh-kv-value amber">Current: ${r.current_ctc}</span></div>` : ''}
-                    ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">🎯</span><span class="dh-kv-value amber">Expected: ${r.expected_ctc}</span></div>` : ''}
-                    ${r.notice_period ? `<div class="dh-kv full"><span class="dh-kv-icon">📅</span><span class="dh-kv-value green">Notice: ${r.notice_period}</span></div>` : ''}
+                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-key">loc</span><span class="dh-kv-sep">›</span><span class="dh-kv-value">${r.location}</span></div>` : ''}
+                    ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-key">exp</span><span class="dh-kv-sep">›</span><span class="dh-kv-value" style="color:var(--accent);">${_fmtExp(r.experience_years)}</span></div>` : ''}
+                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-key">email</span><span class="dh-kv-sep">›</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
+                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-key">phone</span><span class="dh-kv-sep">›</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
+                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-key">intern</span><span class="dh-kv-sep">›</span><span class="dh-kv-value purple">${r.internship_months} mo internship</span></div>` : ''}
                 </div>
                 <div class="dh-actions">
                     <label class="dh-shortlist-wrap" onclick="event.stopPropagation()" title="Add to shortlist">
@@ -7137,6 +7099,26 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
 
             <!-- Detail body -->
             <div style="padding:1rem 1.25rem 2rem;">
+
+                ${Array.isArray(r.extra_requirements_feedback) && r.extra_requirements_feedback?.length ? `
+                <div class="overlay-section">
+                    <div class="overlay-section-title" style="color:var(--amber);">📝 Custom Screening Feedback</div>
+                    ${r.extra_requirements_feedback.map(f => {
+                        const txt = typeof f === 'object' && f !== null
+                            ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — '))
+                            : String(f ?? '');
+                        const low = txt.toLowerCase();
+                        const isPass = /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low);
+                        const isFail = /found \d|missing|not found|lacks?|absent|none found|poor|weak|inconsistent|errors? found|mistakes? found|no (demonstrated|relevant|direct)|not (relevant|present|demonstrated|stated)|limited/.test(low);
+                        const color  = isPass ? 'var(--success)' : isFail ? 'var(--danger)' : 'var(--amber)';
+                        const bg     = isPass ? 'rgba(86,211,100,0.07)' : isFail ? 'rgba(248,81,73,0.07)' : 'var(--amber-dim)';
+                        const icon   = isPass ? '✅' : isFail ? '❌' : '⚠️';
+                        return `<div style="border-left:3px solid ${color};background:${bg};padding:0.5rem 0.75rem;border-radius:6px;font-size:0.8rem;margin-bottom:0.35rem;display:flex;gap:0.5rem;align-items:flex-start;">
+                            <span style="flex-shrink:0;margin-top:0.05rem;">${icon}</span>
+                            <span>${txt}</span>
+                        </div>`;
+                    }).join('')}
+                </div>` : ''}
 
                 <div class="overlay-section" id="heroNotesSection-${idx}">
                     <div class="overlay-section-title" style="display:flex;align-items:center;justify-content:space-between;">
@@ -7211,26 +7193,6 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     `}
                     </div>`;
                 })()}
-
-                ${Array.isArray(r.extra_requirements_feedback) && r.extra_requirements_feedback?.length ? `
-                <div class="overlay-section">
-                    <div class="overlay-section-title" style="color:var(--amber);">📝 Custom Screening Feedback</div>
-                    ${r.extra_requirements_feedback.map(f => {
-                        const txt = typeof f === 'object' && f !== null
-                            ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — '))
-                            : String(f ?? '');
-                        const low = txt.toLowerCase();
-                        const isPass = /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low);
-                        const isFail = /found \d|missing|not found|lacks?|absent|none found|poor|weak|inconsistent|errors? found|mistakes? found|no (demonstrated|relevant|direct)|not (relevant|present|demonstrated|stated)|limited/.test(low);
-                        const color  = isPass ? 'var(--success)' : isFail ? 'var(--danger)' : 'var(--amber)';
-                        const bg     = isPass ? 'rgba(86,211,100,0.07)' : isFail ? 'rgba(248,81,73,0.07)' : 'var(--amber-dim)';
-                        const icon   = isPass ? '✅' : isFail ? '❌' : '⚠️';
-                        return `<div style="border-left:3px solid ${color};background:${bg};padding:0.5rem 0.75rem;border-radius:6px;font-size:0.8rem;margin-bottom:0.35rem;display:flex;gap:0.5rem;align-items:flex-start;">
-                            <span style="flex-shrink:0;margin-top:0.05rem;">${icon}</span>
-                            <span>${txt}</span>
-                        </div>`;
-                    }).join('')}
-                </div>` : ''}
 
                 ${r.score_breakdown ? `
                 <div class="overlay-section">
