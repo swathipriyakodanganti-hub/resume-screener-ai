@@ -7108,11 +7108,10 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                             ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — '))
                             : String(f ?? '');
                         const low = txt.toLowerCase();
-                        const isPass = /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low);
-                        const isFail = /found \d|missing|not found|lacks?|absent|none found|poor|weak|inconsistent|errors? found|mistakes? found|no (demonstrated|relevant|direct)|not (relevant|present|demonstrated|stated)|limited/.test(low);
-                        const color  = isPass ? 'var(--success)' : isFail ? 'var(--danger)' : 'var(--amber)';
-                        const bg     = isPass ? 'rgba(86,211,100,0.07)' : isFail ? 'rgba(248,81,73,0.07)' : 'var(--amber-dim)';
-                        const icon   = isPass ? '✅' : isFail ? '❌' : '⚠️';
+                        const isMet = /^meets:/.test(low) || (!/^missing:/.test(low) && /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low));
+                        const color  = isMet ? 'var(--success)' : '#f0883e';
+                        const bg     = isMet ? 'rgba(86,211,100,0.07)' : 'rgba(240,136,62,0.12)';
+                        const icon   = isMet ? '✅' : '⚠️';
                         return `<div style="border-left:3px solid ${color};background:${bg};padding:0.5rem 0.75rem;border-radius:6px;font-size:0.8rem;margin-bottom:0.35rem;display:flex;gap:0.5rem;align-items:flex-start;">
                             <span style="flex-shrink:0;margin-top:0.05rem;">${icon}</span>
                             <span>${txt}</span>
@@ -7752,10 +7751,9 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — '))
                     : String(f ?? '');
                 const low = txt.toLowerCase();
-                const isPass = /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low);
-                const isFail = /found \d|missing|not found|lacks?|absent|none found|poor|weak|inconsistent|errors? found|mistakes? found|no (demonstrated|relevant|direct)|not (relevant|present|demonstrated|stated)|limited/.test(low);
-                const ic = isPass ? '✅' : isFail ? '❌' : '⚠️';
-                const cl = isPass ? 'fb-pass' : isFail ? 'fb-fail' : 'fb-warn';
+                const isMet = /^meets:/.test(low) || (!/^missing:/.test(low) && /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low));
+                const ic = isMet ? '✅' : '⚠️';
+                const cl = isMet ? 'fb-pass' : 'fb-warn';
                 return `<div class="fb-item ${cl}">${ic} ${txt}</div>`;
             }).join('');
 
@@ -7887,7 +7885,7 @@ body{font-family:'Inter',sans-serif;background:#0d1117;color:#f0f6fc;line-height
 .fb-item{font-size:0.74rem;padding:0.35rem 0.6rem;border-radius:5px;border-left:3px solid;line-height:1.4;}
 .fb-pass{background:rgba(86,211,100,0.07);border-color:#56d364;color:#c9d1d9;}
 .fb-fail{background:rgba(248,81,73,0.07);border-color:#f85149;color:#c9d1d9;}
-.fb-warn{background:rgba(227,179,65,0.07);border-color:#e3b341;color:#c9d1d9;}
+.fb-warn{background:rgba(240,136,62,0.12);border-color:#f0883e;color:#c9d1d9;}
 .print-btn{position:fixed;bottom:1rem;right:1rem;padding:0.45rem 0.9rem;background:#388bfd;color:#fff;border:none;border-radius:7px;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;box-shadow:0 4px 14px rgba(56,139,253,0.4);z-index:999;}
 .print-btn:hover{background:#2f7dea;}
 @media print{
