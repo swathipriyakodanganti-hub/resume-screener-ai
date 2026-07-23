@@ -9211,8 +9211,9 @@ main.addEventListener('scroll',()=>{
 
         document.getElementById('sharePgBody').innerHTML = `
             <div class="share-detail-body">
-                ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
-                ${_sharePageMode === 'full' && r.score_breakdown ? `
+                `${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
+${_sharePageMode === 'full' && r.recruiter_comments ? `<div class="share-pg-section"><div class="share-pg-section-title">📝 Recruiter Notes</div><div class="overlay-text">${r.recruiter_comments}</div></div>` : ''}
+${_sharePageMode === 'full' && r.score_breakdown ? `
                 <div class="share-pg-section">
                     <div class="share-pg-section-title">📐 Score Breakdown</div>
                     <div class="score-breakdown-list">
