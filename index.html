@@ -2998,6 +2998,33 @@
         .dh-reanalyze-btn:hover { border-color: rgba(77,159,255,0.6); color: #fff; background: rgba(77,159,255,0.1); }
         .dh-reanalyze-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+        /* Reviewer decision buttons (share page) + note field */
+        .dh-decision-block { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid rgba(77,159,255,0.15); }
+        .dh-decision-block .dh-actions { margin-top: 0; padding-top: 0; border-top: none; }
+        .dh-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 0.4rem 0.95rem;
+            background: #0b0f16; border: 1px solid rgba(77,159,255,0.25);
+            color: #93c5fd; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .dh-btn:hover { border-color: rgba(77,159,255,0.5); background: rgba(77,159,255,0.08); }
+        .dh-btn.proceed.active { background: rgba(52,211,153,0.14); border-color: #34d399; color: #6ee7b7; }
+        .dh-btn.pass.active { background: rgba(248,113,113,0.12); border-color: #f87171; color: #fca5a5; }
+        .dh-note-wrap { margin-top: 0.6rem; }
+        .dh-note-input {
+            width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px;
+            padding: 0.5rem 0.7rem;
+            background: #0b0f16; border: 1px solid rgba(77,159,255,0.2);
+            border-radius: 7px; color: #dde6f0;
+            font-size: 0.76rem; font-family: 'Source Sans 3', sans-serif; line-height: 1.5;
+            outline: none; transition: border-color 0.15s;
+        }
+        .dh-note-input::placeholder { color: #475569; }
+        .dh-note-input:focus { border-color: rgba(77,159,255,0.5); }
+
         /* Sidebar list items — redesigned as numbered rows */
         .main-cand-item {
             display: flex; align-items: center; gap: 0; 
@@ -3557,7 +3584,15 @@
                         <div class="dc-card green-glow">
                             <div style="margin-bottom:0.75rem;">
                                 <label class="dc-label" for="positionSelect">Select Position</label>
-                                <select id="positionSelect" class="dc-select" onchange="loadJD()"><option value="">-- Select Position --</option></select>
+                                <select id="positionSelect" class="dc-select" onchange="loadJD(); toggleCustomPositionNameField();"><option value="">-- Select Position --</option></select>
+                            </div>
+                            <div id="customPositionNameWrap" style="display:none;margin-bottom:0.75rem;">
+                                <label class="dc-label" for="customPositionNameInput">Position Name <span style="color:#6ee7b7;font-weight:400;font-size:0.61rem;">— no saved position selected, name this role</span></label>
+                                <div class="dc-row" style="gap:0.4rem;align-items:stretch;">
+                                    <input type="text" id="customPositionNameInput" class="dc-input green" placeholder="e.g. QA Engineer" style="flex:1;" oninput="saveCustomPositionName()">
+                                    <button class="dc-btn-sm green" id="savePositionBtn" onclick="savePositionToSheet()" style="white-space:nowrap;" title="Save this position + JD into the JD tab of your linked Google Sheet">💾 Save to Sheet</button>
+                                </div>
+                                <div class="dc-hint" style="margin-top:0.3rem;">Saves into the <strong>JD</strong> tab of your linked Google Sheet, so it shows up under Select Position next time.</div>
                             </div>
                             <div style="margin-bottom:0.6rem;border:1px solid rgba(52,211,153,0.18);border-radius:9px;padding:0.65rem 0.75rem;background:rgba(52,211,153,0.04);">
                                 <label class="dc-label" style="color:#6ee7b7;margin-bottom:0.4rem;">✨ Generate JD with AI</label>
@@ -3569,7 +3604,7 @@
                             </div>
                             <div style="margin-bottom:0.4rem;">
                                 <label class="dc-label">Job Description</label>
-                                <textarea class="dc-textarea" id="jdEditBox" placeholder="Select a position above, generate with AI, or type / paste a job description here…" oninput="currentJD = this.value;" style="min-height:145px;"></textarea>
+                                <textarea class="dc-textarea" id="jdEditBox" placeholder="Select a position above, generate with AI, or type / paste a job description here…" oninput="currentJD = this.value; toggleCustomPositionNameField();" style="min-height:145px;"></textarea>
                             </div>
                             <div style="display:flex;justify-content:flex-end;">
                                 <button class="dc-btn-sm green jd-rec-btn" id="jdRecBtn" onclick="getJdRecommendations()">✨ AI Recommendations</button>
@@ -3644,7 +3679,7 @@
         <div class="results-dc-bar">
             <div>
                 <div class="dc-eyebrow">Pearl Hire · Results</div>
-                <div class="dc-title">Candidate Analysis</div>
+                <div class="dc-title" id="resultsDcTitle">Candidate Analysis</div>
             </div>
             <!-- Batch history dropdown -->
             <div id="batchHistoryWrap" style="display:flex;align-items:center;gap:0.5rem;flex:1;justify-content:center;max-width:420px;margin:0 1rem;">
@@ -4112,7 +4147,6 @@
         <div class="share-note-steps">
             <div class="share-note-step"><span class="share-note-num">1</span><span><strong>Open the profiles</strong> — each one has the candidate's background, relevant skills, and a brief summary.</span></div>
             <div class="share-note-step"><span class="share-note-num">2</span><span><strong>Mark your preference</strong> — shortlist, maybe, or pass. Even a quick note on each helps a lot.</span></div>
-            <div class="share-note-step"><span class="share-note-num">3</span><span><strong>Share your feedback</strong> whenever it suits you — there's no hard deadline on this one.</span></div>
         </div>
     </div>
 
@@ -4413,8 +4447,89 @@
     let _rateLimitUntil   = { groq: 0, gemini: 0 };
     let _countdownTimer   = null; // setInterval handle for the live UI ticker
     let extraRequirements  = localStorage.getItem('extraRequirements') || '';
+    let customPositionName = localStorage.getItem('customPositionName') || '';
     let resumeDropOpen = false;
     let fileStatuses   = {};
+
+    // ─── Position name: dropdown selection takes priority, else the custom name
+    //     typed in when a JD was generated/pasted without picking a saved position ───
+    function getCurrentPositionName() {
+        const sel = document.getElementById('positionSelect');
+        if (sel && sel.value !== '' && sel.selectedIndex > 0) {
+            return sel.options[sel.selectedIndex].text;
+        }
+        return (customPositionName || '').trim();
+    }
+
+    function updateResultsPageTitle() {
+        const titleEl = document.getElementById('resultsDcTitle');
+        if (!titleEl) return;
+        titleEl.textContent = getCurrentPositionName() || 'Candidate Analysis';
+    }
+
+    // Shows the "Position Name" field only once a JD exists and no saved position was picked
+    function toggleCustomPositionNameField() {
+        const wrap = document.getElementById('customPositionNameWrap');
+        const sel  = document.getElementById('positionSelect');
+        const hasJD = (document.getElementById('jdEditBox')?.value || '').trim().length > 0;
+        const hasPositionSelected = !!(sel && sel.value !== '');
+        const show = hasJD && !hasPositionSelected;
+        if (wrap) wrap.style.display = show ? 'block' : 'none';
+        if (hasPositionSelected && customPositionName) {
+            // A saved position was picked — it's now authoritative, drop the custom name
+            customPositionName = '';
+            localStorage.removeItem('customPositionName');
+            const inp = document.getElementById('customPositionNameInput');
+            if (inp) inp.value = '';
+        }
+        updateResultsPageTitle();
+    }
+
+    function saveCustomPositionName() {
+        customPositionName = (document.getElementById('customPositionNameInput')?.value || '').trim();
+        localStorage.setItem('customPositionName', customPositionName);
+        updateResultsPageTitle();
+    }
+
+    // Persists the typed Position Name + current JD into the "JD" tab of the
+    // linked Google Sheet (via Apps Script) so it appears in Select Position next time.
+    async function savePositionToSheet() {
+        const position = (document.getElementById('customPositionNameInput')?.value || customPositionName || '').trim();
+        const jd = (document.getElementById('jdEditBox')?.value || currentJD || '').trim();
+
+        if (!position) { showToast('Type a position name first', 'error'); return; }
+        if (!jd) { showToast('Add a job description first', 'error'); return; }
+        if (!appsScriptUrl) { showToast('Apps Script URL not configured — add it in Settings first', 'error'); return; }
+        if (!sheetsId) { showToast('Google Sheets ID not set — add it in the Links tab first', 'error'); return; }
+
+        const btn = document.getElementById('savePositionBtn');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…'; }
+
+        try {
+            const res = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: 'savePositionJD', spreadsheetId: sheetsId, position, jd })
+            });
+            const json = await res.json();
+            if (!json.ok) throw new Error(json.error || 'Unknown error');
+
+            showToast(json.updated ? `✅ "${position}" updated in your JD sheet` : `✅ "${position}" added to your JD sheet`, 'success');
+
+            await loadPositions();
+            const sel = document.getElementById('positionSelect');
+            if (sel) {
+                for (const opt of sel.options) {
+                    if (opt.text.trim().toLowerCase() === position.toLowerCase()) { sel.value = opt.value; break; }
+                }
+                toggleCustomPositionNameField();
+            }
+        } catch (err) {
+            showToast('Save failed: ' + err.message, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '💾 Save to Sheet'; }
+        }
+    }
 
     function ensureUsageShape(provider) {
         if (!tokenUsage[provider]) tokenUsage[provider] = { prompt: 0, completion: 0, total: 0 };
@@ -4705,6 +4820,12 @@
         const savedExtraReqs = localStorage.getItem('extraRequirements') || '';
         if (savedExtraReqs) document.getElementById('extraReqsInput').value = savedExtraReqs;
 
+        if (customPositionName) {
+            const cpInput = document.getElementById('customPositionNameInput');
+            if (cpInput) cpInput.value = customPositionName;
+        }
+        toggleCustomPositionNameField();
+
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -4857,7 +4978,11 @@ STEP 4 — skills_missing must list EVERY must-have JD skill that is not demonst
 
 STEP 5 — rating_reason and summary must cite something SPECIFIC from THIS resume (a real project, employer, number, or gap) — never generic filler like "strong candidate with relevant background."
 
-STEP 6 — extra_requirements_feedback: for each extra screening item listed in Filters above, return one string starting with exactly "Meets: " or "Missing: " followed by the specific evidence or reason from the resume. One string per item, in the same order given. Return an empty array if no extra screening items were given.
+STEP 6 — extra_requirements_feedback: For each extra screening item listed in Filters above, output one string per item, same order. Each string MUST start with exactly "Meets: " or "Missing: " — never anything else, and NEVER just restate the requirement text itself. After the prefix, write ONE short clause citing the specific evidence from THIS resume (or its specific absence) — not a copy of the requirement.
+  Example — requirement "Need someone who are in Hyderabad": write "Meets: resume lists current location as Hyderabad" or "Missing: resume lists location as Bangalore, not Hyderabad" — never just "Need someone who are in Hyderabad".
+  Example — requirement "More than 2 years is a must": write "Meets: 3.5 years of professional experience per work history" or "Missing: only 1.2 years of professional experience, requirement is 2+ years".
+  If you cannot find clear evidence the requirement is satisfied, default to "Missing: " — never leave it ambiguous or unprefixed.
+Return an empty array if no extra screening items were given.
 
 Return exactly this JSON shape:
 {"name":"","email":null,"phone":null,"linkedin_url":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","company":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
@@ -4912,7 +5037,11 @@ STEP 4 — skills_missing must list EVERY must-have JD skill that is not demonst
 
 STEP 5 — rating_reason and summary must cite something SPECIFIC from THIS resume (a real project, employer, number, or gap) — never generic filler like "strong candidate with relevant background."
 
-STEP 6 — extra_requirements_feedback: for each extra screening item listed in Filters above, return one string starting with exactly "Meets: " or "Missing: " followed by the specific evidence or reason from the resume. One string per item, in the same order given. Return an empty array if no extra screening items were given.
+STEP 6 — extra_requirements_feedback: For each extra screening item listed in Filters above, output one string per item, same order. Each string MUST start with exactly "Meets: " or "Missing: " — never anything else, and NEVER just restate the requirement text itself. After the prefix, write ONE short clause citing the specific evidence from THIS resume (or its specific absence) — not a copy of the requirement.
+  Example — requirement "Need someone who are in Hyderabad": write "Meets: resume lists current location as Hyderabad" or "Missing: resume lists location as Bangalore, not Hyderabad" — never just "Need someone who are in Hyderabad".
+  Example — requirement "More than 2 years is a must": write "Meets: 3.5 years of professional experience per work history" or "Missing: only 1.2 years of professional experience, requirement is 2+ years".
+  If you cannot find clear evidence the requirement is satisfied, default to "Missing: " — never leave it ambiguous or unprefixed.
+Return an empty array if no extra screening items were given.
 
 Return exactly this JSON shape:
 {"name":"","email":null,"phone":null,"linkedin_url":null,"experience_years":0,"internship_months":0,"roles":[{"title":"","company":"","start":"","end":"","type":"professional"}],"location":"","match_score":0,"score_breakdown":{"skills_score":0,"experience_score":0,"education_score":0,"achievements_score":0,"culture_score":0},"key_skills":[],"skills_present":[],"skills_missing":[],"highlights":[],"rating_reason":"","summary":"","extra_requirements_feedback":[]}`;
@@ -5101,6 +5230,14 @@ Write in a professional tone. Be specific and realistic for this role. Do not in
             const editBox = document.getElementById('jdEditBox');
             editBox.value = jdText;
             currentJD = jdText;
+            // Pre-fill the position name with the role just generated, if nothing's been typed yet
+            const posSel = document.getElementById('positionSelect');
+            if (!customPositionName && (!posSel || posSel.value === '')) {
+                customPositionName = role;
+                localStorage.setItem('customPositionName', customPositionName);
+                const cpInput = document.getElementById('customPositionNameInput');
+                if (cpInput) cpInput.value = role;
+            }
             editBox.dispatchEvent(new Event('input'));
             // scroll textarea into view
             editBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -6413,6 +6550,19 @@ Rules:
         return _audioCtx;
     }
 
+    // Browsers keep a freshly-created AudioContext suspended until a user gesture
+    // unlocks it. Catch the very first click/keypress/tap anywhere on the page so
+    // it's already unlocked by the time analysis starts, however it was triggered.
+    function _unlockAudioCtx() {
+        try {
+            const ctx = _getAudioCtx();
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+        } catch (e) {}
+    }
+    ['pointerdown', 'keydown', 'touchstart'].forEach(evt =>
+        document.addEventListener(evt, _unlockAudioCtx, { once: true, capture: true })
+    );
+
     function toggleAnalysisSound() {
         soundEnabled = !soundEnabled;
         localStorage.setItem('soundEnabled', soundEnabled);
@@ -6425,35 +6575,41 @@ Rules:
         else _stopAmbientHum();
     }
 
-    function _startAmbientHum() {
+    async function _startAmbientHum() {
         if (!soundEnabled || _ambientNodes) return;
         try {
             const ctx = _getAudioCtx();
-            if (ctx.state === 'suspended') ctx.resume();
+            if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) {} }
+            if (ctx.state !== 'running') {
+                console.warn('Ambient sound: AudioContext could not start (state=' + ctx.state + ') — it will retry on the next click.');
+                return;
+            }
 
             const masterGain = ctx.createGain();
             masterGain.gain.value = 0;
             masterGain.connect(ctx.destination);
-            masterGain.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 0.8);
+            masterGain.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 0.8);
 
-            // Two soft detuned sine tones for a low pad texture
+            // Two soft detuned tones, a fifth apart, pitched where laptop/phone
+            // speakers actually reproduce sound (low bass tones were previously
+            // inaudible on most hardware even though they were technically playing)
             const osc1 = ctx.createOscillator();
             osc1.type = 'sine';
-            osc1.frequency.value = 110;
+            osc1.frequency.value = 220;
             const osc2 = ctx.createOscillator();
             osc2.type = 'sine';
-            osc2.frequency.value = 164.5;
+            osc2.frequency.value = 329.63;
 
             const filter = ctx.createBiquadFilter();
             filter.type = 'lowpass';
-            filter.frequency.value = 650;
+            filter.frequency.value = 1400;
 
             // Slow LFO gives a gentle "breathing" pulse instead of a flat drone
             const lfo = ctx.createOscillator();
             lfo.type = 'sine';
             lfo.frequency.value = 0.16;
             const lfoGain = ctx.createGain();
-            lfoGain.gain.value = 0.022;
+            lfoGain.gain.value = 0.045;
             lfo.connect(lfoGain);
             lfoGain.connect(masterGain.gain);
 
@@ -7028,6 +7184,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const searchSummaryEl = document.getElementById('candidateSearchSummary');
 
         const dcCount = document.getElementById('resultsDcCount');
+        updateResultsPageTitle();
         if (!analysisResults.length) {
             listEl.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--text-muted);text-align:center;padding:1rem;"><div style="font-size:2rem;opacity:0.2;margin-bottom:0.5rem;">📭</div><div style="font-size:0.75rem;">Analyze resumes to see candidates</div></div>`;
             metaEl.textContent = 'No results yet';
@@ -7770,7 +7927,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         if (!analysisResults.length) { showToast('No results to preview', 'error'); return; }
         const avg = Math.round(analysisResults.reduce((s, r) => s + r.match_score, 0) / analysisResults.length);
         const top = analysisResults[0].match_score;
-        const jdTitle = document.getElementById('positionSelect')?.selectedOptions?.[0]?.text || 'Position';
+        const jdTitle = getCurrentPositionName() || 'Position';
 
         const cardHTML = analysisResults.map((r, i) => {
             const recColor = r.match_score >= 75 ? '#56d364' : r.match_score >= 50 ? '#e3b341' : '#f85149';
@@ -8030,11 +8187,7 @@ main.addEventListener('scroll',()=>{
     }
 
     function _buildScreeningExportFilename() {
-        const posSel = document.getElementById('positionSelect');
-        const selectedText = posSel?.selectedOptions?.[0]?.textContent?.trim() || '';
-        const positionName = selectedText && !/^--\s*select position\s*--$/i.test(selectedText)
-            ? selectedText
-            : 'screening-report';
+        const positionName = getCurrentPositionName() || 'screening-report';
 
         const now = new Date();
         const day = String(now.getDate()).padStart(2, '0');
@@ -8189,8 +8342,7 @@ main.addEventListener('scroll',()=>{
         }
 
         // Current position from UI
-        const posEl = document.getElementById('positionSelect') || document.getElementById('selectedPositionLabel');
-        const position = posEl ? (posEl.value || posEl.textContent || '').trim() : '';
+        const position = getCurrentPositionName();
 
         // Button loading state
         const btn = document.getElementById('pushConfirmBtn');
@@ -8390,7 +8542,7 @@ main.addEventListener('scroll',()=>{
         }).filter(Boolean);
         const selected  = analysisResults.filter(r => selectedFilenames.includes(r.filename || r.name));
         const nameList  = selected.map(c => c.name);
-        const position  = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
+        const position  = getCurrentPositionName() || 'Open Position';
 
         // Update modal header to reflect bulk
         document.getElementById('shareModalTitle').textContent = `📤 Share ${count} Candidate${count > 1 ? 's' : ''}`;
@@ -8427,10 +8579,8 @@ main.addEventListener('scroll',()=>{
         if (!appsScriptUrl) { showToast('Apps Script URL not set — go to Setup', 'error'); return; }
         if (!analysisResults.length) { showToast('No results to save', 'error'); return; }
 
-        const sel = document.getElementById('positionSelect');
-        const position = (sel && sel.selectedIndex > 0)
-            ? sel.options[sel.selectedIndex].text
-            : (document.getElementById('jdEditBox')?.value?.trim().split('\n')[0]?.slice(0, 60) || 'Unnamed Position');
+        const position = getCurrentPositionName()
+            || (document.getElementById('jdEditBox')?.value?.trim().split('\n')[0]?.slice(0, 60) || 'Unnamed Position');
 
         const batchId  = _genBatchId();
         const savedAt  = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
@@ -8535,9 +8685,14 @@ main.addEventListener('scroll',()=>{
             badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
             if (analysisResults.length) badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
 
-            // Update results bar title to show which batch is loaded
-            const dcTitle = document.querySelector('.results-dc-bar .dc-title');
-            if (dcTitle) dcTitle.textContent = json.position || 'Loaded Batch';
+            // Update position name so the results bar title (and every other place
+            // that reads it) reflects which batch is loaded
+            const posSel = document.getElementById('positionSelect');
+            if (posSel) posSel.value = '';
+            customPositionName = json.position || 'Loaded Batch';
+            localStorage.setItem('customPositionName', customPositionName);
+            const cpInput = document.getElementById('customPositionNameInput');
+            if (cpInput) cpInput.value = customPositionName;
 
             renderMainPanels();
             switchPage('results');
@@ -8552,10 +8707,8 @@ main.addEventListener('scroll',()=>{
     // Auto-save batch after analysis completes (called from _finish)
     async function _autoSaveBatch() {
         if (!appsScriptUrl || !analysisResults.length) return;
-        const sel = document.getElementById('positionSelect');
-        const position = (sel && sel.selectedIndex > 0)
-            ? sel.options[sel.selectedIndex].text
-            : (document.getElementById('jdEditBox')?.value?.trim().split('\n')[0]?.slice(0, 60) || 'Analysis');
+        const position = getCurrentPositionName()
+            || (document.getElementById('jdEditBox')?.value?.trim().split('\n')[0]?.slice(0, 60) || 'Analysis');
         const batchId = _genBatchId();
         const savedAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
         try {
@@ -8771,7 +8924,7 @@ main.addEventListener('scroll',()=>{
             return r ? (r.filename || r.name) : null;
         }).filter(Boolean);
         const candidates = analysisResults.filter(r => selFilenames.includes(r.filename || r.name));
-        const position   = document.getElementById('positionSelect').options[document.getElementById('positionSelect').selectedIndex]?.text || 'Open Position';
+        const position   = getCurrentPositionName() || 'Open Position';
         const shareMode  = document.querySelector('input[name="shareMode"]:checked')?.value || 'full';
 
         // For URL mode: strip resume_pdf_b64 only when a drive_link exists (Drive serves the resume).
@@ -9004,6 +9157,7 @@ main.addEventListener('scroll',()=>{
     let _shareCandidates = null; // holds decoded candidates on the share page
     let _shareActiveIdx  = -1;  // currently selected candidate index in share page
     let _shareFeedback      = {};  // { idx: 'proceed' | 'pass' }
+    let _shareNotes         = {};  // { idx: 'free-text note from reviewer' }
     let _shareSid           = null;
     let _shareDbForFb       = null;
     let _shareAppsScriptUrl = null;
@@ -9052,19 +9206,27 @@ main.addEventListener('scroll',()=>{
         updateShareFeedbackBar();
     }
 
+    // ─── Track a reviewer's free-text note on a candidate ───
+    function setShareNote(idx, val) {
+        if (val && val.trim()) _shareNotes[idx] = val;
+        else delete _shareNotes[idx];
+        updateShareFeedbackBar();
+    }
+
     // ─── Update floating feedback bar visibility/count ───
     function updateShareFeedbackBar() {
         const bar = document.getElementById('shareFeedbackBar');
         if (!bar) return;
         const vals = Object.values(_shareFeedback);
-        const proceedCount = vals.filter(v => v === 'proceed').length;
-        const passCount    = vals.filter(v => v === 'pass').length;
-        const total        = proceedCount + passCount;
+        const proceedCount  = vals.filter(v => v === 'proceed').length;
+        const passCount     = vals.filter(v => v === 'pass').length;
+        const noteOnlyCount = Object.keys(_shareNotes).filter(k => !_shareFeedback[k]).length;
+        const total         = proceedCount + passCount + noteOnlyCount;
         if (total === 0) { bar.classList.remove('visible'); return; }
         bar.classList.add('visible');
         document.getElementById('shareFeedbackCount').textContent = proceedCount;
         document.getElementById('shareFeedbackSub').textContent   =
-            (passCount > 0 ? passCount + ' passed · ' : '') + 'Tap "Submit" when done';
+            (passCount > 0 ? passCount + ' passed · ' : '') + (noteOnlyCount > 0 ? noteOnlyCount + ' noted · ' : '') + 'Tap "Submit" when done';
     }
 
     // ─── Show name prompt before saving feedback ───
@@ -9082,11 +9244,18 @@ main.addEventListener('scroll',()=>{
         const overlay = document.getElementById('shareFeedbackNameOverlay');
         overlay.style.display = 'none';
 
-        // Build decisions map: candidateName → 'proceed' | 'pass'
+        // Build decisions map: candidateName → { decision: 'proceed' | 'pass' | '', note: '...' }
         const decisions = {};
-        for (const [idxStr, dec] of Object.entries(_shareFeedback)) {
+        const touchedIdxs = new Set([...Object.keys(_shareFeedback), ...Object.keys(_shareNotes)]);
+        for (const idxStr of touchedIdxs) {
             const c = _shareCandidates && _shareCandidates[+idxStr];
-            if (c) decisions[c.name] = dec;
+            if (!c) continue;
+            decisions[c.name] = { decision: _shareFeedback[idxStr] || '', note: _shareNotes[idxStr] || '' };
+        }
+        if (!Object.keys(decisions).length) {
+            document.getElementById('shareFeedbackNameOverlay').style.display = 'flex';
+            showToast('Mark a decision or add a note on at least one candidate first', 'error');
+            return;
         }
 
         const position = (document.getElementById('sharePgPositionBanner')?.textContent || '').replace(/^📋\s*/, '').trim();
@@ -9245,13 +9414,18 @@ main.addEventListener('scroll',()=>{
                     ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">🎯</span><span class="dh-kv-value amber">Expected: ${r.expected_ctc}</span></div>` : ''}
                     ${r.notice_period ? `<div class="dh-kv full"><span class="dh-kv-icon">📅</span><span class="dh-kv-value green">Notice: ${r.notice_period}</span></div>` : ''}
                 </div>
-                <div class="dh-actions" id="shareDecisionRow">
-                    <button class="dh-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
-                        ${_decisionState === 'proceed' ? '✅ Proceeding' : '✓ Proceed'}
-                    </button>
-                    <button class="dh-btn pass${_decisionState === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
-                        ${_decisionState === 'pass' ? '✕ Passed' : '✕ Pass'}
-                    </button>
+                <div class="dh-decision-block">
+                    <div class="dh-actions" id="shareDecisionRow">
+                        <button class="dh-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+                            ${_decisionState === 'proceed' ? '✅ Proceeding' : '✓ Proceed'}
+                        </button>
+                        <button class="dh-btn pass${_decisionState === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+                            ${_decisionState === 'pass' ? '✕ Passed' : '✕ Pass'}
+                        </button>
+                    </div>
+                    <div class="dh-note-wrap">
+                        <textarea class="dh-note-input" id="share-note-${idx}" placeholder="Add a quick note for the recruiting team (optional)…" oninput="setShareNote(${idx}, this.value)">${escapeHtml(_shareNotes[idx] || '')}</textarea>
+                    </div>
                 </div>
                 ${mobileResumeBtn ? `<div style="padding:0 1.25rem 0.75rem;">${mobileResumeBtn}</div>` : ''}
             </div>`;
