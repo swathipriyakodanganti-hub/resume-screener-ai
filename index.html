@@ -3485,7 +3485,6 @@
             <span id="progressText">Analyzing…</span>
             <div style="display:flex;align-items:center;gap:0.5rem;">
                 <span id="progressCount">0/0</span>
-                <button id="soundToggleBtn" onclick="toggleAnalysisSound()" title="Mute analysis sound" style="padding:2px 8px;font-size:0.75rem;background:rgba(255,255,255,0.05);color:var(--text-muted, #8b949e);border:1px solid rgba(255,255,255,0.12);border-radius:5px;cursor:pointer;">🔊</button>
                 <button id="stopAnalysisBtn" onclick="stopAnalysis()" style="display:none;padding:2px 10px;font-size:0.7rem;background:rgba(248,81,73,0.15);color:#f85149;border:1px solid rgba(248,81,73,0.4);border-radius:5px;cursor:pointer;font-weight:600;">⏹ Stop</button>
                 <!-- Floating stop button — visible during analysis -->
                 <div id="stopAnalysisFab" onclick="stopAnalysis()" style="display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;padding:0.55rem 1.4rem;background:#f85149;color:#fff;border:none;border-radius:999px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(248,81,73,0.5);letter-spacing:0.02em;user-select:none;animation:fabPulse 2s ease-in-out infinite;">⏹ Stop Analysis</div>
@@ -4733,13 +4732,6 @@
         initCandidateShareView();
         // ─── Check for a Pearly session transcript link ───
         initPearlySessionView();
-
-        // Restore analysis sound preference
-        const soundBtn = document.getElementById('soundToggleBtn');
-        if (soundBtn) {
-            soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
-            soundBtn.title = soundEnabled ? 'Mute analysis sound' : 'Unmute analysis sound';
-        }
 
         // Restore Apps Script URL
         const savedScriptUrl = localStorage.getItem('appsScriptUrl') || '';
@@ -6540,103 +6532,6 @@ Rules:
         }
     }
 
-    // ─── Ambient "analysis in progress" hum ───
-    let _audioCtx      = null;
-    let _ambientNodes  = null;
-    let soundEnabled   = localStorage.getItem('soundEnabled') !== 'false';
-
-    function _getAudioCtx() {
-        if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        return _audioCtx;
-    }
-
-    // Browsers keep a freshly-created AudioContext suspended until a user gesture
-    // unlocks it. Catch the very first click/keypress/tap anywhere on the page so
-    // it's already unlocked by the time analysis starts, however it was triggered.
-    function _unlockAudioCtx() {
-        try {
-            const ctx = _getAudioCtx();
-            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-        } catch (e) {}
-    }
-    ['pointerdown', 'keydown', 'touchstart'].forEach(evt =>
-        document.addEventListener(evt, _unlockAudioCtx, { once: true, capture: true })
-    );
-
-    function toggleAnalysisSound() {
-        soundEnabled = !soundEnabled;
-        localStorage.setItem('soundEnabled', soundEnabled);
-        const btn = document.getElementById('soundToggleBtn');
-        if (btn) {
-            btn.textContent = soundEnabled ? '🔊' : '🔇';
-            btn.title = soundEnabled ? 'Mute analysis sound' : 'Unmute analysis sound';
-        }
-        if (soundEnabled) _startAmbientHum();
-        else _stopAmbientHum();
-    }
-
-    async function _startAmbientHum() {
-        if (!soundEnabled || _ambientNodes) return;
-        try {
-            const ctx = _getAudioCtx();
-            if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) {} }
-            if (ctx.state !== 'running') {
-                console.warn('Ambient sound: AudioContext could not start (state=' + ctx.state + ') — it will retry on the next click.');
-                return;
-            }
-
-            const masterGain = ctx.createGain();
-            masterGain.gain.value = 0;
-            masterGain.connect(ctx.destination);
-            masterGain.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 0.8);
-
-            // Two soft detuned tones, a fifth apart, pitched where laptop/phone
-            // speakers actually reproduce sound (low bass tones were previously
-            // inaudible on most hardware even though they were technically playing)
-            const osc1 = ctx.createOscillator();
-            osc1.type = 'sine';
-            osc1.frequency.value = 220;
-            const osc2 = ctx.createOscillator();
-            osc2.type = 'sine';
-            osc2.frequency.value = 329.63;
-
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.value = 1400;
-
-            // Slow LFO gives a gentle "breathing" pulse instead of a flat drone
-            const lfo = ctx.createOscillator();
-            lfo.type = 'sine';
-            lfo.frequency.value = 0.16;
-            const lfoGain = ctx.createGain();
-            lfoGain.gain.value = 0.045;
-            lfo.connect(lfoGain);
-            lfoGain.connect(masterGain.gain);
-
-            osc1.connect(filter);
-            osc2.connect(filter);
-            filter.connect(masterGain);
-
-            osc1.start(); osc2.start(); lfo.start();
-
-            _ambientNodes = { masterGain, osc1, osc2, lfo };
-        } catch (e) { console.warn('Ambient sound unavailable:', e); }
-    }
-
-    function _stopAmbientHum() {
-        if (!_ambientNodes) return;
-        const { masterGain, osc1, osc2, lfo } = _ambientNodes;
-        try {
-            const ctx = _getAudioCtx();
-            const now = ctx.currentTime;
-            masterGain.gain.cancelScheduledValues(now);
-            masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-            masterGain.gain.linearRampToValueAtTime(0, now + 0.5);
-            setTimeout(() => { try { osc1.stop(); osc2.stop(); lfo.stop(); } catch (_) {} }, 600);
-        } catch (_) {}
-        _ambientNodes = null;
-    }
-
     async function analyzeResumes() {
         if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key first`, 'error'); return; }
         if (!uploadedFiles.length && !driveFiles.length) { showToast('Upload a resume or paste a Drive link first', 'error'); return; }
@@ -6799,7 +6694,6 @@ Rules:
             stopFabDots.style.display = 'flex';
         }
         pw.classList.add('visible');
-        _startAmbientHum();
 
         const _TOTAL_DOTS = 20;
         function updateProgressDots(done, total) {
@@ -6825,7 +6719,6 @@ Rules:
         pc.textContent = `${done}/${total}`;
 
         const _finish = (wasStopped, wasLimit) => {
-            _stopAmbientHum();
             btn.disabled = false; btn.innerHTML = '🚀';
             if (btn2) { btn2.disabled = false; btn2.innerHTML = '<span class="tb-prompt">&gt;</span><span class="tb-typewrap">Analyze Resumes</span><span class="tb-cursor">_</span>'; }
             stopBtn.style.display = 'none';
@@ -7311,7 +7204,10 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                             ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — '))
                             : String(f ?? '');
                         const low = txt.toLowerCase();
-                        const isMet = /^meets:/.test(low) || (!/^missing:/.test(low) && /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low));
+                        // "Not met" must be checked first — natural sentences like "this requirement is
+                        // not fully met" contain the word "met", which would otherwise false-positive as green.
+                        const isNotMet = /^missing:/.test(low) || /\bnot\s+(?:fully\s+|entirely\s+|completely\s+)?met\b|\bnot\s+satisfied\b|\bdoes(?:n't| not)\s+meet\b|\bfails?\s+to\s+meet\b|\bmissing\b|\blacks?\b|\babsent\b|\bno\s+evidence\b|\bnot\s+(?:present|demonstrated|relevant|stated)\b|\bunmet\b/.test(low);
+                        const isMet = !isNotMet && (/^meets:/.test(low) || /\bis\s+met\b|\bmeets?\s+(?:the\s+)?requirement\b|\bfully\s+met\b|\bsatisf(?:ies|ied)\b|\bfulfilled\b|\bmeets?\s+expectation\b|no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|present|strong|excellent|good|clear|consistent/.test(low));
                         const color  = isMet ? 'var(--success)' : '#f0883e';
                         const bg     = isMet ? 'rgba(86,211,100,0.07)' : 'rgba(240,136,62,0.12)';
                         const icon   = isMet ? '✅' : '⚠️';
@@ -7954,7 +7850,8 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     ? (f.feedback || f.result || f.text || f.comment || Object.values(f).filter(v => typeof v === 'string').join(' — '))
                     : String(f ?? '');
                 const low = txt.toLowerCase();
-                const isMet = /^meets:/.test(low) || (!/^missing:/.test(low) && /no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|meets? (requirement|expectation)|present|strong|excellent|good|clear|consistent/.test(low));
+                const isNotMet = /^missing:/.test(low) || /\bnot\s+(?:fully\s+|entirely\s+|completely\s+)?met\b|\bnot\s+satisfied\b|\bdoes(?:n't| not)\s+meet\b|\bfails?\s+to\s+meet\b|\bmissing\b|\blacks?\b|\babsent\b|\bno\s+evidence\b|\bnot\s+(?:present|demonstrated|relevant|stated)\b|\bunmet\b/.test(low);
+                const isMet = !isNotMet && (/^meets:/.test(low) || /\bis\s+met\b|\bmeets?\s+(?:the\s+)?requirement\b|\bfully\s+met\b|\bsatisf(?:ies|ied)\b|\bfulfilled\b|\bmeets?\s+expectation\b|no issues? found|looks? (good|great|clean|well[- ]structured|solid)|no (errors?|mistakes?|problems?|gaps?|spelling|grammar)|present|strong|excellent|good|clear|consistent/.test(low));
                 const ic = isMet ? '✅' : '⚠️';
                 const cl = isMet ? 'fb-pass' : 'fb-warn';
                 return `<div class="fb-item ${cl}">${ic} ${txt}</div>`;
