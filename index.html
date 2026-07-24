@@ -583,101 +583,71 @@
         /* progress-fill kept as invisible shim so JS width sets don't error */
         .progress-fill { display: none; }
 
-        /* Terminal reader shell — RGB Glitch Scan */
-        .term-reader {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 3px;
-            background: #050a12;
-            border: 1px solid rgba(77,159,255,0.15);
-            border-radius: 7px;
-            padding: 6px 11px;
-            height: 60px;
-            overflow: hidden;
-            position: relative;
-            animation: glitchBoxFlicker 3.2s infinite;
-        }
-        .term-label {
-            font-family: 'Fira Mono', 'Courier New', monospace;
-            font-size: 8px;
-            letter-spacing: 0.06em;
-            color: #4d9fff;
-            text-transform: uppercase;
+        /* Terminal reader shell — Scanline Marquee */
+        .scan-marquee {
             display: flex;
             align-items: center;
-            gap: 5px;
-            animation: glitchLabelFlicker 2.4s infinite;
-        }
-        .term-cursor {
-            width: 5px;
-            height: 10px;
-            background: #4d9fff;
-            border-radius: 1px;
-            flex-shrink: 0;
-            animation: termBlink 0.8s step-end infinite;
+            gap: 10px;
+            background: #050a12;
+            border: 1px solid rgba(77,159,255,0.15);
+            border-radius: 999px;
+            padding: 8px 16px;
+            height: 36px;
+            position: relative;
+            overflow: hidden;
+            animation: glitchBoxFlicker 3.2s infinite;
         }
         @keyframes termBlink { 0%,100% { opacity:1; } 50% { opacity:0; } }
-        @keyframes glitchLabelFlicker {
-            0%, 88%, 100% { opacity: 1; text-shadow: none; }
-            90% { opacity: 0.4; text-shadow: -1px 0 #ff4d6d, 1px 0 #4dfff0; }
-            92% { opacity: 1; text-shadow: 1px 0 #ff4d6d, -1px 0 #4dfff0; }
-            94% { opacity: 0.6; text-shadow: none; }
-        }
         @keyframes glitchBoxFlicker {
             0%, 94%, 100% { border-color: rgba(77,159,255,0.15); }
             95% { border-color: rgba(255,77,109,0.4); transform: translateX(-1px); }
             97% { border-color: rgba(77,255,240,0.4); transform: translateX(1px); }
             98% { border-color: rgba(77,159,255,0.15); transform: translateX(0); }
         }
-        .term-rows {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            justify-content: center;
-            overflow: hidden;
-            animation: rowsGlitchFlicker 6s infinite;
+        .sm-glyph {
+            width: 5px;
+            height: 9px;
+            background: #4d9fff;
+            border-radius: 1px;
+            flex-shrink: 0;
+            animation: termBlink 0.8s step-end infinite;
         }
-        @keyframes rowsGlitchFlicker {
-            0%, 90%, 100% { filter: none; }
-            92% { filter: drop-shadow(-1px 0 #ff4d6d) drop-shadow(1px 0 #4dfff0); }
-            94% { filter: drop-shadow(1px 0 #ff4d6d) drop-shadow(-1px 0 #4dfff0); }
-            96% { filter: none; }
-        }
-        .term-row {
+        .sm-track { position: relative; flex: 1; height: 16px; min-width: 0; }
+        .sm-line {
+            position: absolute;
+            inset: 0;
             display: flex;
-            align-items: baseline;
-            gap: 5px;
+            align-items: center;
+            gap: 7px;
             font-family: 'Fira Mono', 'Courier New', monospace;
-            font-size: 9.5px;
-            line-height: 13px;
-            height: 13px;
+            font-size: 11px;
             white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0;
+            animation: smCycle 6s infinite;
         }
-        .term-key  { color: #475569; flex-shrink: 0; }
-        .term-sep  { color: #334155; flex-shrink: 0; }
-        .term-val  {
-            overflow: hidden;
-            white-space: nowrap;
-            width: 0;
-            display: inline-block;
-            border-right: 1.5px solid transparent;
-            animation: termType 3s steps(18) infinite;
+        .sm-line b {
+            color: #64748b;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            font-size: 0.82em;
+            flex-shrink: 0;
         }
-        /* each row staggers, RGB-tinted per field */
-        .term-row:nth-child(1) .term-val { animation-delay: 0s;    border-right-color: #7dd3fc; color: #7dd3fc; }
-        .term-row:nth-child(2) .term-val { animation-delay: 0.55s; border-right-color: #4d9fff; color: #93c5fd; }
-        .term-row:nth-child(3) .term-val { animation-delay: 1.1s;  border-right-color: #4ade80; color: #86efac; }
-        @keyframes termType {
-            0%        { width: 0;    opacity: 0.7; }
-            8%        { opacity: 1; }
-            55%, 90%  { width: 160px; opacity: 1; }
-            100%      { width: 0;    opacity: 0.5; }
+        .sm-line--a { animation-delay: 0s; color: #7dd3fc; }
+        .sm-line--b { animation-delay: 2s; color: #93c5fd; }
+        .sm-line--c { animation-delay: 4s; color: #4ade80; }
+        @keyframes smCycle {
+            0%   { opacity: 0; transform: translateX(-8px); }
+            3%   { opacity: 1; transform: translateX(0); text-shadow: -1px 0 #ff4d6d, 1px 0 #4dfff0; }
+            6%   { text-shadow: none; }
+            28%  { opacity: 1; transform: translateX(0); }
+            33%  { opacity: 0; transform: translateX(8px); }
+            100% { opacity: 0; }
         }
         /* subtle scanline shimmer across the whole bar */
-        .term-reader::after {
+        .scan-marquee::after {
             content: '';
             position: absolute;
             inset: 0;
@@ -3488,6 +3458,7 @@
             <span id="progressText">Analyzing…</span>
             <div style="display:flex;align-items:center;gap:0.5rem;">
                 <span id="progressCount">0/0</span>
+                <button id="soundToggleBtn" onclick="toggleAnalysisSound()" title="Mute analysis sound" style="padding:2px 8px;font-size:0.75rem;background:rgba(255,255,255,0.05);color:var(--text-muted, #8b949e);border:1px solid rgba(255,255,255,0.12);border-radius:5px;cursor:pointer;">🔊</button>
                 <button id="stopAnalysisBtn" onclick="stopAnalysis()" style="display:none;padding:2px 10px;font-size:0.7rem;background:rgba(248,81,73,0.15);color:#f85149;border:1px solid rgba(248,81,73,0.4);border-radius:5px;cursor:pointer;font-weight:600;">⏹ Stop</button>
                 <!-- Floating stop button — visible during analysis -->
                 <div id="stopAnalysisFab" onclick="stopAnalysis()" style="display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;padding:0.55rem 1.4rem;background:#f85149;color:#fff;border:none;border-radius:999px;font-size:0.82rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(248,81,73,0.5);letter-spacing:0.02em;user-select:none;animation:fabPulse 2s ease-in-out infinite;">⏹ Stop Analysis</div>
@@ -3508,25 +3479,13 @@
             <div class="progress-dot" data-i="14"></div><div class="progress-dot" data-i="15"></div>
             <div class="progress-dot" data-i="16"></div><div class="progress-dot" data-i="17"></div>
             <div class="progress-dot" data-i="18"></div><div class="progress-dot" data-i="19"></div>
-            <!-- Terminal reader UI — RGB Glitch Scan -->
-            <div class="term-reader">
-                <div class="term-label"><span class="term-cursor"></span>ANALYZING_RESUME.exe</div>
-                <div class="term-rows" id="termRows">
-                    <div class="term-row">
-                        <span class="term-key">name</span>
-                        <span class="term-sep">›</span>
-                        <span class="term-val" id="termName">reading…</span>
-                    </div>
-                    <div class="term-row">
-                        <span class="term-key">exp </span>
-                        <span class="term-sep">›</span>
-                        <span class="term-val" id="termExp">scanning…</span>
-                    </div>
-                    <div class="term-row">
-                        <span class="term-key">fit </span>
-                        <span class="term-sep">›</span>
-                        <span class="term-val" id="termFit">computing score…</span>
-                    </div>
+            <!-- Terminal reader UI — Scanline Marquee -->
+            <div class="scan-marquee">
+                <span class="sm-glyph"></span>
+                <div class="sm-track" id="termRows">
+                    <span class="sm-line sm-line--a"><b>name</b><span id="termName">reading…</span></span>
+                    <span class="sm-line sm-line--b"><b>exp</b><span id="termExp">scanning…</span></span>
+                    <span class="sm-line sm-line--c"><b>fit</b><span id="termFit">computing score…</span></span>
                 </div>
             </div>
         </div>
@@ -4659,6 +4618,13 @@
         initCandidateShareView();
         // ─── Check for a Pearly session transcript link ───
         initPearlySessionView();
+
+        // Restore analysis sound preference
+        const soundBtn = document.getElementById('soundToggleBtn');
+        if (soundBtn) {
+            soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+            soundBtn.title = soundEnabled ? 'Mute analysis sound' : 'Unmute analysis sound';
+        }
 
         // Restore Apps Script URL
         const savedScriptUrl = localStorage.getItem('appsScriptUrl') || '';
@@ -6437,6 +6403,84 @@ Rules:
         }
     }
 
+    // ─── Ambient "analysis in progress" hum ───
+    let _audioCtx      = null;
+    let _ambientNodes  = null;
+    let soundEnabled   = localStorage.getItem('soundEnabled') !== 'false';
+
+    function _getAudioCtx() {
+        if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return _audioCtx;
+    }
+
+    function toggleAnalysisSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('soundEnabled', soundEnabled);
+        const btn = document.getElementById('soundToggleBtn');
+        if (btn) {
+            btn.textContent = soundEnabled ? '🔊' : '🔇';
+            btn.title = soundEnabled ? 'Mute analysis sound' : 'Unmute analysis sound';
+        }
+        if (soundEnabled) _startAmbientHum();
+        else _stopAmbientHum();
+    }
+
+    function _startAmbientHum() {
+        if (!soundEnabled || _ambientNodes) return;
+        try {
+            const ctx = _getAudioCtx();
+            if (ctx.state === 'suspended') ctx.resume();
+
+            const masterGain = ctx.createGain();
+            masterGain.gain.value = 0;
+            masterGain.connect(ctx.destination);
+            masterGain.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 0.8);
+
+            // Two soft detuned sine tones for a low pad texture
+            const osc1 = ctx.createOscillator();
+            osc1.type = 'sine';
+            osc1.frequency.value = 110;
+            const osc2 = ctx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.value = 164.5;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 650;
+
+            // Slow LFO gives a gentle "breathing" pulse instead of a flat drone
+            const lfo = ctx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.value = 0.16;
+            const lfoGain = ctx.createGain();
+            lfoGain.gain.value = 0.022;
+            lfo.connect(lfoGain);
+            lfoGain.connect(masterGain.gain);
+
+            osc1.connect(filter);
+            osc2.connect(filter);
+            filter.connect(masterGain);
+
+            osc1.start(); osc2.start(); lfo.start();
+
+            _ambientNodes = { masterGain, osc1, osc2, lfo };
+        } catch (e) { console.warn('Ambient sound unavailable:', e); }
+    }
+
+    function _stopAmbientHum() {
+        if (!_ambientNodes) return;
+        const { masterGain, osc1, osc2, lfo } = _ambientNodes;
+        try {
+            const ctx = _getAudioCtx();
+            const now = ctx.currentTime;
+            masterGain.gain.cancelScheduledValues(now);
+            masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+            masterGain.gain.linearRampToValueAtTime(0, now + 0.5);
+            setTimeout(() => { try { osc1.stop(); osc2.stop(); lfo.stop(); } catch (_) {} }, 600);
+        } catch (_) {}
+        _ambientNodes = null;
+    }
+
     async function analyzeResumes() {
         if (!hasAnyApiKey()) { showToast(`Configure your ${providerCfg(selectedProvider).label} API key first`, 'error'); return; }
         if (!uploadedFiles.length && !driveFiles.length) { showToast('Upload a resume or paste a Drive link first', 'error'); return; }
@@ -6599,6 +6643,7 @@ Rules:
             stopFabDots.style.display = 'flex';
         }
         pw.classList.add('visible');
+        _startAmbientHum();
 
         const _TOTAL_DOTS = 20;
         function updateProgressDots(done, total) {
@@ -6624,6 +6669,7 @@ Rules:
         pc.textContent = `${done}/${total}`;
 
         const _finish = (wasStopped, wasLimit) => {
+            _stopAmbientHum();
             btn.disabled = false; btn.innerHTML = '🚀';
             if (btn2) { btn2.disabled = false; btn2.innerHTML = '<span class="tb-prompt">&gt;</span><span class="tb-typewrap">Analyze Resumes</span><span class="tb-cursor">_</span>'; }
             stopBtn.style.display = 'none';
