@@ -80,6 +80,16 @@ function testGetFile() {
 function doGet(e) {
   const action = e && e.parameter && e.parameter.action;
 
+  // ── Pearly: recent cross-session memory ──
+  if (action === 'getPearlyMemory') {
+    return getPearlyMemory(e);
+  }
+
+  // ── Pearly: full transcript for one session (session link) ──
+  if (action === 'getPearlySession') {
+    return getPearlySession(e);
+  }
+
   // ── List all PDF files in a Google Drive folder ──
   if (action === 'listFolder') {
     try {
@@ -272,11 +282,63 @@ function doGet(e) {
     }
   }
 
-    // ── Health check endpoint ──
+    // ── List all saved analysis batches ──
+  if (action === 'getBatches') {
+    try {
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      let sheet = ss.getSheetByName('Analysis Batches');
+      if (!sheet) {
+        return jsonResponse({ ok: true, batches: [] });
+      }
+      const data = sheet.getDataRange().getValues();
+      if (data.length <= 1) return jsonResponse({ ok: true, batches: [] });
+
+      const batches = data.slice(1).map(row => ({
+        batchId:      row[0],
+        position:     row[1],
+        savedAt:      row[2],
+        candidateCount: row[3],
+        avgScore:     row[4]
+      })).reverse(); // newest first
+
+      return jsonResponse({ ok: true, batches });
+    } catch (err) {
+      return jsonResponse({ ok: false, error: err.message });
+    }
+  }
+
+  // ── Get a single saved batch by batchId ──
+  if (action === 'getBatch') {
+    try {
+      const batchId = (e.parameter.batchId || '').trim();
+      if (!batchId) throw new Error('Missing batchId');
+
+      const ss    = SpreadsheetApp.openById(SHEET_ID);
+      const sheet = ss.getSheetByName('Analysis Batches');
+      if (!sheet) throw new Error('No batches saved yet');
+
+      const data = sheet.getDataRange().getValues();
+      const row  = data.slice(1).find(r => String(r[0]) === batchId);
+      if (!row) throw new Error('Batch not found: ' + batchId);
+
+      const candidates = JSON.parse(row[5] || '[]');
+      return jsonResponse({
+        ok: true,
+        batchId:   row[0],
+        position:  row[1],
+        savedAt:   row[2],
+        candidates
+      });
+    } catch (err) {
+      return jsonResponse({ ok: false, error: err.message });
+    }
+  }
+
+  // ── Health check endpoint ──
   return jsonResponse({ 
     status: '✅ Pearl Hire — Apps Script is running.',
     timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-    version: '2.1'
+    version: '2.2'
   });
 }
 
@@ -300,6 +362,11 @@ function doPost(e) {
 
     const data = JSON.parse(raw);
 
+    // ── Save an analysis batch ──
+    if (data.action === 'saveBatch') {
+      return saveBatch(data);
+    }
+
     // ── Inline feedback from share page buttons ──
     if (data.action === 'saveInlineFeedback') {
       return handleInlineFeedback(data);
@@ -310,9 +377,19 @@ function doPost(e) {
       return logPromptChange(data);
     }
 
+    // ── Pearly chat message log (Sheet-backed memory) ──
+    if (data.action === 'logPearlyMessage') {
+      return logPearlyMessage(data);
+    }
+
     // ── Push candidates to a target spreadsheet ──
     if (data.action === 'pushCandidates') {
       return pushCandidatesToSheet(data);
+    }
+
+    // ── Save a custom Position Name + JD into the JD tab ──
+    if (data.action === 'savePositionJD') {
+      return savePositionToJDSheet(data);
     }
 
     const { recipients, candidateName, candidateCount, position, shareLink, matchScore, isBulk, candidates, urgency } = data;
@@ -354,95 +431,56 @@ function doPost(e) {
 // ───────────────────────────────────────────────────────────────
 function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, urgency) {
   candidates = candidates || [];
-  const count  = candidates.length;
-  const isAsap = urgency === 'asap';
+  const count = candidates.length;
 
-  // Build per-candidate score bar rows
+  // Design B candidate list: "Name · XX% match"
   const candidateRows = candidates.map(function(c) {
     const s = c.match_score || 0;
-    const barColor   = s >= 75 ? 'linear-gradient(90deg,#1D9E75,#34d399)' : s >= 50 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : 'linear-gradient(90deg,#ef4444,#f87171)';
-    const scoreColor = s >= 75 ? '#1D9E75' : s >= 50 ? '#b45309' : '#dc2626';
-    return '<tr><td style="padding-bottom:12px;">' +
-      '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      '<td></td>' +
-      '<td align="right" style="font-size:13px;font-weight:800;color:' + scoreColor + ';white-space:nowrap;padding-left:12px;">' + s + '%</td>' +
-      '</tr><tr><td colspan="2" style="padding-top:5px;">' +
-      '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
-      '<td style="background:#f1f5f9;border-radius:4px;height:6px;">' +
-      '<div style="width:' + s + '%;height:6px;background:' + barColor + ';border-radius:4px;"></div>' +
-      '</td></tr></table></td></tr></table>' +
-      '</td></tr>';
+    return '<div style="font-size:14px;color:#111827;margin-bottom:10px;">' +
+      '<strong>' + (c.name || 'Candidate') + '</strong> ' +
+      '<span style="color:#9ca3af;">&middot;</span> ' +
+      '<span style="color:#16a34a;font-weight:600;">' + s + '% match</span>' +
+    '</div>';
   }).join('');
-
-  // Steps box — step 3 varies by urgency
-  const step3Text = isAsap
-    ? '<strong>Share your feedback as soon as you can</strong> \u2014 so I can get the interview schedule in place without delay.'
-    : '<strong>Share your feedback</strong> whenever it suits you \u2014 there\'s no hard deadline on this one.';
-
-  const stepsBox =
-    '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:20px;"><tr><td style="padding:14px 18px;">' +
-    '<p style="margin:0 0 10px;font-size:12px;color:#475569;font-style:italic;">To make it easy, here\'s how I\'d suggest going through them:</p>' +
-    '<table cellpadding="0" cellspacing="0"><tr><td style="vertical-align:top;padding-bottom:9px;">' +
-      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">1</div>' +
-    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;padding-bottom:9px;"><strong>Open the profiles</strong> \u2014 each one has the candidate\'s background, relevant skills, and a brief summary.</td></tr>' +
-    '<tr><td style="vertical-align:top;padding-bottom:9px;">' +
-      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">2</div>' +
-    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;padding-bottom:9px;"><strong>Mark your preference</strong> \u2014 shortlist, maybe, or pass. Even a quick note on each helps a lot.</td></tr>' +
-    '<tr><td style="vertical-align:top;">' +
-      '<div style="width:20px;height:20px;background:#0c447c;color:#fff;font-size:10px;font-weight:800;border-radius:50%;text-align:center;line-height:20px;margin-right:10px;">3</div>' +
-    '</td><td style="font-size:12.5px;color:#334155;line-height:1.6;">' + step3Text + '</td></tr></table>' +
-    '</td></tr></table>';
-
-  // Closing paragraph — varies by urgency
-  const closeBg   = isAsap ? '#fff7ed' : '#f0fdf4';
-  const closeBdr  = isAsap ? '#f59e0b' : '#34d399';
-  const closeText = isAsap
-    ? 'We\'re hoping to move quickly on this one \u2014 if you could share your thoughts soon, that would be a huge help. Of course, reach out anytime if you\'d like to talk through any of the candidates.'
-    : 'No rush at all \u2014 take your time and review when it suits you. If you have questions or want more context on any of the candidates, just say the word. Happy to help!';
-  const closePara = '<p style="margin:0 0 22px;font-size:12.5px;color:#475569;line-height:1.8;background:' + closeBg + ';border-left:3px solid ' + closeBdr + ';padding:10px 14px;border-radius:0 6px 6px 0;">' + closeText + '</p>';
 
   return '<!DOCTYPE html>' +
 '<html lang="en">' +
-'<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Shortlist</title></head>' +
-'<body style="margin:0;padding:0;background:#f0f4f8;font-family:\'Segoe UI\',Arial,sans-serif;color:#1a1a2e;">' +
-'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">' +
+'<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Shortlist</title>' +
+'<style>' +
+'@keyframes emailBtnGlitch { 0%,88%,100% { text-shadow:none; } 90% { text-shadow:-2px 0 #ff4d6d,2px 0 #4dfff0; } 93% { text-shadow:2px 0 #ff4d6d,-2px 0 #4dfff0; } 96% { text-shadow:none; } }' +
+'@keyframes emailBtnBorder { 0%,88%,100% { border-color:rgba(77,255,150,0.4); } 90% { border-color:rgba(255,77,109,0.6); } 93% { border-color:rgba(77,255,240,0.6); } }' +
+'.glitch-btn { animation: emailBtnGlitch 4s infinite, emailBtnBorder 4s infinite; }' +
+'</style>' +
+'</head>' +
+'<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;color:#111827;">' +
+'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">' +
 '<tr><td align="center">' +
-'<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">' +
+'<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;">' +
 
-'<!-- Accent top stripe -->' +
-'<tr><td style="background:linear-gradient(90deg,#1a56db 0%,#0c447c 50%,#1D9E75 100%);height:5px;border-radius:14px 14px 0 0;"></td></tr>' +
-
-'<!-- Body -->' +
-'<tr><td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:26px 32px 30px;">' +
-  '<p style="margin:0 0 4px;font-size:15px;color:#0f172a;">Hi <strong>' + interviewerName + '</strong>,</p>' +
-  '<p style="margin:0 0 14px;font-size:13px;color:#475569;line-height:1.8;">Hope your week is going well!</p>' +
-  '<p style="margin:0 0 20px;font-size:13px;color:#475569;line-height:1.8;">' +
-    'I\'ve gone through the applications for <strong style="color:#0f172a;">' + position + '</strong> and put together a shortlist of ' +
-    '<strong style="color:#0f172a;">' + count + ' candidate' + (count > 1 ? 's' : '') + '</strong> I think are genuinely worth a closer look. ' +
-    'I\'m sharing them with you so you can review before we decide who to move forward with.' +
+'<!-- Greeting + intro -->' +
+'<tr><td style="padding:28px 28px 8px;">' +
+  '<p style="margin:0 0 4px;font-size:14px;color:#111827;">Hi <strong>' + interviewerName + '</strong>,</p>' +
+  '<p style="margin:0 0 14px;font-size:13px;color:#4b5563;line-height:1.7;">Hope your week is going well!</p>' +
+  '<p style="margin:0 0 22px;font-size:13px;color:#4b5563;line-height:1.7;">' +
+    'I\u2019ve gone through the applications for <strong style="color:#111827;">' + position + '</strong> and put together a shortlist of ' +
+    '<strong style="color:#111827;">' + count + ' candidate' + (count > 1 ? 's' : '') + '</strong> I think ' + (count > 1 ? 'are' : 'is') + ' genuinely worth a closer look. ' +
+    'I\u2019m sharing them with you so you can review them before we decide who to move forward with.' +
   '</p>' +
-  stepsBox +
-  '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px;">' +
-    candidateRows +
-  '</table>' +
-  closePara +
-  '<div style="text-align:center;margin-bottom:8px;">' +
-    '<a href="' + shareLink + '" target="_blank" style="display:inline-block;padding:14px 36px;background:#0c447c;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 14px rgba(12,68,124,0.25);">' +
-      'View Profiles &amp; Resumes \u2192' +
-    '</a>' +
-  '</div>' +
-  '<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px;">Open each profile, review the resume, and leave your preference</p>' +
 '</td></tr>' +
 
-'<!-- Footer -->' +
-'<tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;padding:16px 32px;">' +
-  '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
-    '<td>' +
-      '<div style="font-size:12px;font-weight:700;color:#1e293b;">Talent Acquisition Team</div>' +
-      '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">This email is confidential and intended only for the recipient.</div>' +
-    '</td>' +
-    '<td align="right"><div style="font-size:13px;font-weight:800;color:#0c447c;letter-spacing:0.04em;">Pearl Hire</div></td>' +
-  '</tr></table>' +
+'<!-- Candidate list -->' +
+'<tr><td style="padding:0 28px 22px;">' +
+  candidateRows +
+'</td></tr>' +
+
+'<!-- Glitch button -->' +
+'<tr><td style="padding:0 28px 30px;">' +
+  '<a href="' + shareLink + '" class="glitch-btn" style="display:inline-block;background:#050a12;border:1.5px solid rgba(77,255,150,0.4);border-radius:7px;padding:10px 22px;font-family:\'Courier New\',monospace;font-size:13px;color:#86efac;text-decoration:none;">&gt; View Profiles &amp; Resumes_</a>' +
+'</td></tr>' +
+
+'<!-- Sign-off -->' +
+'<tr><td style="padding:16px 28px 26px;border-top:1px solid #f3f4f6;">' +
+  '<p style="margin:0;font-size:12px;color:#9ca3af;">\u2014 Talent Acquisition Team</p>' +
 '</td></tr>' +
 
 '</table></td></tr></table>' +
@@ -453,79 +491,47 @@ function buildBulkEmailHtml(interviewerName, candidates, position, shareLink, ur
 // Single candidate email
 // ───────────────────────────────────────────────────────────────
 function buildEmailHtml(interviewerName, candidateName, position, shareLink, matchScore) {
-  const scoreColor = matchScore >= 75 ? '#1D9E75' : matchScore >= 50 ? '#BA7517' : '#A32D2D';
-  const scoreBg    = matchScore >= 75 ? '#E1F5EE' : matchScore >= 50 ? '#FAEEDA' : '#FCEBEB';
-  const scoreLabel = matchScore >= 75 ? 'Strong Match' : matchScore >= 50 ? 'Good Match' : 'Low Match';
+  const s = matchScore || 0;
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Profile</title></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 16px;">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Candidate Profile</title>
+<style>
+@keyframes emailBtnGlitch { 0%,88%,100% { text-shadow:none; } 90% { text-shadow:-2px 0 #ff4d6d,2px 0 #4dfff0; } 93% { text-shadow:2px 0 #ff4d6d,-2px 0 #4dfff0; } 96% { text-shadow:none; } }
+@keyframes emailBtnBorder { 0%,88%,100% { border-color:rgba(77,255,150,0.4); } 90% { border-color:rgba(255,77,109,0.6); } 93% { border-color:rgba(77,255,240,0.6); } }
+.glitch-btn { animation: emailBtnGlitch 4s infinite, emailBtnBorder 4s infinite; }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;color:#111827;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
-        <tr>
-          <td style="background:#0C447C;border-radius:12px 12px 0 0;padding:24px 28px;">
-            <div style="font-size:10px;color:#85B7EB;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:5px;">Talent Acquisition · Candidate Profile</div>
-            <div style="font-size:20px;font-weight:700;color:#E6F1FB;">${position}</div>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#ffffff;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;padding:28px 28px 20px;">
-            <p style="margin:0 0 4px;font-size:14px;color:#1a1a2e;">Hi <strong>${interviewerName}</strong>,</p>
-            <p style="margin:0 0 24px;font-size:13px;color:#64748b;line-height:1.7;">
-              Please find the screened candidate profile below for <strong>${position}</strong>.
-              Click the button to view the complete profile with resume and detailed analysis.
-            </p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:20px;">
-              <tr>
-                <td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
-                  <table width="100%" cellpadding="0" cellspacing="0"><tr>
-                    <td style="vertical-align:middle;">
-                      <div style="font-size:16px;font-weight:700;color:#1a1a2e;">${candidateName}</div>
-                      <div style="font-size:12px;color:#64748b;margin-top:4px;">Candidate Profile &middot; ${position}</div>
-                    </td>
-                    <td align="right" style="vertical-align:middle;">
-                      <div style="display:inline-block;background:${scoreBg};border-radius:20px;padding:5px 14px;">
-                        <span style="font-size:16px;font-weight:700;color:${scoreColor};">${matchScore}%</span>
-                        <span style="font-size:10px;font-weight:600;color:${scoreColor};text-transform:uppercase;letter-spacing:0.05em;margin-left:4px;">${scoreLabel}</span>
-                      </div>
-                    </td>
-                  </tr></table>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
-                  <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:6px;">AI Match Score</div>
-                  <table width="100%" cellpadding="0" cellspacing="0"><tr>
-                    <td style="background:#f1f5f9;border-radius:4px;height:8px;">
-                      <div style="width:${matchScore}%;height:8px;background:${scoreColor};border-radius:4px;"></div>
-                    </td>
-                  </tr></table>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:24px 20px;background:#f8fafc;text-align:center;">
-                  <a href="${shareLink}" target="_blank"
-                     style="display:inline-block;padding:14px 32px;background:#0C447C;border-radius:8px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;box-shadow:0 4px 12px rgba(12,68,124,0.3);">
-                    View Complete Profile &amp; Resume &rarr;
-                  </a>
-                  <div style="margin-top:12px;font-size:11px;color:#94a3b8;">Access full candidate details, skills analysis, and resume</div>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#0C447C;border-radius:0 0 12px 12px;padding:16px 28px;">
-            <table width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td>
-                <div style="font-size:12px;font-weight:700;color:#E6F1FB;">Talent Acquisition Team</div>
-                <div style="font-size:11px;color:#85B7EB;margin-top:2px;">This email is confidential and intended only for the recipient.</div>
-              </td>
-              <td align="right"><div style="font-size:10px;color:#85B7EB;">Pearl Hire</div></td>
-            </tr></table>
-          </td>
-        </tr>
+      <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;">
+
+        <!-- Greeting + intro -->
+        <tr><td style="padding:28px 28px 8px;">
+          <p style="margin:0 0 4px;font-size:14px;color:#111827;">Hi <strong>${interviewerName}</strong>,</p>
+          <p style="margin:0 0 14px;font-size:13px;color:#4b5563;line-height:1.7;">Hope your week is going well!</p>
+          <p style="margin:0 0 22px;font-size:13px;color:#4b5563;line-height:1.7;">
+            I've gone through the applications for <strong style="color:#111827;">${position}</strong> and wanted to share a candidate profile I think is genuinely worth a closer look.
+          </p>
+        </td></tr>
+
+        <!-- Candidate row -->
+        <tr><td style="padding:0 28px 22px;">
+          <div style="font-size:14px;color:#111827;">
+            <strong>${candidateName}</strong> <span style="color:#9ca3af;">&middot;</span> <span style="color:#16a34a;font-weight:600;">${s}% match</span>
+          </div>
+        </td></tr>
+
+        <!-- Glitch button -->
+        <tr><td style="padding:0 28px 30px;">
+          <a href="${shareLink}" class="glitch-btn" style="display:inline-block;background:#050a12;border:1.5px solid rgba(77,255,150,0.4);border-radius:7px;padding:10px 22px;font-family:'Courier New',monospace;font-size:13px;color:#86efac;text-decoration:none;">&gt; View Profile &amp; Resume_</a>
+        </td></tr>
+
+        <!-- Sign-off -->
+        <tr><td style="padding:16px 28px 26px;border-top:1px solid #f3f4f6;">
+          <p style="margin:0;font-size:12px;color:#9ca3af;">&mdash; Talent Acquisition Team</p>
+        </td></tr>
+
       </table>
     </td></tr>
   </table>
@@ -539,15 +545,14 @@ function buildEmailHtml(interviewerName, candidateName, position, shareLink, mat
 function buildEmailText(interviewerName, candidateName, position, shareLink) {
   return `Hi ${interviewerName},
 
-Please find below the candidate profile shortlisted for ${position}.
+Hope your week is going well!
+
+I've gone through the applications for ${position} and wanted to share a candidate profile I think is genuinely worth a closer look.
 
 Candidate: ${candidateName}
-View Details & Resume: ${shareLink}
+View profile & resume: ${shareLink}
 
-Kindly review and let us know your thoughts.
-
-Best regards,
-Talent Acquisition Team`;
+\u2014 Talent Acquisition Team`;
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -858,13 +863,13 @@ function handleInlineFeedback(data) {
     let   sheet = ss.getSheetByName('Interviewer Feedback');
     if (!sheet) {
       sheet = ss.insertSheet('Interviewer Feedback');
-      sheet.appendRow(['Timestamp', 'Position', 'Reviewer Name', 'Candidate Name', 'Decision']);
-      sheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.appendRow(['Timestamp', 'Position', 'Reviewer Name', 'Candidate Name', 'Decision', 'Notes']);
+      sheet.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
       sheet.setFrozenRows(1);
 
       // Conditional formatting: green row for "proceed", red row for "pass"
       const maxRows = 1000;
-      const fullRange = sheet.getRange(2, 1, maxRows, 5);
+      const fullRange = sheet.getRange(2, 1, maxRows, 6);
       const proceedRule = SpreadsheetApp.newConditionalFormatRule()
         .whenFormulaSatisfied('=$E2="proceed"')
         .setBackground('#C8F0DC')
@@ -878,10 +883,17 @@ function handleInlineFeedback(data) {
         .setRanges([fullRange])
         .build();
       sheet.setConditionalFormatRules([proceedRule, passRule]);
+    } else if (sheet.getLastColumn() === 5 && !sheet.getRange(1, 6).getValue()) {
+      // Migrate sheets created before the Notes column existed
+      sheet.getRange(1, 6).setValue('Notes').setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
     }
     const ts = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     for (const candidateName in decisions) {
-      sheet.appendRow([ts, position, reviewer, candidateName, decisions[candidateName]]);
+      const entry    = decisions[candidateName];
+      const isObj    = entry && typeof entry === 'object';
+      const decision = isObj ? (entry.decision || '') : (entry || '');
+      const note     = isObj ? (entry.note || '') : '';
+      sheet.appendRow([ts, position, reviewer, candidateName, decision, note]);
     }
     return jsonResponse({ success: true });
   } catch (err) {
@@ -901,6 +913,66 @@ function jsonResponse(obj) {
 
 
 // ───────────────────────────────────────────────────────────────
+// Save a custom Position Name + JD directly into the JD tab
+// (the same tab the app's "Select Position" dropdown reads from)
+// ───────────────────────────────────────────────────────────────
+function savePositionToJDSheet(data) {
+  try {
+    const position = (data.position || '').trim();
+    const jd       = (data.jd || '').trim();
+    const spreadsheetId = (data.spreadsheetId || '').trim();
+
+    if (!spreadsheetId) throw new Error('Missing spreadsheetId — save your Google Sheets link in the Links tab first');
+    if (!position) throw new Error('Missing position name');
+    if (!jd) throw new Error('Missing job description');
+
+    let ss;
+    try {
+      ss = SpreadsheetApp.openById(spreadsheetId);
+    } catch (openErr) {
+      throw new Error(
+        'Could not open that spreadsheet. Either the Sheet ID/URL is wrong, or it is not shared with the Google ' +
+        'account that owns this Apps Script deployment (Editor access). Original error: ' + (openErr.message || openErr)
+      );
+    }
+
+    let sheet = ss.getSheetByName('JD');
+    if (!sheet) {
+      sheet = ss.insertSheet('JD');
+      sheet.appendRow(['Position', 'Job Description']);
+      sheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    }
+
+    // Existing rows (row 0 is the header, matching how the app's Select Position
+    // dropdown reads this tab) — update in place if this position already exists,
+    // otherwise append a new row.
+    const values = sheet.getDataRange().getValues();
+    let rowIndex = -1; // 1-based sheet row number
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][0] || '').trim().toLowerCase() === position.toLowerCase()) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    let updated = false;
+    if (rowIndex > 0) {
+      sheet.getRange(rowIndex, 2).setValue(jd);
+      updated = true;
+    } else {
+      sheet.appendRow([position, jd]);
+      rowIndex = sheet.getLastRow();
+    }
+
+    return jsonResponse({ ok: true, position: position, rowIndex: rowIndex, updated: updated });
+  } catch (err) {
+    Logger.log('savePositionToJDSheet error: ' + err.toString());
+    return jsonResponse({ ok: false, error: err.message || String(err) });
+  }
+}
+
+// ───────────────────────────────────────────────────────────────
 // Push screened candidates to a target Google Sheet
 // ───────────────────────────────────────────────────────────────
 function pushCandidatesToSheet(data) {
@@ -910,12 +982,41 @@ function pushCandidatesToSheet(data) {
     if (!targetSheetId) throw new Error('Missing targetSheetId');
     if (!candidates || !candidates.length) throw new Error('No candidates provided');
 
-    const ss = SpreadsheetApp.openById(targetSheetId.trim());
+    let ss;
+    try {
+      ss = SpreadsheetApp.openById(targetSheetId.trim());
+    } catch (openErr) {
+      throw new Error(
+        'Could not open the target spreadsheet. Either the Sheet ID/URL is wrong, or it is not shared ' +
+        'with the Google account that owns this Apps Script deployment. Share the sheet with that account ' +
+        '(Editor access) and try again. Original error: ' + (openErr.message || openErr)
+      );
+    }
 
     // Use specified tab name, or fall back to first sheet (the main Strix sheet)
     const sheetName = (tabName || '').trim();
-    const sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
-    if (!sheet) throw new Error('Tab "' + sheetName + '" not found in the spreadsheet. Check the tab name.');
+    const STRIX_HEADERS = [
+      'Date','Job Portal','Job Code','Position','Name','Mobile','Email',
+      'Recruiter','Recruiter Feedback','Education','Experience','Relevant Experience',
+      'Current CTC','Expected CTC','Notice Period','Location','Resume',
+      'Interview Timing','L1 Panel','L1 Status','L2 Panel','L2 Status',
+      'Final Round','Meet Link','AI Score','Score Reasons','Screen Status',
+      'Form Sent','Form Filled','Resume Text','L1 Feedback Status','L2 Feedback Status',
+      'L3 Scheduled','CEO Notified','L1 Feedback Form ID','L2 Feedback Form ID',
+      'Form Sent Date','Form Link','Form ID','L1 Schedule','L2 Schedule',
+      'Preferred Location','LinkedIn','Status','Column 1','Column 2','Why do you want to join BeamX'
+    ];
+    let sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
+    let createdNewTab = false;
+    if (!sheet && sheetName) {
+      // Tab doesn't exist yet — create it with the standard Strix header row instead of failing
+      sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(STRIX_HEADERS);
+      sheet.getRange(1, 1, 1, STRIX_HEADERS.length).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+      createdNewTab = true;
+    }
+    if (!sheet) throw new Error('No sheet tab available to push into. Check the spreadsheet has at least one tab.');
 
     // ── Exact Strix column order ──
     // Date | Job Portal | Job Code | Position | Name | Mobile | Email |
@@ -1012,7 +1113,8 @@ function pushCandidatesToSheet(data) {
       pushed: rows.length,
       sheetName: sheet.getName(),
       spreadsheetName: ss.getName(),
-      spreadsheetUrl: ss.getUrl()
+      spreadsheetUrl: ss.getUrl(),
+      createdNewTab: createdNewTab
     });
 
   } catch (err) {
@@ -1022,6 +1124,89 @@ function pushCandidatesToSheet(data) {
 }
 
 
+
+// ───────────────────────────────────────────────────────────────
+// Pearly Chat — Sheet-backed memory + per-session transcript
+// ───────────────────────────────────────────────────────────────
+function logPearlyMessage(data) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+
+    let sheet = ss.getSheetByName('Pearly Chat Log');
+    if (!sheet) {
+      sheet = ss.insertSheet('Pearly Chat Log');
+      const headers = ['Timestamp', 'Session ID', 'Role', 'Message'];
+      sheet.appendRow(headers);
+      const headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setColumnWidth(1, 180);
+      sheet.setColumnWidth(2, 220);
+      sheet.setColumnWidth(3, 80);
+      sheet.setColumnWidth(4, 600);
+      sheet.setFrozenRows(1);
+    }
+
+    const ts = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    sheet.appendRow([ts, data.sessionId || 'unknown', data.role || 'user', data.message || '']);
+
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, 4).setWrap(true);
+
+    return jsonResponse({ success: true });
+  } catch (err) {
+    Logger.log('logPearlyMessage error: ' + err.message);
+    return jsonResponse({ success: false, error: err.message });
+  }
+}
+
+// Recent cross-session memory (last N messages) — gives Pearly recall of past chats, even after a reload
+function getPearlyMemory(e) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName('Pearly Chat Log');
+    if (!sheet || sheet.getLastRow() < 2) {
+      return jsonResponse({ success: true, messages: [] });
+    }
+
+    const limit = parseInt((e && e.parameter && e.parameter.limit) || '30', 10);
+    const lastRow = sheet.getLastRow();
+    const firstRow = Math.max(2, lastRow - limit + 1);
+    const numRows = lastRow - firstRow + 1;
+    const values = sheet.getRange(firstRow, 1, numRows, 4).getValues();
+
+    const messages = values.map(function(row) {
+      return { timestamp: row[0], sessionId: row[1], role: row[2], message: row[3] };
+    });
+
+    return jsonResponse({ success: true, messages: messages });
+  } catch (err) {
+    Logger.log('getPearlyMemory error: ' + err.message);
+    return jsonResponse({ success: false, error: err.message, messages: [] });
+  }
+}
+
+// Full transcript for one specific session — backs the "session link" feature
+function getPearlySession(e) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName('Pearly Chat Log');
+    const sessionId = e && e.parameter && e.parameter.sessionId;
+    if (!sheet || !sessionId || sheet.getLastRow() < 2) {
+      return jsonResponse({ success: true, sessionId: sessionId || '', messages: [] });
+    }
+
+    const lastRow = sheet.getLastRow();
+    const values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    const messages = values
+      .filter(function(row) { return row[1] === sessionId; })
+      .map(function(row) { return { timestamp: row[0], role: row[2], message: row[3] }; });
+
+    return jsonResponse({ success: true, sessionId: sessionId, messages: messages });
+  } catch (err) {
+    Logger.log('getPearlySession error: ' + err.message);
+    return jsonResponse({ success: false, error: err.message, messages: [] });
+  }
+}
 
 function logPromptChange(data) {
   try {
@@ -1052,5 +1237,66 @@ function logPromptChange(data) {
   } catch (err) {
     Logger.log('logPromptChange error: ' + err.message);
     return jsonResponse({ success: false, error: err.message });
+  }
+}
+
+// ───────────────────────────────────────────────────────────────
+// Save Analysis Batch to Google Sheet
+// ───────────────────────────────────────────────────────────────
+function saveBatch(data) {
+  try {
+    const { batchId, position, savedAt, candidates } = data;
+
+    if (!batchId)    throw new Error('Missing batchId');
+    if (!candidates || !candidates.length) throw new Error('No candidates to save');
+
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let sheet = ss.getSheetByName('Analysis Batches');
+
+    if (!sheet) {
+      sheet = ss.insertSheet('Analysis Batches');
+      const headers = ['Batch ID', 'Position', 'Saved At', 'Candidate Count', 'Avg Score', 'Candidates JSON'];
+      sheet.appendRow(headers);
+      const hRange = sheet.getRange(1, 1, 1, headers.length);
+      hRange.setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+      sheet.setColumnWidth(1, 160);
+      sheet.setColumnWidth(2, 180);
+      sheet.setColumnWidth(3, 180);
+      sheet.setColumnWidth(4, 100);
+      sheet.setColumnWidth(5, 100);
+      sheet.setColumnWidth(6, 400);
+    }
+
+    // Check if batchId already exists — update in place
+    const allData = sheet.getDataRange().getValues();
+    const existingRow = allData.findIndex((r, i) => i > 0 && String(r[0]) === String(batchId));
+
+    const avgScore = Math.round(candidates.reduce((s, c) => s + (c.match_score || 0), 0) / candidates.length);
+
+    // Strip resume base64 blobs before saving — keep everything else
+    const slim = candidates.map(c => {
+      const copy = Object.assign({}, c);
+      delete copy.resume_pdf_b64; // can be 500KB+ per resume
+      return copy;
+    });
+    const jsonStr = JSON.stringify(slim);
+
+    if (existingRow > 0) {
+      // Update existing row
+      sheet.getRange(existingRow + 1, 1, 1, 6).setValues([[
+        batchId, position, savedAt, candidates.length, avgScore, jsonStr
+      ]]);
+    } else {
+      sheet.appendRow([batchId, position, savedAt, candidates.length, avgScore, jsonStr]);
+      // Style the new data row
+      const lastRow = sheet.getLastRow();
+      sheet.getRange(lastRow, 5).setNumberFormat('0"%"');
+    }
+
+    return jsonResponse({ ok: true, batchId });
+  } catch (err) {
+    Logger.log('saveBatch error: ' + err.toString());
+    return jsonResponse({ ok: false, error: err.message || String(err) });
   }
 }
