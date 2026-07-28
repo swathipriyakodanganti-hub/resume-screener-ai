@@ -1384,11 +1384,11 @@
 
         .overlay-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-        .hero-notes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
-        .hero-notes-item { display: flex; flex-direction: column; gap: 0.2rem; }
-        .hero-notes-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-        .hero-notes-val { font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; }
-        .hero-notes-edit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+        .hero-notes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; }
+        .hero-notes-item { display: flex; flex-direction: column; gap: 0.15rem; }
+        .hero-notes-label { font-size: 0.56rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .hero-notes-val { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
+        .hero-notes-edit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; }
         @media (max-width: 560px) {
             .hero-notes-grid, .hero-notes-edit-grid { grid-template-columns: 1fr; }
         }
@@ -3010,6 +3010,20 @@
         .dh-kv-value.green { color: #86efac; }
         .dh-kv-value.purple { color: #c4b5fd; }
 
+        /* Recruiter's internal note — surfaced read-only on the share page */
+        .dh-recruiter-note {
+            display: flex; gap: 8px; align-items: flex-start;
+            margin-top: 0.75rem; padding: 0.6rem 0.75rem;
+            background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.22);
+            border-radius: 8px;
+        }
+        .dh-recruiter-note-icon { flex-shrink: 0; font-size: 0.85rem; margin-top: 0.05rem; }
+        .dh-recruiter-note-label {
+            font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+            color: #fbbf24; margin-bottom: 2px;
+        }
+        .dh-recruiter-note-text { font-size: 0.76rem; color: #dde6f0; line-height: 1.5; }
+
         /* Shortlist + reanalyze row */
         .dh-actions {
             display: flex; align-items: center; gap: 10px;
@@ -3506,6 +3520,164 @@
             transition: transform 0.15s, box-shadow 0.15s;
         }
         .pearly-send:hover{transform:scale(1.1);box-shadow:0 4px 16px rgba(192,132,252,0.5)}
+
+        /* ══════════════════════════════════════════════════════════════
+           "CLARITY" THEME — Candidate Share Page only
+           Scoped entirely under #candidateSharePage (an ID, so it always
+           outranks the plain-class rules above) plus the two reviewer-
+           feedback overlays that live outside that container. Nothing in
+           this block touches the main app — every selector below either
+           starts with #candidateSharePage or targets an ID unique to the
+           recipient-facing share flow.
+           ══════════════════════════════════════════════════════════════ */
+        #candidateSharePage {
+            /* Re-point the app's shared design tokens to a light palette —
+               everything downstream that reads var(--text-primary) etc.
+               (dh-card, score bars, skill tags…) inherits this automatically. */
+            --bg-main: #f7f8fa;
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --text-primary: #1c2430;
+            --text-secondary: #333d4c;
+            --text-muted: #5b6472;
+            --border: #e2e6ec;
+            --border-accent: #c3d4fb;
+            --accent: #2f5fd9;
+            --accent-dark: #274ec2;
+            --accent-glow: rgba(47,95,217,0.14);
+            --amber: #b3720a;
+            --amber-dim: rgba(179,114,10,0.12);
+            --success: #17875a;
+            --success-glow: rgba(23,135,90,0.16);
+            --danger: #c53a30;
+            --shadow: rgba(16,24,40,0.08);
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+        #candidateSharePage .share-top-bar { background: #ffffff; box-shadow: 0 1px 0 var(--border); }
+        #candidateSharePage .share-pg-logo { background: none; -webkit-text-fill-color: initial; color: #1c2430; }
+        #candidateSharePage .share-pg-logo-tagline { color: #8a93a3; }
+        #candidateSharePage .share-pg-tag { background: #fbf1de; border-color: #f0dcae; color: #8a5a06; }
+        #candidateSharePage .share-position-pill { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage > div[style*="font-size:0.68rem"] { color: #8a93a3; } /* "Powered by AI…" corner label */
+
+        #candidateSharePage .share-note-box { background: #eaf0fe; border-color: #c3d4fb; border-left-color: var(--accent); }
+        #candidateSharePage .share-note-intro { color: #5b6472; }
+        #candidateSharePage .share-note-step { color: #333d4c; }
+        #candidateSharePage .share-note-num { background: var(--accent); color: #fff; }
+
+        #candidateSharePage .share-candidates-sidebar,
+        #candidateSharePage .share-detail-panel { background: #ffffff; }
+        #candidateSharePage .share-pg-footer { color: #8a93a3; border-top-color: var(--border); }
+
+        #candidateSharePage .share-cand-item:hover { background: #f3f6fc; border-color: #dbe6fb; }
+        #candidateSharePage .share-cand-item.active { background: #eaf0fe; border-color: var(--accent); box-shadow: none; }
+        #candidateSharePage .share-cand-item-avatar { background: var(--accent); border-color: var(--accent); color: #fff; }
+        #candidateSharePage .share-cand-item-bar { background: #eef1f6; }
+        #candidateSharePage .share-cand-decision-dot.pass { background: var(--danger); box-shadow: none; }
+        /* Proceed status: a calm green left rail instead of the spinning purple glow */
+        #candidateSharePage .share-cand-item.shortlisted-glow {
+            background: #eefaf3 !important; border: 1px solid #b9e6cf !important; box-shadow: none !important;
+        }
+        #candidateSharePage .share-cand-item.shortlisted-glow::before,
+        #candidateSharePage .share-cand-item.shortlisted-glow::after { display: none; content: none; }
+
+        /* Hero "dossier" card → clean status card */
+        #candidateSharePage .dh-card {
+            background: #ffffff; border-bottom: 1px solid var(--border);
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #candidateSharePage .dh-term-label { display: none; }
+        #candidateSharePage .dh-name { color: #1c2430; }
+        #candidateSharePage .dh-score-num { color: var(--success); }
+        #candidateSharePage .dh-score-num.dh-mid { color: var(--amber); }
+        #candidateSharePage .dh-score-num.dh-low { color: var(--danger); }
+        #candidateSharePage .dh-rec-bar { background: #e8f5ee; border-color: #bfe4d2; color: var(--success); }
+        #candidateSharePage .dh-rec-bar.dh-mid { background: #fbf1de; border-color: #eeda9f; color: var(--amber); }
+        #candidateSharePage .dh-rec-bar.dh-low { background: #fcebe9; border-color: #f2c3bd; color: var(--danger); }
+        #candidateSharePage .dh-kv-key { color: #909aa8; }
+        #candidateSharePage .dh-kv-sep { color: #c7cedb; }
+        #candidateSharePage .dh-kv-value { color: #1c2430; }
+        #candidateSharePage .dh-kv-value.blue   { color: var(--accent); }
+        #candidateSharePage .dh-kv-value.amber  { color: var(--amber); }
+        #candidateSharePage .dh-kv-value.green  { color: var(--success); }
+        #candidateSharePage .dh-kv-value.purple { color: #6d4fc4; }
+        #candidateSharePage .dh-recruiter-note { background: #eaf0fe; border-color: #c3d4fb; }
+        #candidateSharePage .dh-recruiter-note-label { color: var(--accent); }
+        #candidateSharePage .dh-recruiter-note-text { color: #333d4c; }
+        #candidateSharePage .dh-decision-block,
+        #candidateSharePage .dh-actions { border-top-color: var(--border); }
+        #candidateSharePage .dh-btn {
+            background: #ffffff; border-color: var(--border); color: #333d4c;
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #candidateSharePage .dh-btn:hover { background: #f3f6fc; border-color: #c3d4fb; }
+        #candidateSharePage .dh-btn.proceed.active { background: #e8f5ee; border-color: #7fcda6; color: var(--success); }
+        #candidateSharePage .dh-btn.pass.active { background: #fcebe9; border-color: #e69890; color: var(--danger); }
+        #candidateSharePage .dh-note-input { background: #f7f8fa; border-color: var(--border); color: #1c2430; }
+        #candidateSharePage .dh-note-input::placeholder { color: #a7afbc; }
+        #candidateSharePage .dh-note-input:focus { border-color: var(--accent); }
+
+        #candidateSharePage .share-resume-sidebar { background: #eff2f6; }
+        #candidateSharePage .share-resume-header { background: #ffffff; }
+        #candidateSharePage .share-resume-empty { background: #eff2f6; color: #8a93a3; }
+        #candidateSharePage .share-resume-empty h3 { color: #333d4c; }
+
+        #candidateSharePage .share-pg-section-title { color: var(--accent); border-bottom-color: var(--border); }
+        #candidateSharePage .rating-box { background: #eaf0fe; border-left-color: var(--accent); color: #333d4c; }
+        #candidateSharePage .overlay-text,
+        #candidateSharePage .overlay-highlight-item { color: #333d4c; }
+        #candidateSharePage .overlay-highlight-item::before { color: var(--accent); }
+        #candidateSharePage .sbd-label { color: #333d4c; }
+        #candidateSharePage .sbd-bar { background: #eef1f6; }
+        #candidateSharePage .sbd-bar-fill.fill-high { background: var(--success); }
+        #candidateSharePage .sbd-bar-fill.fill-mid  { background: var(--amber); }
+        #candidateSharePage .sbd-bar-fill.fill-low  { background: var(--danger); }
+        #candidateSharePage .sbd-val.score-high { color: var(--success); }
+        #candidateSharePage .sbd-val.score-mid  { color: var(--amber); }
+        #candidateSharePage .sbd-val.score-low  { color: var(--danger); }
+        #candidateSharePage .overlay-skill-tag.have    { background: #e8f5ee; border-color: #bfe4d2; color: var(--success); }
+        #candidateSharePage .overlay-skill-tag.missing { background: #fcebe9; border-color: #f2c3bd; color: var(--danger); }
+        #candidateSharePage .overlay-skill-tag.neutral { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .share-skills-col-label.have { color: var(--success); }
+        #candidateSharePage .share-skills-col-label.missing { color: var(--danger); }
+        #candidateSharePage .comp-card { background: #eaf0fe; border-color: #c3d4fb; }
+        #candidateSharePage .comp-card-name { color: var(--accent); }
+        #candidateSharePage .comp-card-body { color: #333d4c; }
+        #candidateSharePage .comp-card-tag { background: #dbe6fb; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .dc-btn-sm { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .dc-btn-sm:hover { background: #dbe6fb; }
+
+        #candidateSharePage .share-mobile-back { background: #ffffff; color: var(--accent); }
+        #candidateSharePage .share-mobile-back svg { stroke: var(--accent); }
+        #candidateSharePage .share-mobile-resume-btn { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .share-mobile-resume-btn:hover { background: #dbe6fb; }
+
+        /* Reviewer-facing floating bar + name modal — same recipient flow, outside #candidateSharePage in the DOM */
+        #shareFeedbackBar {
+            background: #ffffff; border: 1px solid #bfe4d2;
+            box-shadow: 0 4px 24px rgba(16,24,40,0.12);
+        }
+        #shareFeedbackBar .floating-bar-count { color: #1c2430; }
+        #shareFeedbackBar .floating-bar-count strong { color: #17875a; }
+        #shareFeedbackBar .floating-bar-sub { color: #5b6472; }
+        #shareFeedbackBar .floating-bar-divider { background: #e2e6ec; }
+        #shareFeedbackBar .btn-submit-feedback {
+            background: #17875a; color: #ffffff; box-shadow: 0 4px 14px rgba(23,135,90,0.28);
+        }
+        #shareFeedbackBar .btn-submit-feedback:hover { box-shadow: 0 6px 20px rgba(23,135,90,0.36); }
+
+        #shareFeedbackNameOverlay > div {
+            background: #ffffff; border: 1px solid #e2e6ec; box-shadow: 0 20px 60px rgba(16,24,40,0.18);
+        }
+        #shareFeedbackNameOverlay > div > div:first-child { color: #1c2430; }
+        #shareFeedbackNameOverlay > div > div:nth-child(2) { color: #5b6472; }
+        #shareFeedbackNameOverlay input {
+            background: #f7f8fa; border: 1px solid #e2e6ec; color: #1c2430;
+        }
+        #shareFeedbackNameOverlay input:focus { border-color: #2f5fd9; }
+        #shareFeedbackNameOverlay button:last-child { background: #17875a; color: #fff; }
+        #shareFeedbackNameOverlay button:first-child { color: #5b6472; border-color: #e2e6ec; }
     </style>
 
 </head>
@@ -7270,6 +7442,34 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             <!-- Detail body -->
             <div style="padding:1rem 1.25rem 2rem;">
 
+                <div class="overlay-section" id="heroNotesSection-${idx}" style="margin-bottom:0.85rem;">
+                    <div class="overlay-section-title" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+                        <span style="font-size:0.9em;">💼 Compensation &amp; Recruiter Notes</span>
+                        <button class="dc-btn-sm" id="heroNotesEditBtn-${idx}" onclick="toggleHeroNotesEdit(${idx})" style="padding:0.15rem 0.45rem;font-size:0.62rem;">✏️ Edit</button>
+                    </div>
+                    <div id="heroNotesView-${idx}">
+                        <div class="hero-notes-grid">
+                            <div class="hero-notes-item"><span class="hero-notes-label">Current CTC</span><span class="hero-notes-val">${r.current_ctc ? escapeHtml(r.current_ctc) : '—'}</span></div>
+                            <div class="hero-notes-item"><span class="hero-notes-label">Expected CTC</span><span class="hero-notes-val">${r.expected_ctc ? escapeHtml(r.expected_ctc) : '—'}</span></div>
+                            <div class="hero-notes-item"><span class="hero-notes-label">Notice Period</span><span class="hero-notes-val">${r.notice_period ? escapeHtml(r.notice_period) : '—'}</span></div>
+                        </div>
+                        <div class="overlay-text" style="margin-top:0.45rem;font-size:0.76rem;${r.recruiter_comments ? '' : 'color:var(--text-muted);font-style:italic;'}">${r.recruiter_comments ? escapeHtml(r.recruiter_comments) : 'No recruiter comments yet.'}</div>
+                    </div>
+                    <div id="heroNotesEdit-${idx}" style="display:none;">
+                        <div class="hero-notes-edit-grid">
+                            <div><label class="dc-label" style="font-size:0.64rem;">Current CTC</label><input type="text" class="dc-input" id="heroCurCtc-${idx}" value="${escapeHtml(r.current_ctc || '')}" placeholder="e.g. 12 LPA"></div>
+                            <div><label class="dc-label" style="font-size:0.64rem;">Expected CTC</label><input type="text" class="dc-input" id="heroExpCtc-${idx}" value="${escapeHtml(r.expected_ctc || '')}" placeholder="e.g. 16 LPA"></div>
+                            <div><label class="dc-label" style="font-size:0.64rem;">Notice Period</label><input type="text" class="dc-input" id="heroNotice-${idx}" value="${escapeHtml(r.notice_period || '')}" placeholder="e.g. 30 days"></div>
+                        </div>
+                        <label class="dc-label" style="font-size:0.64rem;margin-top:0.5rem;display:block;">Recruiter Comments</label>
+                        <textarea class="dc-textarea" id="heroComments-${idx}" rows="2" placeholder="Notes for senior management — interview feedback, concerns, negotiation notes...">${escapeHtml(r.recruiter_comments || '')}</textarea>
+                        <div style="display:flex;justify-content:flex-end;gap:0.4rem;margin-top:0.45rem;">
+                            <button class="dc-btn-sm" onclick="toggleHeroNotesEdit(${idx})" style="font-size:0.66rem;">Cancel</button>
+                            <button class="dc-btn-sm pink" onclick="saveHeroNotes(${idx})" style="font-size:0.66rem;">💾 Save</button>
+                        </div>
+                    </div>
+                </div>
+
                 ${Array.isArray(r.extra_requirements_feedback) && r.extra_requirements_feedback?.length ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title" style="color:var(--amber);">📝 Custom Screening Feedback</div>
@@ -7291,34 +7491,6 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                         </div>`;
                     }).join('')}
                 </div>` : ''}
-
-                <div class="overlay-section" id="heroNotesSection-${idx}">
-                    <div class="overlay-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-                        <span>💼 Compensation &amp; Recruiter Notes</span>
-                        <button class="dc-btn-sm" id="heroNotesEditBtn-${idx}" onclick="toggleHeroNotesEdit(${idx})" style="padding:0.2rem 0.55rem;font-size:0.68rem;">✏️ Edit</button>
-                    </div>
-                    <div id="heroNotesView-${idx}">
-                        <div class="hero-notes-grid">
-                            <div class="hero-notes-item"><span class="hero-notes-label">Current CTC</span><span class="hero-notes-val">${r.current_ctc ? escapeHtml(r.current_ctc) : '—'}</span></div>
-                            <div class="hero-notes-item"><span class="hero-notes-label">Expected CTC</span><span class="hero-notes-val">${r.expected_ctc ? escapeHtml(r.expected_ctc) : '—'}</span></div>
-                            <div class="hero-notes-item"><span class="hero-notes-label">Notice Period</span><span class="hero-notes-val">${r.notice_period ? escapeHtml(r.notice_period) : '—'}</span></div>
-                        </div>
-                        <div class="overlay-text" style="margin-top:0.6rem;${r.recruiter_comments ? '' : 'color:var(--text-muted);font-style:italic;'}">${r.recruiter_comments ? escapeHtml(r.recruiter_comments) : 'No recruiter comments yet.'}</div>
-                    </div>
-                    <div id="heroNotesEdit-${idx}" style="display:none;">
-                        <div class="hero-notes-edit-grid">
-                            <div><label class="dc-label" style="font-size:0.68rem;">Current CTC</label><input type="text" class="dc-input" id="heroCurCtc-${idx}" value="${escapeHtml(r.current_ctc || '')}" placeholder="e.g. 12 LPA"></div>
-                            <div><label class="dc-label" style="font-size:0.68rem;">Expected CTC</label><input type="text" class="dc-input" id="heroExpCtc-${idx}" value="${escapeHtml(r.expected_ctc || '')}" placeholder="e.g. 16 LPA"></div>
-                            <div><label class="dc-label" style="font-size:0.68rem;">Notice Period</label><input type="text" class="dc-input" id="heroNotice-${idx}" value="${escapeHtml(r.notice_period || '')}" placeholder="e.g. 30 days"></div>
-                        </div>
-                        <label class="dc-label" style="font-size:0.68rem;margin-top:0.6rem;display:block;">Recruiter Comments</label>
-                        <textarea class="dc-textarea" id="heroComments-${idx}" rows="3" placeholder="Notes for senior management — interview feedback, concerns, negotiation notes...">${escapeHtml(r.recruiter_comments || '')}</textarea>
-                        <div style="display:flex;justify-content:flex-end;gap:0.4rem;margin-top:0.5rem;">
-                            <button class="dc-btn-sm" onclick="toggleHeroNotesEdit(${idx})" style="font-size:0.7rem;">Cancel</button>
-                            <button class="dc-btn-sm pink" onclick="saveHeroNotes(${idx})" style="font-size:0.7rem;">💾 Save</button>
-                        </div>
-                    </div>
-                </div>
 
                 ${r.summary ? `
                 <div class="overlay-section">
@@ -9448,6 +9620,7 @@ main.addEventListener('scroll',()=>{
                     ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">🎯</span><span class="dh-kv-value amber">Expected: ${r.expected_ctc}</span></div>` : ''}
                     ${r.notice_period ? `<div class="dh-kv full"><span class="dh-kv-icon">📅</span><span class="dh-kv-value green">Notice: ${r.notice_period}</span></div>` : ''}
                 </div>
+                ${r.recruiter_comments ? `<div class="dh-recruiter-note"><span class="dh-recruiter-note-icon">📝</span><div><div class="dh-recruiter-note-label">Recruiter Note</div><div class="dh-recruiter-note-text">${escapeHtml(r.recruiter_comments)}</div></div></div>` : ''}
                 <div class="dh-decision-block">
                     <div class="dh-actions" id="shareDecisionRow">
                         <button class="dh-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
