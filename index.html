@@ -2144,23 +2144,10 @@
             border-radius: 8px;
         }
         .share-note-intro {
-            margin: 0 0 0.6rem;
-            font-size: 0.76rem;
-            font-style: italic;
-            color: var(--text-muted);
-        }
-        .share-note-steps { display: flex; flex-direction: column; gap: 0.55rem; }
-        .share-note-step {
-            display: flex; align-items: flex-start; gap: 0.6rem;
-            font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary);
-        }
-        .share-note-num {
-            flex-shrink: 0;
-            width: 18px; height: 18px; border-radius: 50%;
-            background: var(--accent); color: #04060b;
-            font-size: 0.65rem; font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            margin-top: 1px;
+            margin: 0;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
         }
         @media (max-width: 720px) {
             .share-note-box { margin: 0.7rem 0.85rem 0; padding: 0.75rem 0.9rem; }
@@ -3563,8 +3550,6 @@
 
         #candidateSharePage .share-note-box { background: #eaf0fe; border-color: #c3d4fb; border-left-color: var(--accent); }
         #candidateSharePage .share-note-intro { color: #5b6472; }
-        #candidateSharePage .share-note-step { color: #333d4c; }
-        #candidateSharePage .share-note-num { background: var(--accent); color: #fff; }
 
         #candidateSharePage .share-candidates-sidebar,
         #candidateSharePage .share-detail-panel { background: #ffffff; }
@@ -3582,41 +3567,66 @@
         #candidateSharePage .share-cand-item.shortlisted-glow::before,
         #candidateSharePage .share-cand-item.shortlisted-glow::after { display: none; content: none; }
 
-        /* Hero "dossier" card → clean status card */
-        #candidateSharePage .dh-card {
-            background: #ffffff; border-bottom: 1px solid var(--border);
+        /* ── Chip Hero — share page candidate hero card ──
+           A dedicated component (not a recolor of the internal dh-card
+           dossier) so it actually matches the approved Clarity mockup:
+           status stripe, score chip, CTC/notice as small chips. */
+        #candidateSharePage .chero { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; }
+        #candidateSharePage .chero-stripe { height: 3px; background: var(--success); }
+        #candidateSharePage .chero-stripe.dh-mid { background: var(--amber); }
+        #candidateSharePage .chero-stripe.dh-low { background: var(--danger); }
+        #candidateSharePage .chero-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+            padding: 1.1rem 1.25rem 0.9rem;
             font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        #candidateSharePage .dh-term-label { display: none; }
-        #candidateSharePage .dh-name { color: #1c2430; }
-        #candidateSharePage .dh-score-num { color: var(--success); }
-        #candidateSharePage .dh-score-num.dh-mid { color: var(--amber); }
-        #candidateSharePage .dh-score-num.dh-low { color: var(--danger); }
-        #candidateSharePage .dh-rec-bar { background: #e8f5ee; border-color: #bfe4d2; color: var(--success); }
-        #candidateSharePage .dh-rec-bar.dh-mid { background: #fbf1de; border-color: #eeda9f; color: var(--amber); }
-        #candidateSharePage .dh-rec-bar.dh-low { background: #fcebe9; border-color: #f2c3bd; color: var(--danger); }
-        #candidateSharePage .dh-kv-key { color: #909aa8; }
-        #candidateSharePage .dh-kv-sep { color: #c7cedb; }
-        #candidateSharePage .dh-kv-value { color: #1c2430; }
-        #candidateSharePage .dh-kv-value.blue   { color: var(--accent); }
-        #candidateSharePage .dh-kv-value.amber  { color: var(--amber); }
-        #candidateSharePage .dh-kv-value.green  { color: var(--success); }
-        #candidateSharePage .dh-kv-value.purple { color: #6d4fc4; }
-        #candidateSharePage .dh-recruiter-note { background: #eaf0fe; border-color: #c3d4fb; }
-        #candidateSharePage .dh-recruiter-note-label { color: var(--accent); }
-        #candidateSharePage .dh-recruiter-note-text { color: #333d4c; }
-        #candidateSharePage .dh-decision-block,
-        #candidateSharePage .dh-actions { border-top-color: var(--border); }
-        #candidateSharePage .dh-btn {
-            background: #ffffff; border-color: var(--border); color: #333d4c;
+        #candidateSharePage .chero-name { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; color: #1c2430; }
+        #candidateSharePage .chero-role-line { font-size: 0.78rem; color: #5b6472; margin-top: 0.35rem; line-height: 1.55; }
+        #candidateSharePage .chero-score-chip { flex-shrink: 0; text-align: center; padding: 0.5rem 0.8rem; border-radius: 9px; background: #e8f5ee; }
+        #candidateSharePage .chero-score-chip.dh-mid { background: #fbf1de; }
+        #candidateSharePage .chero-score-chip.dh-low { background: #fcebe9; }
+        #candidateSharePage .chero-score-num { font-variant-numeric: tabular-nums; font-size: 1.35rem; font-weight: 700; color: var(--success); line-height: 1; }
+        #candidateSharePage .chero-score-chip.dh-mid .chero-score-num { color: var(--amber); }
+        #candidateSharePage .chero-score-chip.dh-low .chero-score-num { color: var(--danger); }
+        #candidateSharePage .chero-score-lbl { font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--success); margin-top: 2px; opacity: 0.8; }
+        #candidateSharePage .chero-score-chip.dh-mid .chero-score-lbl { color: var(--amber); }
+        #candidateSharePage .chero-score-chip.dh-low .chero-score-lbl { color: var(--danger); }
+        #candidateSharePage .chero-rec-row {
+            display: flex; align-items: center; gap: 6px; padding: 0 1.25rem 0.9rem;
+            font-size: 0.8rem; font-weight: 600; color: var(--success);
             font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        #candidateSharePage .dh-btn:hover { background: #f3f6fc; border-color: #c3d4fb; }
-        #candidateSharePage .dh-btn.proceed.active { background: #e8f5ee; border-color: #7fcda6; color: var(--success); }
-        #candidateSharePage .dh-btn.pass.active { background: #fcebe9; border-color: #e69890; color: var(--danger); }
-        #candidateSharePage .dh-note-input { background: #f7f8fa; border-color: var(--border); color: #1c2430; }
-        #candidateSharePage .dh-note-input::placeholder { color: #a7afbc; }
-        #candidateSharePage .dh-note-input:focus { border-color: var(--accent); }
+        #candidateSharePage .chero-rec-row.dh-mid { color: var(--amber); }
+        #candidateSharePage .chero-rec-row.dh-low { color: var(--danger); }
+        #candidateSharePage .chero-rec-row::before { content: "✓"; font-size: 0.72rem; }
+        #candidateSharePage .chero-rec-row.dh-low::before { content: "✕"; }
+        #candidateSharePage .chero-chip-row { display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0 1.25rem 1.05rem; }
+        #candidateSharePage .chero-chip { display: flex; flex-direction: column; gap: 1px; padding: 0.4rem 0.7rem; border-radius: 8px; background: #eff2f6; font-size: 0.76rem; }
+        #candidateSharePage .chero-chip-lbl { font-size: 0.58rem; color: #909aa8; text-transform: uppercase; letter-spacing: 0.04em; }
+        #candidateSharePage .chero-chip b { font-variant-numeric: tabular-nums; font-weight: 600; color: #1c2430; }
+        #candidateSharePage .chero-note { margin: 0 1.25rem 1.05rem; padding: 0.8rem 0.95rem; background: #eaf0fe; border: 1px solid #c3d4fb; border-radius: 9px; }
+        #candidateSharePage .chero-note-lbl { font-size: 0.64rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        #candidateSharePage .chero-note-text { font-size: 0.8rem; color: #1c2430; line-height: 1.55; }
+        #candidateSharePage .chero-actions-block { padding: 0 1.25rem 1.2rem; }
+        #candidateSharePage .chero-actions { display: flex; gap: 0.55rem; margin-bottom: 0.65rem; }
+        #candidateSharePage .chero-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.8rem; font-weight: 600; padding: 0.5rem 1.1rem; border-radius: 8px;
+            cursor: pointer; background: #ffffff; border: 1px solid var(--border); color: #333d4c;
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: all 0.15s;
+        }
+        #candidateSharePage .chero-btn:hover { background: #f3f6fc; border-color: #c3d4fb; }
+        #candidateSharePage .chero-btn.proceed.active { background: #e8f5ee; border-color: #7fcda6; color: var(--success); }
+        #candidateSharePage .chero-btn.pass.active { background: #fcebe9; border-color: #e69890; color: var(--danger); }
+        #candidateSharePage .chero-note-input {
+            width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px;
+            padding: 0.55rem 0.75rem; background: #f7f8fa; border: 1px solid var(--border); border-radius: 8px;
+            color: #1c2430; font-size: 0.78rem; line-height: 1.5; outline: none; transition: border-color 0.15s;
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #candidateSharePage .chero-note-input::placeholder { color: #a7afbc; }
+        #candidateSharePage .chero-note-input:focus { border-color: var(--accent); }
 
         #candidateSharePage .share-resume-sidebar { background: #eff2f6; }
         #candidateSharePage .share-resume-header { background: #ffffff; }
@@ -4373,11 +4383,7 @@
 
     <!-- Instructions note box — how to review this shortlist -->
     <div class="share-note-box">
-        <p class="share-note-intro">To make it easy, here's how I'd suggest going through them:</p>
-        <div class="share-note-steps">
-            <div class="share-note-step"><span class="share-note-num">1</span><span><strong>Open the profiles</strong> — each one has the candidate's background, relevant skills, and a brief summary.</span></div>
-            <div class="share-note-step"><span class="share-note-num">2</span><span><strong>Mark your preference</strong> — shortlist, maybe, or pass. Even a quick note on each helps a lot.</span></div>
-        </div>
+        <p class="share-note-intro">Please review the candidate profiles (including their skills and summary) and mark your feedback - Proceed or Pass, with a quick note for each.</p>
     </div>
 
     <!-- Two-panel layout -->
@@ -9381,10 +9387,10 @@ main.addEventListener('scroll',()=>{
     function _buildDecisionBtns(idx) {
         const dec = _shareFeedback[idx];
         return `
-            <button class="dh-btn proceed${dec === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+            <button class="chero-btn proceed${dec === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
                 ${dec === 'proceed' ? '✅ Proceeding' : '✓ Proceed'}
             </button>
-            <button class="dh-btn pass${dec === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+            <button class="chero-btn pass${dec === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
                 ${dec === 'pass' ? '✕ Passed' : '✕ Pass'}
             </button>`;
     }
@@ -9597,44 +9603,42 @@ main.addEventListener('scroll',()=>{
         const _sRecTxt   = r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Consider — Further Review' : '❌ Not Recommended — Pass';
         const _sInitials = r.name.split(' ').slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
         const _decisionState = _shareFeedback[idx];
+        // Chip row: CTC / notice / internship — whatever's present, in mockup order
+        const chipItems = [
+            r.current_ctc  ? { lbl: 'Current CTC',  val: r.current_ctc }  : null,
+            r.expected_ctc ? { lbl: 'Expected CTC', val: r.expected_ctc } : null,
+            r.notice_period ? { lbl: 'Notice', val: r.notice_period } : null,
+            r.internship_months > 0 ? { lbl: 'Internship', val: `${r.internship_months} mo` } : null
+        ].filter(Boolean);
+
         document.getElementById('sharePgHero').innerHTML = `
-            <div class="dh-card">
-                <div class="dh-top-band">
-                    <div class="dh-name-area">
-                        <div class="dh-name-label">Candidate Profile</div>
-                        <div class="dh-name">${r.name}</div>
+            <div class="chero">
+                <div class="chero-stripe ${_sScoreCls}"></div>
+                <div class="chero-head">
+                    <div>
+                        <div class="chero-name">${r.name}</div>
+                        <div class="chero-role-line">${r.location || ''}${r.location && r.experience_years > 0 ? ' · ' : ''}${r.experience_years > 0 ? _fmtExp(r.experience_years) + ' experience' : ''}${(r.email || r.phone) ? '<br>' : ''}${r.email || ''}${r.email && r.phone ? ' · ' : ''}${r.phone || ''}</div>
                     </div>
-                    <div class="dh-score-block">
-                        <div class="dh-score-num ${_sScoreCls}">${r.match_score}%</div>
-                        <div class="dh-score-lbl ${_sScoreCls}">AI Match</div>
+                    <div class="chero-score-chip ${_sScoreCls}">
+                        <div class="chero-score-num">${r.match_score}%</div>
+                        <div class="chero-score-lbl">Match</div>
                     </div>
                 </div>
-                <div class="dh-rec-bar ${_sScoreCls}"><span class="dh-rec-dot"></span>${_sRecTxt}</div>
-                <div class="dh-kv-list">
-                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-icon">📍</span><span class="dh-kv-value">${r.location}</span></div>` : ''}
-                    ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">💼</span><span class="dh-kv-value" style="color:var(--accent);">${_fmtExp(r.experience_years)}</span></div>` : ''}
-                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-icon">✉️</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-icon">📞</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
-                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">🎓</span><span class="dh-kv-value" style="color:#a78bfa;">${r.internship_months} mo internship</span></div>` : ''}
-                    ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">💰</span><span class="dh-kv-value amber">Current: ${r.current_ctc}</span></div>` : ''}
-                    ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">🎯</span><span class="dh-kv-value amber">Expected: ${r.expected_ctc}</span></div>` : ''}
-                    ${r.notice_period ? `<div class="dh-kv full"><span class="dh-kv-icon">📅</span><span class="dh-kv-value green">Notice: ${r.notice_period}</span></div>` : ''}
-                </div>
-                ${r.recruiter_comments ? `<div class="dh-recruiter-note"><span class="dh-recruiter-note-icon">📝</span><div><div class="dh-recruiter-note-label">Recruiter Note</div><div class="dh-recruiter-note-text">${escapeHtml(r.recruiter_comments)}</div></div></div>` : ''}
-                <div class="dh-decision-block">
-                    <div class="dh-actions" id="shareDecisionRow">
-                        <button class="dh-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+                <div class="chero-rec-row ${_sScoreCls}">${_sRecTxt.replace(/^[^\s]+\s/, '')}</div>
+                ${chipItems.length ? `<div class="chero-chip-row">${chipItems.map(c => `<div class="chero-chip"><span class="chero-chip-lbl">${c.lbl}</span><b>${escapeHtml(c.val)}</b></div>`).join('')}</div>` : ''}
+                ${r.recruiter_comments ? `<div class="chero-note"><div class="chero-note-lbl">Recruiter Note</div><div class="chero-note-text">${escapeHtml(r.recruiter_comments)}</div></div>` : ''}
+                <div class="chero-actions-block">
+                    <div class="chero-actions" id="shareDecisionRow">
+                        <button class="chero-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
                             ${_decisionState === 'proceed' ? '✅ Proceeding' : '✓ Proceed'}
                         </button>
-                        <button class="dh-btn pass${_decisionState === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+                        <button class="chero-btn pass${_decisionState === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
                             ${_decisionState === 'pass' ? '✕ Passed' : '✕ Pass'}
                         </button>
                     </div>
-                    <div class="dh-note-wrap">
-                        <textarea class="dh-note-input" id="share-note-${idx}" placeholder="Add a quick note for the recruiting team (optional)…" oninput="setShareNote(${idx}, this.value)">${escapeHtml(_shareNotes[idx] || '')}</textarea>
-                    </div>
+                    <textarea class="chero-note-input" id="share-note-${idx}" placeholder="Add a quick note for the recruiting team (optional)…" oninput="setShareNote(${idx}, this.value)">${escapeHtml(_shareNotes[idx] || '')}</textarea>
                 </div>
-                ${mobileResumeBtn ? `<div style="padding:0 1.25rem 0.75rem;">${mobileResumeBtn}</div>` : ''}
+                ${mobileResumeBtn ? `<div style="padding:0 1.25rem 1.1rem;">${mobileResumeBtn}</div>` : ''}
             </div>`;
 
         document.getElementById('sharePgBody').innerHTML = `
