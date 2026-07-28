@@ -2252,15 +2252,17 @@
 
         /* ── MIDDLE PANEL: candidate detail (compact) ── */
         .share-detail-panel {
-            width: 450px; min-width: 380px; max-width: 500px;
+            flex: 1 1 auto; min-width: 320px;
             display: flex; flex-direction: column; overflow: hidden;
             border-right: 1px solid var(--border);
-            flex-shrink: 0;
         }
-        
-        /* ── RIGHT PANEL: permanent resume viewer ── */
+
+        /* ── RIGHT PANEL: permanent resume viewer ──
+           Fixed at exactly half the screen; the candidate list + detail
+           panel together share the other half. */
         .share-resume-sidebar {
-            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            flex: 0 0 50%; max-width: 50%;
+            display: flex; flex-direction: column; overflow: hidden;
             background: var(--bg-main);
         }
         .share-resume-header {
