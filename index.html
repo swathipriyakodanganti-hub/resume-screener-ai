@@ -6476,7 +6476,7 @@ Rules:
         let lastError;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                return await fn();
+                return await fn(attempt);
             } catch (err) {
                 lastError = err;
 
@@ -6488,6 +6488,15 @@ Rules:
                     const backoffMs = Math.min(2000 * Math.pow(2, attempt), 15000); // 2s, 4s, 8s, max 15s
                     console.log(`🔄 Rate limit hit! Retry ${attempt}/${maxRetries} after ${(backoffMs/1000).toFixed(1)}s`);
                     await sleepInterruptible(backoffMs);
+                    continue;
+                }
+
+                // Malformed/empty JSON is usually a one-off flaky generation (e.g. a
+                // reasoning model getting truncated mid-answer) — worth a quick retry
+                // before giving up and dropping the candidate into "pending".
+                if (err.message.includes('Malformed JSON') || err.message.includes('empty response')) {
+                    console.log(`🔄 Bad AI output, retry ${attempt}/${maxRetries}`);
+                    await sleepInterruptible(800);
                     continue;
                 }
                 
@@ -6527,7 +6536,13 @@ Rules:
                         model: cfg.model,
                         messages,
                         temperature,
-                        max_tokens: maxTokens
+                        max_tokens: maxTokens,
+                        // gpt-oss reasoning models spend part of max_tokens on a hidden
+                        // "thinking" pass before writing the answer — left at Groq's
+                        // default ('medium') that pass can eat the whole budget and
+                        // truncate the JSON answer mid-object. 'low' keeps most of the
+                        // budget for the actual output. Other models ignore this field.
+                        ...(cfg.model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {})
                     })
                 });
             } catch (err) {
@@ -6576,7 +6591,7 @@ Rules:
         throw new Error(`RATE_LIMIT:${cfg.label} keys exhausted — add a fresh key and resume`);
     }
 
-    async function analyzeWithProvider(resumeText, jd, filters) {
+    async function analyzeWithProvider(resumeText, jd, filters, attempt = 1) {
         const cfg = providerCfg(selectedProvider);
         if (!cfg.getKeys().length) throw new Error(`No ${cfg.label} API key configured`);
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
@@ -6589,8 +6604,11 @@ Rules:
         const controller = new AbortController();
         _activeApiAbortController = controller;
 
+        // At temperature 0 a truncated response tends to truncate the same way on
+        // retry — so a bare retry at the same budget just fails again. Escalate the
+        // token budget each attempt instead: 2600 → 3800 → 5000.
         const raw = await callAIProvider([{ role: 'user', content: prompt }], {
-            maxTokens: 1500,
+            maxTokens: 2600 + (attempt - 1) * 1200,
             temperature: 0,
             signal: controller.signal
         });
@@ -6764,7 +6782,7 @@ Rules:
                 }
             }
             if (!text || text.trim().length < 30) throw new Error('Could not extract text from resume');
-            const newResult = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
+            const newResult = await retryWithBackoff(async (attempt) => analyzeWithProvider(text, currentJD, filters, attempt));
             newResult.filename       = r.filename;
             newResult.file_type      = r.file_type;
             newResult.drive_link     = r.drive_link;
@@ -7036,7 +7054,7 @@ Rules:
                 }
                 if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable');
 
-                const result = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
+                const result = await retryWithBackoff(async (attempt) => analyzeWithProvider(text, currentJD, filters, attempt));
                 result.filename  = file.name;
                 result.file_type = ext;
                 if (!result.name) result.name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
@@ -7097,7 +7115,7 @@ Rules:
                 const text = await extractTextFromPDF(pdfFile);
                 if (!text || text.trim().length < 30) throw new Error('Could not extract text — ensure the file is a readable PDF');
 
-                const result = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
+                const result = await retryWithBackoff(async (attempt) => analyzeWithProvider(text, currentJD, filters, attempt));
                 result.filename        = driveEntry.name;
                 result.drive_link      = driveEntry.driveLink;
                 result.resume_pdf_b64  = pdfBase64;
