@@ -269,19 +269,6 @@ function doGet(e) {
     }
   }
 
-  // ── Serve interviewer feedback form ──
-  if (action === 'feedback') {
-    try {
-      const sid = e.parameter.sid;
-      if (!sid) return HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:40px;">Invalid feedback link.</p>');
-      const scriptUrl = ScriptApp.getService().getUrl();
-      return HtmlService.createHtmlOutput(buildFeedbackFormHtml(sid, scriptUrl))
-        .setTitle('Interview Feedback');
-    } catch (err) {
-      return HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:40px;">Error loading feedback form: ' + err.message + '</p>');
-    }
-  }
-
     // ── List all saved analysis batches ──
   if (action === 'getBatches') {
     try {
@@ -347,11 +334,6 @@ function doGet(e) {
 // ───────────────────────────────────────────────────────────────
 function doPost(e) {
   try {
-    // ── Feedback form submission (HTML form POST) ──
-    if (e.parameter && e.parameter.action === 'submitFeedback') {
-      return handleFeedbackSubmit(e);
-    }
-
     const raw = (e.parameter && e.parameter.payload)
       ? e.parameter.payload
       : (e.postData && e.postData.contents ? e.postData.contents : '');
@@ -586,245 +568,30 @@ function logShare(candidateName, position, shareLink, recipients) {
       linksSheet.setColumnWidth(6, 400);
     }
 
-    // Calculate batch number for this position (count existing rows for same position + 1)
-    const allData  = linksSheet.getDataRange().getValues();
-    const posRows  = allData.slice(1).filter(row => row[2] === position);
-    const batchNo  = posRows.length + 1;
+    // Calculate batch number for this position (count existing rows for same position + 1).
+    // Locked: two shares for the same position at once would otherwise read the same count.
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      const allData  = linksSheet.getDataRange().getValues();
+      const posRows  = allData.slice(1).filter(row => row[2] === position);
+      const batchNo  = posRows.length + 1;
 
-    linksSheet.appendRow([
-      batchNo,
-      new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-      position,
-      candidateName,
-      recipients.map(r => `${r.name} <${r.email}>`).join(', '),
-      shareLink
-    ]);
+      linksSheet.appendRow([
+        batchNo,
+        new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+        position,
+        candidateName,
+        recipients.map(r => `${r.name} <${r.email}>`).join(', '),
+        shareLink
+      ]);
+    } finally {
+      lock.releaseLock();
+    }
 
   } catch (err) {
     Logger.log('logShare warning (non-fatal): ' + err.message);
   }
-}
-
-// ───────────────────────────────────────────────────────────────
-// Reviewer Feedback — session creation & form serving
-// ───────────────────────────────────────────────────────────────
-
-// Store candidate list for a feedback session in Script Properties
-function createFeedbackSession(sid, position, candidates) {
-  const sessionData = JSON.stringify({ position, candidates });
-  PropertiesService.getScriptProperties().setProperty('feedback_' + sid, sessionData);
-}
-
-// Build the HTML feedback form page served to the reviewer
-function buildFeedbackFormHtml(sid, scriptUrl) {
-  const prop = PropertiesService.getScriptProperties().getProperty('feedback_' + sid);
-  if (!prop) {
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Feedback</title></head>
-<body style="margin:0;padding:40px 16px;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;text-align:center;">
-  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:40px 28px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-    <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
-    <div style="font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">Link Expired</div>
-    <div style="font-size:13px;color:#64748b;">This feedback link is no longer valid. Please ask the recruiting team for a new one.</div>
-  </div>
-</body></html>`;
-  }
-
-  const session = JSON.parse(prop);
-  const { position, candidates } = session;
-
-  const candidateFields = candidates.map((c, i) => {
-    const sc = c.match_score >= 75 ? '#1D9E75' : c.match_score >= 50 ? '#BA7517' : '#A32D2D';
-    const lbl = c.match_score >= 75 ? 'Strong Match' : c.match_score >= 50 ? 'Good Match' : 'Low Match';
-    return `
-      <input type="hidden" name="candName_${i}" value="${escapeHtml(c.name)}">
-      <input type="hidden" name="candScore_${i}" value="${c.match_score}">
-      <div class="cand-card">
-        <div class="cand-top">
-          <div>
-            <div class="cand-name">${escapeHtml(c.name)}</div>
-            <div class="cand-lbl" style="color:${sc};">${lbl}</div>
-          </div>
-          <div class="score-pill" style="color:${sc};border-color:${sc};">${c.match_score}%</div>
-        </div>
-        <div class="radio-row">
-          <label class="radio-opt proceed">
-            <input type="radio" name="decision_${i}" value="Proceed" required>
-            <span>✅ Proceed</span>
-          </label>
-          <label class="radio-opt hold">
-            <input type="radio" name="decision_${i}" value="Hold">
-            <span>🔶 Hold</span>
-          </label>
-          <label class="radio-opt pass">
-            <input type="radio" name="decision_${i}" value="Pass">
-            <span>❌ Pass</span>
-          </label>
-        </div>
-        <textarea name="notes_${i}" placeholder="Optional notes for this candidate..." class="notes-ta"></textarea>
-      </div>`;
-  }).join('');
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Interview Feedback — ${escapeHtml(position)}</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { margin:0; padding:24px 16px 48px; background:#f4f6f9; font-family:'Segoe UI',Arial,sans-serif; color:#1a1a2e; }
-    .card { max-width:620px; margin:0 auto; background:#fff; border-radius:14px; box-shadow:0 2px 16px rgba(0,0,0,0.10); overflow:hidden; }
-    .card-header { background:#0C447C; padding:22px 26px; }
-    .card-body   { padding:26px; }
-    .card-footer { background:#0C447C; padding:14px 26px; }
-    .field-lbl { font-size:11px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px; }
-    .text-inp { width:100%; padding:10px 12px; border:1px solid #e2e8f0; border-radius:7px; font-size:13px; font-family:inherit; color:#1a1a2e; transition:border-color .15s; }
-    .text-inp:focus { outline:none; border-color:#0C447C; box-shadow:0 0 0 3px rgba(12,68,124,.1); }
-    .cand-card { border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:12px; }
-    .cand-top  { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-    .cand-name { font-size:14px; font-weight:700; color:#1a1a2e; }
-    .cand-lbl  { font-size:11px; font-weight:600; margin-top:2px; }
-    .score-pill{ font-size:15px; font-weight:700; border:2px solid; border-radius:20px; padding:3px 12px; }
-    .radio-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
-    .radio-opt { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:600; padding:6px 12px; border-radius:7px; border:1px solid #e2e8f0; user-select:none; transition:background .12s,border-color .12s; }
-    .radio-opt input[type=radio] { accent-color:#0C447C; }
-    .radio-opt:has(input:checked) { border-color:#0C447C; background:#EBF2FA; }
-    .proceed span { color:#1D9E75; }
-    .hold    span { color:#BA7517; }
-    .pass    span { color:#A32D2D; }
-    .notes-ta { width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:12px; font-family:inherit; color:#1a1a2e; resize:vertical; min-height:48px; transition:border-color .15s; }
-    .notes-ta:focus { outline:none; border-color:#0C447C; }
-    .submit-btn { width:100%; padding:14px; background:#0C447C; border:none; border-radius:9px; font-size:14px; font-weight:700; color:#fff; cursor:pointer; font-family:inherit; margin-top:8px; transition:background .15s; }
-    .submit-btn:hover { background:#0a3a6e; }
-    .section-divider { font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 12px; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="card-header">
-      <div style="font-size:10px;color:#85B7EB;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:5px;">Interview Feedback</div>
-      <div style="font-size:19px;font-weight:700;color:#E6F1FB;">${escapeHtml(position)}</div>
-      <div style="font-size:12px;color:#85B7EB;margin-top:4px;">${candidates.length} candidate${candidates.length !== 1 ? 's' : ''} to review</div>
-    </div>
-    <div class="card-body">
-      <form method="POST" action="${scriptUrl}" onsubmit="return validateForm(this)" id="fbForm">
-        <input type="hidden" name="action" value="submitFeedback">
-        <input type="hidden" name="sid" value="${escapeHtml(sid)}">
-        <input type="hidden" name="candidateCount" value="${candidates.length}">
-
-        <div style="margin-bottom:14px;">
-          <div class="field-lbl">Your Name *</div>
-          <input class="text-inp" type="text" name="reviewerName" placeholder="Enter your full name" required>
-        </div>
-        <div style="margin-bottom:22px;">
-          <div class="field-lbl">Your Email *</div>
-          <input class="text-inp" type="email" name="reviewerEmail" placeholder="Enter your email address" required>
-        </div>
-
-        <div class="section-divider">Candidates — Select Your Decision</div>
-        ${candidateFields}
-
-        <button type="submit" class="submit-btn" id="submitBtn">Submit Feedback &rarr;</button>
-      </form>
-    </div>
-    <div class="card-footer">
-      <div style="font-size:11px;color:#85B7EB;">Pearl Hire &nbsp;&middot;&nbsp; Your feedback will be recorded in the recruiting team's spreadsheet.</div>
-    </div>
-  </div>
-  <script>
-    function validateForm(form) {
-      const count = parseInt(form.candidateCount.value);
-      for (let i = 0; i < count; i++) {
-        const radios = form.querySelectorAll('input[name="decision_' + i + '"]');
-        const checked = Array.from(radios).some(r => r.checked);
-        if (!checked) {
-          alert('Please select Proceed / Hold / Pass for every candidate before submitting.');
-          return false;
-        }
-      }
-      document.getElementById('submitBtn').textContent = 'Submitting…';
-      document.getElementById('submitBtn').disabled = true;
-      return true;
-    }
-  </script>
-</body>
-</html>`;
-}
-
-// Handle the feedback form POST — write decisions to the Interviewer Feedback sheet tab
-function handleFeedbackSubmit(e) {
-  const reviewerName  = e.parameter.reviewerName  || '';
-  const reviewerEmail = e.parameter.reviewerEmail || '';
-  const sid           = e.parameter.sid           || '';
-  const count         = parseInt(e.parameter.candidateCount) || 0;
-
-  // Get position from stored session
-  let position = 'Unknown';
-  try {
-    const prop = PropertiesService.getScriptProperties().getProperty('feedback_' + sid);
-    if (prop) position = JSON.parse(prop).position || 'Unknown';
-  } catch (_) {}
-
-  // Write to "Interviewer Feedback" sheet tab
-  try {
-    const ss    = SpreadsheetApp.openById(SHEET_ID);
-    let   sheet = ss.getSheetByName('Interviewer Feedback');
-    if (!sheet) {
-      sheet = ss.insertSheet('Interviewer Feedback');
-      sheet.appendRow(['Timestamp', 'Position', 'Reviewer Name', 'Reviewer Email', 'Candidate Name', 'Match Score', 'Decision', 'Notes']);
-      sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
-      sheet.setFrozenRows(1);
-      // Color the header row
-      sheet.getRange(1, 1, 1, 8).setBackground('#0C447C').setFontColor('#ffffff');
-    }
-    const ts = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-    for (let i = 0; i < count; i++) {
-      sheet.appendRow([
-        ts,
-        position,
-        reviewerName,
-        reviewerEmail,
-        e.parameter['candName_'  + i] || '',
-        e.parameter['candScore_' + i] || '',
-        e.parameter['decision_'  + i] || '',
-        e.parameter['notes_'     + i] || ''
-      ]);
-    }
-  } catch (err) {
-    Logger.log('handleFeedbackSubmit sheet error (non-fatal): ' + err.toString());
-  }
-
-  // Return a success page
-  return HtmlService.createHtmlOutput(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Feedback Submitted</title>
-</head>
-<body style="margin:0;padding:40px 16px;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;text-align:center;">
-  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:14px;padding:44px 28px;box-shadow:0 2px 16px rgba(0,0,0,0.10);">
-    <div style="font-size:52px;margin-bottom:16px;">✅</div>
-    <div style="font-size:20px;font-weight:700;color:#1a1a2e;margin-bottom:10px;">Feedback Submitted!</div>
-    <div style="font-size:13px;color:#64748b;line-height:1.7;">
-      Thank you, <strong>${escapeHtml(reviewerName)}</strong>.<br>
-      Your decisions for <strong>${count} candidate${count !== 1 ? 's' : ''}</strong> have been recorded.<br>
-      The recruiting team will be notified.
-    </div>
-    <div style="margin-top:28px;font-size:11px;color:#94a3b8;">You can close this tab.</div>
-  </div>
-</body>
-</html>`).setTitle('Feedback Submitted');
-}
-
-// Escape HTML special characters
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 // ─── Run this once to apply colour formatting to the existing sheet ───
@@ -917,6 +684,17 @@ function jsonResponse(obj) {
 // (the same tab the app's "Select Position" dropdown reads from)
 // ───────────────────────────────────────────────────────────────
 function savePositionToJDSheet(data) {
+  // Locked: two first-time saves of the same position must not both append a row
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return _savePositionToJDSheetLocked(data);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function _savePositionToJDSheetLocked(data) {
   try {
     const position = (data.position || '').trim();
     const jd       = (data.jd || '').trim();
@@ -1095,17 +873,54 @@ function pushCandidatesToSheet(data) {
       ];
     });
 
-    rows.forEach(row => sheet.appendRow(row));
+    // ── Write by HEADER NAME, not by fixed position ──
+    // The target tab's columns may have been reordered or extended by hand. Read its real
+    // header row and put each value under the column with the same name. Columns the tab
+    // doesn't have are skipped, so nothing is shifted into the wrong place.
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000); // serialise pushes so two runs can't interleave rows
+    try {
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(STRIX_HEADERS);
+        sheet.getRange(1, 1, 1, STRIX_HEADERS.length).setFontWeight('bold').setBackground('#0C447C').setFontColor('#ffffff');
+        sheet.setFrozenRows(1);
+      }
+      const width        = sheet.getLastColumn();
+      const sheetHeaders = sheet.getRange(1, 1, 1, width).getValues()[0].map(h => String(h).trim());
+      if (sheetHeaders.indexOf('Name') === -1 && sheetHeaders.indexOf('Email') === -1) {
+        throw new Error(
+          'The tab "' + sheet.getName() + '" has no recognised header row (expected columns such as "Name" and "Email"). ' +
+          'Pick the correct tab, or leave the tab name blank to use the first tab.'
+        );
+      }
 
-    // Colour-code Screen Status column (col 27) for pushed rows
-    const lastRow = sheet.getLastRow();
-    const firstDataRow = lastRow - rows.length + 1;
-    for (let i = 0; i < rows.length; i++) {
-      const rowIdx = firstDataRow + i;
-      const status = rows[i][26]; // Screen Status — 0-based index 26 = col 27
-      const bg = status === 'Proceed' ? '#e1f5ee' : status === 'Consider' ? '#faeeda' : '#fcebeb';
-      const fg = status === 'Proceed' ? '#1D9E75' : status === 'Consider' ? '#BA7517'  : '#A32D2D';
-      sheet.getRange(rowIdx, 27).setBackground(bg).setFontColor(fg).setFontWeight('bold');
+      const colOf = {}; // header name -> 0-based column index in this tab
+      sheetHeaders.forEach((h, c) => { if (h && colOf[h] === undefined) colOf[h] = c; });
+
+      const outRows = rows.map(row => {
+        const out = new Array(width).fill('');
+        STRIX_HEADERS.forEach((name, idx) => {
+          if (colOf[name] !== undefined) out[colOf[name]] = row[idx];
+        });
+        return out;
+      });
+
+      const startRow = sheet.getLastRow() + 1;
+      sheet.getRange(startRow, 1, outRows.length, width).setValues(outRows);
+
+      // Colour-code the Screen Status column, located by its header name
+      const statusIdx = STRIX_HEADERS.indexOf('Screen Status');
+      const statusCol = colOf['Screen Status'];
+      if (statusCol !== undefined) {
+        for (let i = 0; i < rows.length; i++) {
+          const status = rows[i][statusIdx];
+          const bg = status === 'Proceed' ? '#e1f5ee' : status === 'Consider' ? '#faeeda' : '#fcebeb';
+          const fg = status === 'Proceed' ? '#1D9E75' : status === 'Consider' ? '#BA7517' : '#A32D2D';
+          sheet.getRange(startRow + i, statusCol + 1).setBackground(bg).setFontColor(fg).setFontWeight('bold');
+        }
+      }
+    } finally {
+      lock.releaseLock();
     }
 
     return jsonResponse({
@@ -1244,6 +1059,17 @@ function logPromptChange(data) {
 // Save Analysis Batch to Google Sheet
 // ───────────────────────────────────────────────────────────────
 function saveBatch(data) {
+  // Locked: two saves of the same batch must not both find "no existing row" and append twice
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return _saveBatchLocked(data);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function _saveBatchLocked(data) {
   try {
     const { batchId, position, savedAt, candidates } = data;
 

@@ -2144,23 +2144,10 @@
             border-radius: 8px;
         }
         .share-note-intro {
-            margin: 0 0 0.6rem;
-            font-size: 0.76rem;
-            font-style: italic;
-            color: var(--text-muted);
-        }
-        .share-note-steps { display: flex; flex-direction: column; gap: 0.55rem; }
-        .share-note-step {
-            display: flex; align-items: flex-start; gap: 0.6rem;
-            font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary);
-        }
-        .share-note-num {
-            flex-shrink: 0;
-            width: 18px; height: 18px; border-radius: 50%;
-            background: var(--accent); color: #04060b;
-            font-size: 0.65rem; font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            margin-top: 1px;
+            margin: 0;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
         }
         @media (max-width: 720px) {
             .share-note-box { margin: 0.7rem 0.85rem 0; padding: 0.75rem 0.9rem; }
@@ -2265,15 +2252,17 @@
 
         /* ── MIDDLE PANEL: candidate detail (compact) ── */
         .share-detail-panel {
-            width: 450px; min-width: 380px; max-width: 500px;
+            flex: 1 1 auto; min-width: 320px;
             display: flex; flex-direction: column; overflow: hidden;
             border-right: 1px solid var(--border);
-            flex-shrink: 0;
         }
-        
-        /* ── RIGHT PANEL: permanent resume viewer ── */
+
+        /* ── RIGHT PANEL: permanent resume viewer ──
+           Fixed at exactly half the screen; the candidate list + detail
+           panel together share the other half. */
         .share-resume-sidebar {
-            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            flex: 0 0 50%; max-width: 50%;
+            display: flex; flex-direction: column; overflow: hidden;
             background: var(--bg-main);
         }
         .share-resume-header {
@@ -3010,6 +2999,20 @@
         .dh-kv-value.green { color: #86efac; }
         .dh-kv-value.purple { color: #c4b5fd; }
 
+        /* Recruiter's internal note — surfaced read-only on the share page */
+        .dh-recruiter-note {
+            display: flex; gap: 8px; align-items: flex-start;
+            margin-top: 0.75rem; padding: 0.6rem 0.75rem;
+            background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.22);
+            border-radius: 8px;
+        }
+        .dh-recruiter-note-icon { flex-shrink: 0; font-size: 0.85rem; margin-top: 0.05rem; }
+        .dh-recruiter-note-label {
+            font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+            color: #fbbf24; margin-bottom: 2px;
+        }
+        .dh-recruiter-note-text { font-size: 0.76rem; color: #dde6f0; line-height: 1.5; }
+
         /* Shortlist + reanalyze row */
         .dh-actions {
             display: flex; align-items: center; gap: 10px;
@@ -3506,6 +3509,187 @@
             transition: transform 0.15s, box-shadow 0.15s;
         }
         .pearly-send:hover{transform:scale(1.1);box-shadow:0 4px 16px rgba(192,132,252,0.5)}
+
+        /* ══════════════════════════════════════════════════════════════
+           "CLARITY" THEME — Candidate Share Page only
+           Scoped entirely under #candidateSharePage (an ID, so it always
+           outranks the plain-class rules above) plus the two reviewer-
+           feedback overlays that live outside that container. Nothing in
+           this block touches the main app — every selector below either
+           starts with #candidateSharePage or targets an ID unique to the
+           recipient-facing share flow.
+           ══════════════════════════════════════════════════════════════ */
+        #candidateSharePage {
+            /* Re-point the app's shared design tokens to a light palette —
+               everything downstream that reads var(--text-primary) etc.
+               (dh-card, score bars, skill tags…) inherits this automatically. */
+            --bg-main: #f7f8fa;
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --text-primary: #1c2430;
+            --text-secondary: #333d4c;
+            --text-muted: #5b6472;
+            --border: #e2e6ec;
+            --border-accent: #c3d4fb;
+            --accent: #2f5fd9;
+            --accent-dark: #274ec2;
+            --accent-glow: rgba(47,95,217,0.14);
+            --amber: #b3720a;
+            --amber-dim: rgba(179,114,10,0.12);
+            --success: #17875a;
+            --success-glow: rgba(23,135,90,0.16);
+            --danger: #c53a30;
+            --shadow: rgba(16,24,40,0.08);
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+        #candidateSharePage .share-top-bar { background: #ffffff; box-shadow: 0 1px 0 var(--border); }
+        #candidateSharePage .share-pg-logo { background: none; -webkit-text-fill-color: initial; color: #1c2430; }
+        #candidateSharePage .share-pg-logo-tagline { color: #8a93a3; }
+        #candidateSharePage .share-pg-tag { background: #fbf1de; border-color: #f0dcae; color: #8a5a06; }
+        #candidateSharePage .share-position-pill { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage > div[style*="font-size:0.68rem"] { color: #8a93a3; } /* "Powered by AI…" corner label */
+
+        #candidateSharePage .share-note-box { background: #eaf0fe; border-color: #c3d4fb; border-left-color: var(--accent); }
+        #candidateSharePage .share-note-intro { color: #5b6472; }
+
+        #candidateSharePage .share-candidates-sidebar,
+        #candidateSharePage .share-detail-panel { background: #ffffff; }
+        #candidateSharePage .share-pg-footer { color: #8a93a3; border-top-color: var(--border); }
+
+        #candidateSharePage .share-cand-item:hover { background: #f3f6fc; border-color: #dbe6fb; }
+        #candidateSharePage .share-cand-item.active { background: #eaf0fe; border-color: var(--accent); box-shadow: none; }
+        #candidateSharePage .share-cand-item-avatar { background: var(--accent); border-color: var(--accent); color: #fff; }
+        #candidateSharePage .share-cand-item-bar { background: #eef1f6; }
+        #candidateSharePage .share-cand-decision-dot.pass { background: var(--danger); box-shadow: none; }
+        /* Proceed status: a calm green left rail instead of the spinning purple glow */
+        #candidateSharePage .share-cand-item.shortlisted-glow {
+            background: #eefaf3 !important; border: 1px solid #b9e6cf !important; box-shadow: none !important;
+        }
+        #candidateSharePage .share-cand-item.shortlisted-glow::before,
+        #candidateSharePage .share-cand-item.shortlisted-glow::after { display: none; content: none; }
+
+        /* ── Chip Hero — share page candidate hero card ──
+           A dedicated component (not a recolor of the internal dh-card
+           dossier) so it actually matches the approved Clarity mockup:
+           status stripe, score chip, CTC/notice as small chips. */
+        #candidateSharePage .chero { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #ffffff; }
+        #candidateSharePage .chero-stripe { height: 3px; background: var(--success); }
+        #candidateSharePage .chero-stripe.dh-mid { background: var(--amber); }
+        #candidateSharePage .chero-stripe.dh-low { background: var(--danger); }
+        #candidateSharePage .chero-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+            padding: 1.1rem 1.25rem 0.9rem;
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #candidateSharePage .chero-name { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; color: #1c2430; }
+        #candidateSharePage .chero-role-line { font-size: 0.78rem; color: #5b6472; margin-top: 0.35rem; line-height: 1.55; }
+        #candidateSharePage .chero-score-chip { flex-shrink: 0; text-align: center; padding: 0.5rem 0.8rem; border-radius: 9px; background: #e8f5ee; }
+        #candidateSharePage .chero-score-chip.dh-mid { background: #fbf1de; }
+        #candidateSharePage .chero-score-chip.dh-low { background: #fcebe9; }
+        #candidateSharePage .chero-score-num { font-variant-numeric: tabular-nums; font-size: 1.35rem; font-weight: 700; color: var(--success); line-height: 1; }
+        #candidateSharePage .chero-score-chip.dh-mid .chero-score-num { color: var(--amber); }
+        #candidateSharePage .chero-score-chip.dh-low .chero-score-num { color: var(--danger); }
+        #candidateSharePage .chero-score-lbl { font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--success); margin-top: 2px; opacity: 0.8; }
+        #candidateSharePage .chero-score-chip.dh-mid .chero-score-lbl { color: var(--amber); }
+        #candidateSharePage .chero-score-chip.dh-low .chero-score-lbl { color: var(--danger); }
+        #candidateSharePage .chero-rec-row {
+            display: flex; align-items: center; gap: 6px; padding: 0 1.25rem 0.9rem;
+            font-size: 0.8rem; font-weight: 600; color: var(--success);
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #candidateSharePage .chero-rec-row.dh-mid { color: var(--amber); }
+        #candidateSharePage .chero-rec-row.dh-low { color: var(--danger); }
+        #candidateSharePage .chero-rec-row::before { content: "✓"; font-size: 0.72rem; }
+        #candidateSharePage .chero-rec-row.dh-low::before { content: "✕"; }
+        #candidateSharePage .chero-chip-row { display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0 1.25rem 1.05rem; }
+        #candidateSharePage .chero-chip { display: flex; flex-direction: column; gap: 1px; padding: 0.4rem 0.7rem; border-radius: 8px; background: #eff2f6; font-size: 0.76rem; }
+        #candidateSharePage .chero-chip-lbl { font-size: 0.58rem; color: #909aa8; text-transform: uppercase; letter-spacing: 0.04em; }
+        #candidateSharePage .chero-chip b { font-variant-numeric: tabular-nums; font-weight: 600; color: #1c2430; }
+        #candidateSharePage .chero-note { margin: 0 1.25rem 1.05rem; padding: 0.8rem 0.95rem; background: #eaf0fe; border: 1px solid #c3d4fb; border-radius: 9px; }
+        #candidateSharePage .chero-note-lbl { font-size: 0.64rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        #candidateSharePage .chero-note-text { font-size: 0.8rem; color: #1c2430; line-height: 1.55; }
+        #candidateSharePage .chero-actions-block { padding: 0 1.25rem 1.2rem; }
+        #candidateSharePage .chero-actions { display: flex; gap: 0.55rem; margin-bottom: 0.65rem; }
+        #candidateSharePage .chero-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.8rem; font-weight: 600; padding: 0.5rem 1.1rem; border-radius: 8px;
+            cursor: pointer; background: #ffffff; border: 1px solid var(--border); color: #333d4c;
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: all 0.15s;
+        }
+        #candidateSharePage .chero-btn:hover { background: #f3f6fc; border-color: #c3d4fb; }
+        #candidateSharePage .chero-btn.proceed.active { background: #e8f5ee; border-color: #7fcda6; color: var(--success); }
+        #candidateSharePage .chero-btn.pass.active { background: #fcebe9; border-color: #e69890; color: var(--danger); }
+        #candidateSharePage .chero-note-input {
+            width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px;
+            padding: 0.55rem 0.75rem; background: #f7f8fa; border: 1px solid var(--border); border-radius: 8px;
+            color: #1c2430; font-size: 0.78rem; line-height: 1.5; outline: none; transition: border-color 0.15s;
+            font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        #candidateSharePage .chero-note-input::placeholder { color: #a7afbc; }
+        #candidateSharePage .chero-note-input:focus { border-color: var(--accent); }
+
+        #candidateSharePage .share-resume-sidebar { background: #eff2f6; }
+        #candidateSharePage .share-resume-header { background: #ffffff; }
+        #candidateSharePage .share-resume-empty { background: #eff2f6; color: #8a93a3; }
+        #candidateSharePage .share-resume-empty h3 { color: #333d4c; }
+
+        #candidateSharePage .share-pg-section-title { color: var(--accent); border-bottom-color: var(--border); }
+        #candidateSharePage .rating-box { background: #eaf0fe; border-left-color: var(--accent); color: #333d4c; }
+        #candidateSharePage .overlay-text,
+        #candidateSharePage .overlay-highlight-item { color: #333d4c; }
+        #candidateSharePage .overlay-highlight-item::before { color: var(--accent); }
+        #candidateSharePage .sbd-label { color: #333d4c; }
+        #candidateSharePage .sbd-bar { background: #eef1f6; }
+        #candidateSharePage .sbd-bar-fill.fill-high { background: var(--success); }
+        #candidateSharePage .sbd-bar-fill.fill-mid  { background: var(--amber); }
+        #candidateSharePage .sbd-bar-fill.fill-low  { background: var(--danger); }
+        #candidateSharePage .sbd-val.score-high { color: var(--success); }
+        #candidateSharePage .sbd-val.score-mid  { color: var(--amber); }
+        #candidateSharePage .sbd-val.score-low  { color: var(--danger); }
+        #candidateSharePage .overlay-skill-tag.have    { background: #e8f5ee; border-color: #bfe4d2; color: var(--success); }
+        #candidateSharePage .overlay-skill-tag.missing { background: #fcebe9; border-color: #f2c3bd; color: var(--danger); }
+        #candidateSharePage .overlay-skill-tag.neutral { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .share-skills-col-label.have { color: var(--success); }
+        #candidateSharePage .share-skills-col-label.missing { color: var(--danger); }
+        #candidateSharePage .comp-card { background: #eaf0fe; border-color: #c3d4fb; }
+        #candidateSharePage .comp-card-name { color: var(--accent); }
+        #candidateSharePage .comp-card-body { color: #333d4c; }
+        #candidateSharePage .comp-card-tag { background: #dbe6fb; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .dc-btn-sm { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .dc-btn-sm:hover { background: #dbe6fb; }
+
+        #candidateSharePage .share-mobile-back { background: #ffffff; color: var(--accent); }
+        #candidateSharePage .share-mobile-back svg { stroke: var(--accent); }
+        #candidateSharePage .share-mobile-resume-btn { background: #eaf0fe; border-color: #c3d4fb; color: var(--accent); }
+        #candidateSharePage .share-mobile-resume-btn:hover { background: #dbe6fb; }
+
+        /* Reviewer-facing floating bar + name modal — same recipient flow, outside #candidateSharePage in the DOM */
+        #shareFeedbackBar {
+            background: #ffffff; border: 1px solid #bfe4d2;
+            box-shadow: 0 4px 24px rgba(16,24,40,0.12);
+        }
+        #shareFeedbackBar .floating-bar-count { color: #1c2430; }
+        #shareFeedbackBar .floating-bar-count strong { color: #17875a; }
+        #shareFeedbackBar .floating-bar-sub { color: #5b6472; }
+        #shareFeedbackBar .floating-bar-divider { background: #e2e6ec; }
+        #shareFeedbackBar .btn-submit-feedback {
+            background: #17875a; color: #ffffff; box-shadow: 0 4px 14px rgba(23,135,90,0.28);
+        }
+        #shareFeedbackBar .btn-submit-feedback:hover { box-shadow: 0 6px 20px rgba(23,135,90,0.36); }
+
+        #shareFeedbackNameOverlay > div {
+            background: #ffffff; border: 1px solid #e2e6ec; box-shadow: 0 20px 60px rgba(16,24,40,0.18);
+        }
+        #shareFeedbackNameOverlay > div > div:first-child { color: #1c2430; }
+        #shareFeedbackNameOverlay > div > div:nth-child(2) { color: #5b6472; }
+        #shareFeedbackNameOverlay input {
+            background: #f7f8fa; border: 1px solid #e2e6ec; color: #1c2430;
+        }
+        #shareFeedbackNameOverlay input:focus { border-color: #2f5fd9; }
+        #shareFeedbackNameOverlay button:last-child { background: #17875a; color: #fff; }
+        #shareFeedbackNameOverlay button:first-child { color: #5b6472; border-color: #e2e6ec; }
     </style>
 
 </head>
@@ -3616,6 +3800,15 @@
                                 <textarea id="driveLinksInput" class="dc-textarea" style="height:70px;resize:none;"
                                     placeholder="Paste file or folder links (one per line)&#10;https://drive.google.com/file/d/…/view&#10;https://drive.google.com/drive/folders/…"></textarea>
                                 <button class="dc-btn-sm pink" onclick="addDriveLinks()" style="height:70px;white-space:nowrap;">＋ Add</button>
+                            </div>
+                            <div class="dc-divider">or import candidates from a Google Sheet</div>
+                            <div class="dc-row">
+                                <input type="text" id="sheetImportInput" class="dc-textarea" style="height:38px;resize:none;"
+                                    placeholder="Paste Google Sheet link or ID">
+                                <button class="dc-btn-sm pink" onclick="importCandidatesFromSheet()" style="height:38px;white-space:nowrap;">⬇ Import</button>
+                            </div>
+                            <div class="dc-upload-sub" style="margin-top:0.35rem;line-height:1.5;">
+                                Columns are matched by name: Name, Email, Mobile, Location, Experience, Current CTC, Expected CTC, Notice Period, Resume (Drive link), AI Score.
                             </div>
                             <div id="resumeDropdownWrapper" class="resume-dropdown-wrapper" style="display:none;margin-top:0.5rem;">
                                 <div class="resume-dropdown-trigger" id="resumeDropTrigger" onclick="toggleResumeDropdown()">
@@ -4201,11 +4394,7 @@
 
     <!-- Instructions note box — how to review this shortlist -->
     <div class="share-note-box">
-        <p class="share-note-intro">To make it easy, here's how I'd suggest going through them:</p>
-        <div class="share-note-steps">
-            <div class="share-note-step"><span class="share-note-num">1</span><span><strong>Open the profiles</strong> — each one has the candidate's background, relevant skills, and a brief summary.</span></div>
-            <div class="share-note-step"><span class="share-note-num">2</span><span><strong>Mark your preference</strong> — shortlist, maybe, or pass. Even a quick note on each helps a lot.</span></div>
-        </div>
+        <p class="share-note-intro">Please review the candidate profiles (including their skills and summary) and mark your feedback - Proceed or Pass, with a quick note for each.</p>
     </div>
 
     <!-- Two-panel layout -->
@@ -4461,7 +4650,7 @@
             emoji: '⚡',
             tag: 'Fast · Free',
             endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-            model: 'llama-3.3-70b-versatile',
+            model: 'openai/gpt-oss-120b',
             defaultDelayMs: 2000,
             rpmHint: '30 RPM free tier',
             budgetHint: '6,000 /min',
@@ -5962,6 +6151,357 @@ Rules:
         if (skipped) showToast(`${skipped} invalid or duplicate link${skipped > 1 ? 's' : ''} skipped`, 'error');
     }
 
+    // ─── Candidate editor: core details + Additional Information (add / edit / delete) ───
+    // Works on a draft copy; nothing touches the candidate until Save. Deleting a field
+    // asks for confirmation first (warning popup).
+    const CAND_CORE_FIELDS = [
+        { key: 'name',          label: 'Name', required: true },
+        { key: 'email',         label: 'Email' },
+        { key: 'phone',         label: 'Mobile' },
+        { key: 'location',      label: 'Location' },
+        { key: 'experience',    label: 'Experience', hint: 'e.g. 2 yrs 6 mo' },
+        { key: 'current_ctc',   label: 'Current CTC' },
+        { key: 'expected_ctc',  label: 'Expected CTC' },
+        { key: 'notice_period', label: 'Notice period' },
+        { key: 'linkedin_url',  label: 'LinkedIn' },
+        { key: 'drive_link',    label: 'Resume (Google Drive link)' }
+    ];
+    let _editKey = null;   // candKey of the candidate being edited
+    let _editDraft = null; // { core: {...}, extra: [{label, value}] }
+    const _EDIT_INP = 'width:100%;box-sizing:border-box;padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg-main);color:inherit;font-size:0.82rem;font-family:inherit;';
+    const _EDIT_LBL = 'display:block;font-size:0.68rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px;';
+
+    function _editOverlay(id, z) {
+        let el = document.getElementById(id);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = id;
+            el.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:${z};padding:16px;`;
+            document.body.appendChild(el);
+        }
+        return el;
+    }
+
+    function openCandidateEditor(idx) {
+        const r = analysisResults[idx];
+        if (!r) return;
+        _editKey = candKey(r);
+        _editDraft = {
+            core: {
+                name: r.name || '', email: r.email || '', phone: r.phone || '', location: r.location || '',
+                experience: r.experience_years ? `${r.experience_years} yrs` : '',
+                current_ctc: r.current_ctc || '', expected_ctc: r.expected_ctc || '',
+                notice_period: r.notice_period || '', linkedin_url: r.linkedin_url || '', drive_link: r.drive_link || ''
+            },
+            extra: (r.additional_info || []).map(f => ({ label: f.label, value: f.value }))
+        };
+        _renderCandidateEditor();
+    }
+
+    function _renderCandidateEditor() {
+        const el = _editOverlay('candEditBackdrop', 9000);
+        const core = CAND_CORE_FIELDS.map(cf => `
+            <label style="display:block;margin-bottom:0.7rem;">
+                <span style="${_EDIT_LBL}">${cf.label}${cf.required ? ' *' : ''}${cf.hint ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400;">(${cf.hint})</span>` : ''}</span>
+                <input value="${escapeHtml(_editDraft.core[cf.key])}" oninput="_editDraft.core['${cf.key}']=this.value" style="${_EDIT_INP}">
+            </label>`).join('');
+        const extra = _editDraft.extra.map((x, i) => `
+            <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">
+                <input placeholder="Field name" value="${escapeHtml(x.label)}" oninput="_editDraft.extra[${i}].label=this.value" style="${_EDIT_INP}flex:0 0 36%;">
+                <input placeholder="Value" value="${escapeHtml(x.value)}" oninput="_editDraft.extra[${i}].value=this.value" style="${_EDIT_INP}flex:1;">
+                <button title="Delete this field" onclick="_askDeleteExtra(${i})" style="flex-shrink:0;padding:6px 9px;border-radius:7px;cursor:pointer;background:rgba(255,92,92,0.1);border:1px solid rgba(255,92,92,0.4);color:#ff5c5c;">🗑</button>
+            </div>`).join('') || '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;">No additional fields yet.</div>';
+
+        el.innerHTML = `
+        <div style="background:var(--bg-panel,#141a26);color:inherit;border:1px solid var(--border);border-radius:12px;width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-weight:700;">✏️ Edit candidate details</div>
+                <button onclick="closeCandidateEditor()" style="background:none;border:none;color:inherit;font-size:1.1rem;cursor:pointer;">✕</button>
+            </div>
+            <div style="padding:16px 18px;overflow-y:auto;">
+                <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin-bottom:0.6rem;">Core details</div>
+                ${core}
+                <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin:1rem 0 0.6rem;">Additional information</div>
+                ${extra}
+                <button onclick="_editDraft.extra.push({label:'',value:''}); _renderCandidateEditor();" style="margin-top:4px;font-size:0.76rem;padding:5px 12px;border-radius:7px;cursor:pointer;background:rgba(0,220,255,0.1);color:var(--accent);border:1px solid var(--border-accent);font-weight:600;">＋ Add field</button>
+            </div>
+            <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+                <button onclick="closeCandidateEditor()" style="padding:7px 16px;border-radius:8px;cursor:pointer;background:none;border:1px solid var(--border);color:inherit;font-weight:600;">Cancel</button>
+                <button onclick="_saveCandidateEditor()" style="padding:7px 16px;border-radius:8px;cursor:pointer;background:var(--accent);border:none;color:#06121f;font-weight:700;">💾 Save changes</button>
+            </div>
+        </div>`;
+        el.style.display = 'flex';
+    }
+
+    function closeCandidateEditor() {
+        const el = document.getElementById('candEditBackdrop');
+        if (el) el.style.display = 'none';
+        _editKey = null;
+        _editDraft = null;
+    }
+
+    // Warning popup — used before any delete
+    function _showWarnPopup({ title, message, confirmText, onConfirm }) {
+        const el = _editOverlay('warnPopupBackdrop', 9500);
+        el.innerHTML = `
+        <div style="background:var(--bg-panel,#141a26);color:inherit;border:1px solid rgba(255,92,92,0.45);border-radius:12px;width:100%;max-width:400px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+            <div style="font-size:1rem;font-weight:700;color:#ff5c5c;margin-bottom:8px;">${escapeHtml(title)}</div>
+            <div style="font-size:0.84rem;line-height:1.5;color:var(--text-muted);margin-bottom:18px;">${escapeHtml(message)}</div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+                <button id="warnPopupCancel" style="padding:7px 16px;border-radius:8px;cursor:pointer;background:none;border:1px solid var(--border);color:inherit;font-weight:600;">Cancel</button>
+                <button id="warnPopupConfirm" style="padding:7px 16px;border-radius:8px;cursor:pointer;background:#ff5c5c;border:none;color:#fff;font-weight:700;">${escapeHtml(confirmText)}</button>
+            </div>
+        </div>`;
+        el.style.display = 'flex';
+        document.getElementById('warnPopupCancel').onclick = () => { el.style.display = 'none'; };
+        document.getElementById('warnPopupConfirm').onclick = () => { el.style.display = 'none'; onConfirm(); };
+    }
+
+    function _askDeleteExtra(i) {
+        const f = _editDraft.extra[i];
+        if (!f) return;
+        const what = f.label ? `"${f.label}"` : 'this field';
+        _showWarnPopup({
+            title: '⚠️ Delete this field?',
+            message: `${what}${f.value ? ` (${f.value})` : ''} will be removed from this candidate when you save. Click Cancel in the editor to keep it.`,
+            confirmText: 'Yes, delete',
+            onConfirm: () => { _editDraft.extra.splice(i, 1); _renderCandidateEditor(); }
+        });
+    }
+
+    function _saveCandidateEditor() {
+        const r = analysisResults.find(x => candKey(x) === _editKey);
+        if (!r) { closeCandidateEditor(); return; }
+        const c = _editDraft.core;
+
+        const name = c.name.trim();
+        if (!name) { showToast('Name is required', 'error'); return; }
+        const email = c.email.trim();
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) { showToast('Enter a valid email address', 'error'); return; }
+        let drive = c.drive_link.trim();
+        if (drive) {
+            const id = extractDriveId(drive);
+            if (!id) { showToast('Resume must be a Google Drive link', 'error'); return; }
+            drive = `https://drive.google.com/file/d/${id}/view`;
+        }
+
+        // Keep the sheet's CTC/notice data from overwriting values the recruiter typed in
+        if (c.current_ctc.trim() !== (r.current_ctc || '') || c.expected_ctc.trim() !== (r.expected_ctc || '') || c.notice_period.trim() !== (r.notice_period || '')) {
+            r._ctcManuallyEdited = true;
+        }
+
+        r.name = name;
+        r.email = email;
+        r.phone = c.phone.trim();
+        r.location = c.location.trim();
+        r.experience_years = _parseExpYears(c.experience);
+        r.current_ctc = c.current_ctc.trim();
+        r.expected_ctc = c.expected_ctc.trim();
+        r.notice_period = c.notice_period.trim();
+        r.linkedin_url = c.linkedin_url.trim();
+        r.drive_link = drive;
+        r.additional_info = _editDraft.extra
+            .map(f => ({ label: (f.label || '').trim(), value: (f.value || '').trim() }))
+            .filter(f => f.label && f.value);
+        r._edited = true; // a later sheet re-import must not overwrite the recruiter's changes
+
+        closeCandidateEditor();
+        renderMainPanels(); // refreshes the sidebar and the open detail panel
+        showToast(`Saved details for ${name}`, 'success');
+    }
+
+    // ─── Import candidates from a Google Sheet ───
+    // Each row becomes a candidate in the results view, so the resume viewer, detail panel,
+    // shortlist and share/push all work on them. Columns are matched by header name (case-
+    // insensitive), so a sheet doesn't have to follow one exact column order.
+    const SHEET_FIELD_ALIASES = {
+        name:          ['name', 'candidate name', 'full name', 'candidate'],
+        email:         ['email', 'email id', 'e-mail', 'email address'],
+        phone:         ['mobile', 'phone', 'phone number', 'mobile number', 'contact', 'contact number'],
+        location:      ['location', 'current location', 'city', 'preferred location'],
+        experience:    ['experience', 'total experience', 'years of experience', 'exp'],
+        current_ctc:   ['current ctc', 'ctc current', 'current salary'],
+        expected_ctc:  ['expected ctc', 'expected salary'],
+        notice_period: ['notice period', 'notice'],
+        resume:        ['resume', 'resume link', 'cv', 'resume url', 'drive link'],
+        linkedin:      ['linkedin', 'linkedin url', 'linkedin profile'],
+        summary:       ['resume text', 'summary', 'profile summary'],
+        ai_score:      ['ai score', 'match score', 'score'],
+        reason:        ['score reasons', 'rating reason', 'reason']
+    };
+
+    // Which sheet column holds each field (first matching alias wins)
+    function _mapSheetHeaders(headers) {
+        const norm = h => String(h || '').trim().toLowerCase();
+        const idx = {};
+        for (const [field, aliases] of Object.entries(SHEET_FIELD_ALIASES)) {
+            for (const alias of aliases) {
+                const c = headers.findIndex(h => norm(h) === alias);
+                if (c !== -1) { idx[field] = c; break; }
+            }
+        }
+        return idx;
+    }
+
+    // "2 yrs 6 mo", "3.5 years", "18 months" or a bare number -> years
+    function _parseExpYears(v) {
+        const s = String(v || '').toLowerCase().trim();
+        if (!s) return 0;
+        const y = s.match(/(\d+(?:\.\d+)?)\s*(?:yrs?|years?|y)\b/);
+        const m = s.match(/(\d+)\s*(?:mos?|months?|m)\b/);
+        if (y || m) return (y ? parseFloat(y[1]) : 0) + (m ? parseInt(m[1], 10) / 12 : 0);
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    function _sheetRowToCandidate(row, idx, rowNo, headers) {
+        const get  = f => idx[f] === undefined ? '' : String(row[idx[f]] ?? '').trim();
+        const name = get('name'), email = get('email'), phone = get('phone');
+        if (!name && !email && !phone) return null; // blank row
+
+        // Every column of the sheet, as it appears (links included), for "Additional Information"
+        const additional_info = (headers || [])
+            .map((h, c) => ({ label: String(h ?? '').trim(), value: String(row[c] ?? '').trim() }))
+            .filter(f => f.label && f.value);
+
+        const resumeRaw = get('resume');
+        const driveId   = resumeRaw ? extractDriveId(resumeRaw) : null;
+        const aiScore   = parseFloat(get('ai_score'));
+        const scored    = Number.isFinite(aiScore);
+        const summary   = get('summary');
+
+        return {
+            // filename is the unique key the results view uses (candKey) — include the row number
+            filename: `${name || email || phone} · row ${rowNo}`,
+            file_type: 'sheet',
+            name: name || email || phone,
+            email, phone,
+            location:  get('location'),
+            experience_years: _parseExpYears(get('experience')),
+            internship_months: 0,
+            roles: [],
+            current_ctc:   get('current_ctc'),
+            expected_ctc:  get('expected_ctc'),
+            notice_period: get('notice_period'),
+            linkedin_url:  get('linkedin'),
+            drive_link:    driveId ? `https://drive.google.com/file/d/${driveId}/view` : '',
+            match_score:   scored ? Math.round(aiScore) : 0,
+            _unscored:     !scored, // shown as "—" until the candidate is analysed (↺ Re-analyse)
+            rating_reason: get('reason'),
+            summary,
+            resumeText:    summary,
+            additional_info,
+            key_skills: [], skills_present: [], skills_missing: [],
+            highlights: [], extra_requirements_feedback: [],
+            _imported: true
+        };
+    }
+
+    // Score text for display: "—" for candidates that have not been scored yet
+    function scoreLabel(r) {
+        return r && r._unscored ? '—' : `${r.match_score}%`;
+    }
+
+    // WhatsApp needs digits with a country code; a bare 10-digit Indian mobile gets +91
+    function _waNumber(phone) {
+        const d = String(phone || '').replace(/\D/g, '');
+        return d.length === 10 ? '91' + d : d;
+    }
+
+    // "Additional Information": every column of an imported sheet row, as it appears in the
+    // sheet (links included, kept clickable) so the details can be shared with the hiring team.
+    // variant: 'detail' (recruiter panel) or 'share' (candidate share page)
+    function _renderAdditionalInfo(r, variant) {
+        const info = Array.isArray(r?.additional_info) ? r.additional_info : [];
+        if (!r || (variant === 'share' && !info.length)) return '';
+        const rows = info.map(f => {
+            const v = String(f.value);
+            const val = /^https?:\/\//i.test(v)
+                ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all;">${escapeHtml(v)}</a>`
+                : escapeHtml(v);
+            return `<div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid rgba(128,128,128,0.15);font-size:0.8rem;line-height:1.5;">
+                <span style="flex:0 0 38%;color:var(--text-muted);">${escapeHtml(f.label)}</span>
+                <span style="flex:1;min-width:0;word-break:break-word;">${val}</span>
+            </div>`;
+        }).join('') || '<div style="font-size:0.78rem;color:var(--text-muted);padding:6px 0;">No additional information yet.</div>';
+        if (variant === 'share') {
+            return `<div class="share-pg-section"><div class="share-pg-section-title">📋 Additional Information</div>${rows}</div>`;
+        }
+        const i = analysisResults.indexOf(r);
+        return `<div class="overlay-section">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div class="overlay-section-title" style="margin-bottom:0;">📋 Additional Information</div>
+                <button onclick="openCandidateEditor(${i})" style="font-size:0.72rem;padding:4px 12px;background:rgba(0,220,255,0.1);color:var(--accent);border:1px solid var(--border-accent);border-radius:6px;cursor:pointer;font-weight:600;">✏️ Edit details</button>
+            </div>
+            <div style="margin-top:0.5rem;">${rows}</div>
+        </div>`;
+    }
+
+    async function importCandidatesFromSheet() {
+        const input = document.getElementById('sheetImportInput');
+        const id    = _extractSheetId(input.value.trim());
+        if (!id) { showToast('Paste a Google Sheet link or ID first', 'error'); return; }
+        if (!appsScriptUrl) { showToast('Add your Apps Script URL in API Config first', 'error'); return; }
+
+        const btn = input.nextElementSibling;
+        if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+        try {
+            const res  = await fetch(appsScriptUrl + '?action=getSheetSnapshot&spreadsheetId=' + encodeURIComponent(id));
+            const json = await res.json();
+            if (!json.ok) throw new Error(json.error || 'Could not read the sheet');
+
+            // Pick the tab that matches the most candidate columns (so an "Emails" tab doesn't win)
+            let best = null, bestIdx = null, bestCount = 0;
+            for (const sh of json.sheets || []) {
+                const m = _mapSheetHeaders(sh.headers || []);
+                const count = Object.keys(m).length;
+                if (count > bestCount && (m.name !== undefined || m.email !== undefined)) {
+                    best = sh; bestIdx = m; bestCount = count;
+                }
+            }
+            if (!best) throw new Error('No tab with candidate columns found. Expected headers such as Name, Email, Mobile, Current CTC, Resume.');
+
+            const emailIdx = new Map(); // lowercase email -> position in analysisResults
+            analysisResults.forEach((r, i) => { const e = (r.email || '').toLowerCase(); if (e) emailIdx.set(e, i); });
+            let added = 0, refreshed = 0, skipped = 0;
+            best.rows.forEach((row, i) => {
+                const cand = _sheetRowToCandidate(row, bestIdx, i + 2, best.headers); // +2 = sheet row number
+                if (!cand) return;
+                _enrichCandidate(cand);
+                const em = (cand.email || '').toLowerCase();
+                if (em && emailIdx.has(em)) {
+                    // Loaded by an earlier import: refresh it in place (picks up new columns).
+                    // Candidates the recruiter edited or added by hand are left alone.
+                    const k = emailIdx.get(em);
+                    if (analysisResults[k]._imported && !analysisResults[k]._edited) { analysisResults[k] = cand; refreshed++; }
+                    else skipped++;
+                    return;
+                }
+                if (em) emailIdx.set(em, analysisResults.length);
+                analysisResults.push(cand);
+                added++;
+            });
+
+            if (!added && !refreshed) { showToast(`No new candidates found in "${best.name}"${skipped ? ` (${skipped} already loaded)` : ''}`, 'error'); return; }
+
+            sortAnalysisResults();
+            const badge = document.getElementById('resultBadge');
+            badge.style.display = 'inline-flex';
+            badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
+            renderMainPanels();
+            switchPage('results');
+            input.value = '';
+            const parts = [`Imported ${added} new`];
+            if (refreshed) parts.push(`refreshed ${refreshed}`);
+            if (skipped) parts.push(`${skipped} kept (edited or hand-added)`);
+            showToast(`✅ ${parts.join(' · ')} from "${best.name}"`, 'success');
+        } catch (err) {
+            showToast('Import failed: ' + err.message, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '⬇ Import'; }
+        }
+    }
+
     async function fetchDrivePdf(driveEntry) {
         if (!appsScriptUrl) {
             throw new Error('Apps Script URL not configured. Open API Config in the sidebar and paste your Web App URL.');
@@ -6296,18 +6836,19 @@ Rules:
         let lastError;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                return await fn();
+                return await fn(attempt);
             } catch (err) {
                 lastError = err;
 
                 // Never retry API limit errors — caller handles stop/resume
                 if (err.message?.startsWith('RATE_LIMIT:')) throw err;
 
-                // If transient rate limit, use exponential backoff
-                if (err.message.includes('Rate limit') || err.message.includes('429')) {
-                    const backoffMs = Math.min(2000 * Math.pow(2, attempt), 15000); // 2s, 4s, 8s, max 15s
-                    console.log(`🔄 Rate limit hit! Retry ${attempt}/${maxRetries} after ${(backoffMs/1000).toFixed(1)}s`);
-                    await sleepInterruptible(backoffMs);
+                // Malformed/empty JSON is usually a one-off flaky generation (e.g. a
+                // reasoning model getting truncated mid-answer) — worth a quick retry
+                // before giving up and dropping the candidate into "pending".
+                if (err.message.includes('Malformed JSON') || err.message.includes('empty response')) {
+                    console.log(`🔄 Bad AI output, retry ${attempt}/${maxRetries}`);
+                    await sleepInterruptible(800);
                     continue;
                 }
                 
@@ -6328,6 +6869,7 @@ Rules:
         if (!keys.length) throw new Error(`No ${cfg.label} API key configured`);
 
         const triedIndexes = new Set();
+        let waitedForRetryAfter = false; // honour a short Retry-After once per call, not per key
         while (triedIndexes.size < keys.length) {
             const keyIndex = cfg.getIndex();
             if (triedIndexes.has(keyIndex)) break;
@@ -6347,7 +6889,13 @@ Rules:
                         model: cfg.model,
                         messages,
                         temperature,
-                        max_tokens: maxTokens
+                        max_tokens: maxTokens,
+                        // gpt-oss reasoning models spend part of max_tokens on a hidden
+                        // "thinking" pass before writing the answer — left at Groq's
+                        // default ('medium') that pass can eat the whole budget and
+                        // truncate the JSON answer mid-object. 'low' keeps most of the
+                        // budget for the actual output. Other models ignore this field.
+                        ...(cfg.model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {})
                     })
                 });
             } catch (err) {
@@ -6364,8 +6912,8 @@ Rules:
                 }
                 if (res.status === 429) {
                     const retryAfterSec = parseInt(res.headers.get('retry-after') || '0', 10);
-                    if (retryAfterSec > 0 && retryAfterSec <= 65 && !triedIndexes.has(String(keyIndex) + '_waited')) {
-                        triedIndexes.add(String(keyIndex) + '_waited');
+                    if (retryAfterSec > 0 && retryAfterSec <= 65 && !waitedForRetryAfter) {
+                        waitedForRetryAfter = true;
                         _rateLimitUntil[provider] = Date.now() + (retryAfterSec * 1000) + 500;
                         updateTokenUsageInfo();
                         showToast(`${cfg.label} key ${keyIndex+1} rate limited — waiting ${retryAfterSec}s…`, 'warning');
@@ -6396,7 +6944,7 @@ Rules:
         throw new Error(`RATE_LIMIT:${cfg.label} keys exhausted — add a fresh key and resume`);
     }
 
-    async function analyzeWithProvider(resumeText, jd, filters) {
+    async function analyzeWithProvider(resumeText, jd, filters, attempt = 1) {
         const cfg = providerCfg(selectedProvider);
         if (!cfg.getKeys().length) throw new Error(`No ${cfg.label} API key configured`);
         if (!resumeText || resumeText.trim().length < 30) throw new Error('Could not extract text from this file');
@@ -6409,25 +6957,53 @@ Rules:
         const controller = new AbortController();
         _activeApiAbortController = controller;
 
+        // At temperature 0 a truncated response tends to truncate the same way on
+        // retry — so a bare retry at the same budget just fails again. Escalate the
+        // token budget each attempt instead: 2600 → 3800 → 5000.
         const raw = await callAIProvider([{ role: 'user', content: prompt }], {
-            maxTokens: 1500,
+            maxTokens: 2600 + (attempt - 1) * 1200,
             temperature: 0,
             signal: controller.signal
         });
 
         try {
             // ─── Parse JSON from either provider ───
+            // Only the parse itself maps to "Malformed JSON" (which is retried). Errors
+            // from the code below keep their own message so they aren't mislabeled.
             const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
             const match = cleaned.match(/\{[\s\S]*\}/);
-            if (!match) throw new Error('Could not find JSON in AI response');
-            const parsed = JSON.parse(match[0]);
+            let parsed;
+            try {
+                if (!match) throw new Error('no JSON object');
+                parsed = JSON.parse(match[0]);
+            } catch {
+                throw new Error('Malformed JSON from AI response');
+            }
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                throw new Error('Malformed JSON from AI response');
+            }
+
+            // ─── Normalise fields so one missing/odd value can't crash rendering or sorting ───
+            const toList = (v) => Array.isArray(v) ? v.filter(x => x != null && x !== '').map(x => String(x)) : [];
+            parsed.key_skills                 = toList(parsed.key_skills);
+            parsed.skills_present             = toList(parsed.skills_present);
+            parsed.skills_missing             = toList(parsed.skills_missing);
+            parsed.highlights                 = toList(parsed.highlights);
+            parsed.extra_requirements_feedback = toList(parsed.extra_requirements_feedback);
+            parsed.roles = Array.isArray(parsed.roles) ? parsed.roles.filter(ro => ro && typeof ro === 'object') : [];
+            for (const f of ['name', 'location', 'rating_reason', 'summary']) parsed[f] = parsed[f] == null ? '' : String(parsed[f]);
+            const numOr0 = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+            parsed.match_score = Math.round(numOr0(parsed.match_score));
+            parsed.experience_years  = numOr0(parsed.experience_years);
+            parsed.internship_months = numOr0(parsed.internship_months);
 
             // ─── Compute experience from roles in JS (AI is unreliable at date math) ───
-            if (Array.isArray(parsed.roles) && parsed.roles.length > 0) {
+            if (parsed.roles.length > 0) {
                 const now = new Date();
-                const parseRoleDate = (str) => {
-                    if (!str) return null;
-                    const s = str.trim().toLowerCase();
+                const parseRoleDate = (raw) => {
+                    // AI sometimes emits unquoted numbers (e.g. 2023) — coerce before string ops
+                    if (raw == null || raw === '') return null;
+                    const s = String(raw).trim().toLowerCase();
                     if (!s || s === 'present' || s === 'current' || s === 'till date' || s === 'ongoing') {
                         return { y: now.getFullYear(), m: now.getMonth() + 1 };
                     }
@@ -6456,7 +7032,7 @@ Rules:
                     if (!st || !en) continue;
                     const dur = (en.y - st.y) * 12 + (en.m - st.m);
                     if (dur <= 0) continue;
-                    if ((role.type || '').toLowerCase() === 'internship') {
+                    if (String(role.type || '').toLowerCase() === 'internship') {
                         internMonths += dur;
                     } else {
                         profMonths += dur;
@@ -6480,8 +7056,6 @@ Rules:
             }
 
             return parsed;
-        } catch {
-            throw new Error('Malformed JSON from AI response');
         } finally {
             if (controller && _activeApiAbortController === controller) {
                 _activeApiAbortController = null;
@@ -6584,7 +7158,7 @@ Rules:
                 }
             }
             if (!text || text.trim().length < 30) throw new Error('Could not extract text from resume');
-            const newResult = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
+            const newResult = await retryWithBackoff(async (attempt) => analyzeWithProvider(text, currentJD, filters, attempt));
             newResult.filename       = r.filename;
             newResult.file_type      = r.file_type;
             newResult.drive_link     = r.drive_link;
@@ -6593,9 +7167,7 @@ Rules:
             if (!newResult.name) newResult.name = (r.name || r.filename || '').replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
             _enrichCandidate(newResult);
             analysisResults[rawIdx] = newResult;
-            analysisResults.sort((a, b) => b.match_score - a.match_score);
-            const newIdx = analysisResults.indexOf(newResult);
-            if (_selectedMainIdx === rawIdx) _selectedMainIdx = newIdx;
+            sortAnalysisResults(); // keeps the open detail panel on the same candidate
             if (document.getElementById('resumeOverlay').classList.contains('open')) closeOverlay();
             renderMainPanels();
             if (_selectedMainIdx !== null) renderMainDetail(_selectedMainIdx);
@@ -6814,7 +7386,7 @@ Rules:
                 _pendingUploadedFiles = [];
                 _pendingDriveFiles    = [];
                 renderPendingProfilesPanel();
-                analysisResults.sort((a, b) => b.match_score - a.match_score);
+                sortAnalysisResults();
                 renderMainPanels();
                 badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
                 if (analysisResults.length) badge.textContent = `${analysisResults.length} candidate${analysisResults.length !== 1 ? 's' : ''}`;
@@ -6856,7 +7428,7 @@ Rules:
                 }
                 if (!text || text.trim().length < 30) throw new Error('File appears to be empty or unreadable');
 
-                const result = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
+                const result = await retryWithBackoff(async (attempt) => analyzeWithProvider(text, currentJD, filters, attempt));
                 result.filename  = file.name;
                 result.file_type = ext;
                 if (!result.name) result.name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
@@ -6866,7 +7438,7 @@ Rules:
 
                 fileStatuses[file.name] = 'done';
                 analysisResults.push(result);
-                analysisResults.sort((a, b) => b.match_score - a.match_score);
+                sortAnalysisResults();
                 renderMainPanels();
                 badge.style.display = 'inline-flex';
                 badge.textContent   = `${analysisResults.length}`;
@@ -6917,7 +7489,7 @@ Rules:
                 const text = await extractTextFromPDF(pdfFile);
                 if (!text || text.trim().length < 30) throw new Error('Could not extract text — ensure the file is a readable PDF');
 
-                const result = await retryWithBackoff(async () => analyzeWithProvider(text, currentJD, filters));
+                const result = await retryWithBackoff(async (attempt) => analyzeWithProvider(text, currentJD, filters, attempt));
                 result.filename        = driveEntry.name;
                 result.drive_link      = driveEntry.driveLink;
                 result.resume_pdf_b64  = pdfBase64;
@@ -6927,7 +7499,7 @@ Rules:
 
                 fileStatuses[driveEntry.name] = 'done';
                 analysisResults.push(result);
-                analysisResults.sort((a, b) => b.match_score - a.match_score);
+                sortAnalysisResults();
                 renderMainPanels();
                 badge.style.display = 'inline-flex';
                 badge.textContent   = `${analysisResults.length}`;
@@ -7073,7 +7645,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
     function _renderCompanyResearchHTML(companies, idx, context) {
         const cards = companies.map(c => `
             <div class="comp-card">
-                <div class="comp-card-name">🏢 ${c.name}</div>
+                <div class="comp-card-name">🏢 ${escapeHtml(c.name)}</div>
                 <div class="comp-card-body">${c.what_they_do || ''}</div>
                 <div class="comp-card-row">
                     ${c.industry ? `<span class="comp-card-tag">🏷 ${c.industry}</span>` : ''}
@@ -7184,20 +7756,20 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         // Sidebar candidate list — indices stay stable; non-matches are hidden, not removed
         listEl.innerHTML = analysisResults.map((r, i) => {
             const rankLabel = i === 0 ? '01' : i === 1 ? '02' : i === 2 ? '03' : String(i+1).padStart(2,'0');
-            const isShortlisted = _selectedCards.has(i);
+            const isShortlisted = isCandSelected(r);
             const sColor = r.match_score >= 75 ? '#00e5a0' : r.match_score >= 50 ? '#f5a623' : '#ff5c5c';
             const fCls   = fillClass(r.match_score);
             const hidden = query && !matchFlags[i];
-            const displayName = query ? _highlightSearchTerms(r.name || r.filename || '—', query) : (r.name || r.filename || '—');
+            const displayName = query ? _highlightSearchTerms(escapeHtml(r.name || r.filename || '—'), query) : escapeHtml(r.name || r.filename || '—');
             return `
             <div class="main-cand-item${_selectedMainIdx === i ? ' active' : ''}${isShortlisted ? ' shortlisted-glow' : ''}" onclick="selectMainCandidate(${i})" id="main-cand-item-${i}" ${hidden ? 'style="display:none;"' : ''}>
                 <div class="main-cand-rank-col">${rankLabel}</div>
                 <div class="main-cand-info">
                     <div class="main-cand-name">${displayName}</div>
-                    <div class="main-cand-meta">${r.location || '—'} · ${_fmtExp(r.experience_years)}</div>
+                    <div class="main-cand-meta">${escapeHtml(r.location || '—')} · ${_fmtExp(r.experience_years)}</div>
                 </div>
                 <div class="main-cand-score-col">
-                    <div class="main-cand-score" style="color:${sColor}">${r.match_score}%</div>
+                    <div class="main-cand-score" style="color:${sColor}">${scoreLabel(r)}</div>
                     <div class="main-cand-bar"><div class="main-cand-bar-fill ${fCls}" style="width:${r.match_score}%"></div></div>
                 </div>
                 <div class="main-cand-shortlist" onclick="event.stopPropagation()" title="Shortlist">
@@ -7244,23 +7816,23 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <div class="dh-term-label">CANDIDATE_PROFILE.dat</div>
                 <div class="dh-term-top">
                     <div class="dh-name-area">
-                        <div class="dh-name">${r.name}</div>
+                        <div class="dh-name">${escapeHtml(r.name)}</div>
                     </div>
                     <div class="dh-score-block">
-                        <div class="dh-score-num ${_scoreCls}">${r.match_score}%</div>
+                        <div class="dh-score-num ${_scoreCls}">${scoreLabel(r)}</div>
                     </div>
                 </div>
                 <div class="dh-rec-bar ${_scoreCls}"><span class="dh-rec-dot"></span>${_recTxt}</div>
                 <div class="dh-kv-list">
-                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-key">loc</span><span class="dh-kv-sep">›</span><span class="dh-kv-value">${r.location}</span></div>` : ''}
+                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-key">loc</span><span class="dh-kv-sep">›</span><span class="dh-kv-value">${escapeHtml(r.location)}</span></div>` : ''}
                     ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-key">exp</span><span class="dh-kv-sep">›</span><span class="dh-kv-value" style="color:var(--accent);">${_fmtExp(r.experience_years)}</span></div>` : ''}
-                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-key">email</span><span class="dh-kv-sep">›</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-key">phone</span><span class="dh-kv-sep">›</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
+                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-key">email</span><span class="dh-kv-sep">›</span><span class="dh-kv-value blue"><a href="mailto:${escapeHtml(r.email)}" style="color:inherit;">${escapeHtml(r.email)}</a></span></div>` : ''}
+                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-key">phone</span><span class="dh-kv-sep">›</span><span class="dh-kv-value blue"><a href="tel:${escapeHtml(r.phone)}" style="color:inherit;">${escapeHtml(r.phone)}</a> · <a href="https://wa.me/${_waNumber(r.phone)}" target="_blank" rel="noopener" style="color:#25D366;">WhatsApp</a></span></div>` : ''}
                     ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-key">intern</span><span class="dh-kv-sep">›</span><span class="dh-kv-value purple">${r.internship_months} mo internship</span></div>` : ''}
                 </div>
                 <div class="dh-actions">
                     <label class="dh-shortlist-wrap" onclick="event.stopPropagation()" title="Add to shortlist">
-                        <input type="checkbox" id="main-shortlist-cb-${idx}" ${_selectedCards.has(idx) ? 'checked' : ''} onchange="toggleShareBtn(${idx}, this.checked); syncShortlistCheckboxes(${idx}, this.checked, 'detail')">
+                        <input type="checkbox" id="main-shortlist-cb-${idx}" ${isCandSelected(r) ? 'checked' : ''} onchange="toggleShareBtn(${idx}, this.checked); syncShortlistCheckboxes(${idx}, this.checked, 'detail')">
                         <span>Add to shortlist</span>
                     </label>
                     <button class="dh-reanalyze-btn" id="reanalyze-btn-${idx}" onclick="reAnalyzeCandidate(${idx})" title="Re-analyse this candidate with AI">↺ Re-analyse</button>
@@ -7323,13 +7895,15 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 ${r.summary ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title">👤 Profile Summary</div>
-                    <div class="overlay-text">${r.summary}</div>
+                    <div class="overlay-text">${escapeHtml(r.summary)}</div>
                 </div>` : ''}
+
+                ${_renderAdditionalInfo(r, 'detail')}
 
                 ${r.rating_reason ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title">🎯 Score Reasoning</div>
-                    <div class="rating-box">${r.rating_reason}</div>
+                    <div class="rating-box">${escapeHtml(r.rating_reason)}</div>
                 </div>` : ''}
 
                 ${(have.length || missing.length) ? `
@@ -7338,11 +7912,11 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     <div class="share-skills-cols">
                         ${have.length ? `<div>
                             <div class="share-skills-col-label have">✓ Present</div>
-                            <div class="share-skill-tags">${have.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div>
+                            <div class="share-skill-tags">${have.map(s => `<span class="overlay-skill-tag have">✓ ${escapeHtml(s)}</span>`).join('')}</div>
                         </div>` : ''}
                         ${missing.length ? `<div>
                             <div class="share-skills-col-label missing">✗ Missing</div>
-                            <div class="share-skill-tags">${missing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div>
+                            <div class="share-skill-tags">${missing.map(s => `<span class="overlay-skill-tag missing">✗ ${escapeHtml(s)}</span>`).join('')}</div>
                         </div>` : ''}
                     </div>
                 </div>` : ''}
@@ -7350,7 +7924,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 ${r.highlights?.length ? `
                 <div class="overlay-section">
                     <div class="overlay-section-title">⭐ Key Highlights</div>
-                    ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                    ${r.highlights.map(h => `<div class="overlay-highlight-item">${escapeHtml(h)}</div>`).join('')}
                 </div>` : ''}
 
                 ${(function() {
@@ -7400,7 +7974,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <div class="overlay-section">
                     <div class="overlay-section-title">📁 Source File</div>
                     <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.75rem;">
-                        <span class="filename-badge">📄 ${r.filename}</span>
+                        <span class="filename-badge">📄 ${escapeHtml(r.filename)}</span>
                     </div>
                     <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:0.4rem;">Google Drive Link</div>
                     <div style="display:flex;gap:0.5rem;">
@@ -7409,7 +7983,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                             value="${r.drive_link || ''}"
                             style="flex:1;padding:0.45rem 0.75rem;background:rgba(4,8,20,0.8);border:1px solid var(--border);border-radius:7px;color:var(--text-primary);font-size:0.78rem;font-family:'Source Sans 3',sans-serif;"
                             oninput="saveDriveLink(${idx}, this.value)">
-                        ${r.drive_link ? `<a href="${r.drive_link}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:0.45rem 0.75rem;background:rgba(0,220,255,0.1);border:1px solid var(--border-accent);color:var(--accent);border-radius:7px;font-size:0.75rem;font-family:'Outfit',sans-serif;font-weight:600;text-decoration:none;">Open ↗</a>` : ''}
+                        ${r.drive_link ? `<a href="${escapeHtml(r.drive_link)}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:0.45rem 0.75rem;background:rgba(0,220,255,0.1);border:1px solid var(--border-accent);color:var(--accent);border-radius:7px;font-size:0.75rem;font-family:'Outfit',sans-serif;font-weight:600;text-decoration:none;">Open ↗</a>` : ''}
                     </div>
                 </div>` : ''}
 
@@ -7418,7 +7992,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
 
         // Restore shortlist checkbox state
         const cb = document.getElementById(`main-shortlist-cb-${idx}`);
-        if (cb && _selectedCards && _selectedCards.has(idx)) cb.checked = true;
+        if (cb && isCandSelected(analysisResults[idx])) cb.checked = true;
     }
 
     let _mainResumeObjUrl = null;
@@ -7431,7 +8005,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
         const empty  = document.getElementById('mainResumeEmpty');
         const titleEl = document.getElementById('mainResumeTitle');
 
-        titleEl.innerHTML = `📄 ${r.name || 'Resume'}`;
+        titleEl.innerHTML = `📄 ${escapeHtml(r.name || 'Resume')}`;
 
         // Reset the resume-text search for the newly selected candidate
         const searchInput = document.getElementById('resumeSearchInput');
@@ -7608,7 +8182,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <div class="card-header-row" style="align-items:center;margin-bottom:0.55rem;">
                     <div class="card-avatar-chip">${initials(r.name)}</div>
                     <div style="flex:1;min-width:0;">
-                        <div class="candidate-name">${r.name}</div>
+                        <div class="candidate-name">${escapeHtml(r.name)}</div>
                     </div>
                     <div class="score-badge ${scoreClass(r.match_score)}">${r.match_score}</div>
                 </div>
@@ -7623,7 +8197,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>
                 <!-- Meta chips -->
                 <div class="card-meta-row">
-                    <span class="card-meta-chip">📍 ${r.location || '—'}</span>
+                    <span class="card-meta-chip">📍 ${escapeHtml(r.location || '—')}</span>
                     <span class="card-meta-chip">💼 ${_fmtExp(r.experience_years)}</span>
                     ${r.notice_period ? `<span class="card-meta-chip">📅 ${r.notice_period}</span>` : ''}
                     ${r.current_ctc   ? `<span class="card-meta-chip">₹ ${r.current_ctc}</span>` : ''}
@@ -7631,7 +8205,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 </div>
                 <!-- Skill tags -->
                 <div class="skill-tags">
-                    ${skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
+                    ${skills.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('')}
                     ${extraSkills > 0 ? `<span class="more-tag">+${extraSkills}</span>` : ''}
                 </div>
             </div>
@@ -7657,18 +8231,18 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     ${r.rating_reason ? `
                     <div class="detail-section">
                         <div class="detail-label">Why this score?</div>
-                        <div class="rating-reason">${r.rating_reason}</div>
+                        <div class="rating-reason">${escapeHtml(r.rating_reason)}</div>
                     </div>` : ''}
 
                     <div class="detail-section">
                         <div class="skills-split">
                             <div>
                                 <div class="skills-col-label have">✓ Present</div>
-                                ${present.length ? present.map(s => `<div class="skill-item"><span class="dot dot-have"></span>${s}</div>`).join('') : '<div class="skill-item" style="color:#3a4459">—</div>'}
+                                ${present.length ? present.map(s => `<div class="skill-item"><span class="dot dot-have"></span>${escapeHtml(s)}</div>`).join('') : '<div class="skill-item" style="color:#3a4459">—</div>'}
                             </div>
                             <div>
                                 <div class="skills-col-label missing">✗ Missing</div>
-                                ${missing.length ? missing.map(s => `<div class="skill-item"><span class="dot dot-missing"></span>${s}</div>`).join('') : '<div class="skill-item" style="color:#3a4459">None</div>'}
+                                ${missing.length ? missing.map(s => `<div class="skill-item"><span class="dot dot-missing"></span>${escapeHtml(s)}</div>`).join('') : '<div class="skill-item" style="color:#3a4459">None</div>'}
                             </div>
                         </div>
                     </div>
@@ -7676,13 +8250,13 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                     ${r.highlights?.length ? `
                     <div class="detail-section">
                         <div class="detail-label">Key Highlights</div>
-                        ${r.highlights.map(h => `<div class="detail-text" style="margin-bottom:0.3rem;">• ${h}</div>`).join('')}
+                        ${r.highlights.map(h => `<div class="detail-text" style="margin-bottom:0.3rem;">• ${escapeHtml(h)}</div>`).join('')}
                     </div>` : ''}
 
                     ${r.summary ? `
                     <div class="detail-section">
                         <div class="detail-label">Profile Summary</div>
-                        <div class="detail-text">${r.summary}</div>
+                        <div class="detail-text">${escapeHtml(r.summary)}</div>
                     </div>` : ''}
 
                 </div>
@@ -7707,10 +8281,9 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
 
     // ─── Overlay Sidebar ───
     function openOverlay(idx) {
-        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const r = sorted[idx];
+        const r = analysisResults[idx];
         if (!r) return;
-        const rawIdx = analysisResults.indexOf(r);
+        const rawIdx = idx;
 
         // Header
         document.getElementById('overlayAvatar').textContent = initials(r.name);
@@ -7735,7 +8308,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <div class="overlay-section-title">📊 Overview</div>
                 <div class="overlay-stat-grid">
                     <div class="overlay-stat-box">
-                        <span class="stat-val ${scoreClass(r.match_score)}">${r.match_score}%</span>
+                        <span class="stat-val ${scoreClass(r.match_score)}">${scoreLabel(r)}</span>
                         <div class="stat-lbl">Match Score</div>
                         <div class="overlay-score-bar">
                             <div class="overlay-score-fill ${fillClass(r.match_score)}" style="width:${r.match_score}%"></div>
@@ -7791,20 +8364,20 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             ${r.rating_reason ? `
             <div class="overlay-section">
                 <div class="overlay-section-title">🎯 Score Reasoning</div>
-                <div class="rating-box">${r.rating_reason}</div>
+                <div class="rating-box">${escapeHtml(r.rating_reason)}</div>
             </div>` : ''}
 
             ${r.summary ? `
             <div class="overlay-section">
                 <div class="overlay-section-title">👤 Profile Summary</div>
-                <div class="overlay-text">${r.summary}</div>
+                <div class="overlay-text">${escapeHtml(r.summary)}</div>
             </div>` : ''}
 
             ${allSkills.length ? `
             <div class="overlay-section">
                 <div class="overlay-section-title">🛠 Key Skills</div>
                 <div class="overlay-skill-list">
-                    ${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}
+                    ${allSkills.map(s => `<span class="overlay-skill-tag neutral">${escapeHtml(s)}</span>`).join('')}
                 </div>
             </div>` : ''}
 
@@ -7814,26 +8387,26 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 ${skillsHave.length ? `
                 <div style="margin-bottom:0.75rem;">
                     <div style="font-size:0.7rem;color:var(--success);font-weight:700;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em;">Present</div>
-                    <div class="overlay-skill-list">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div>
+                    <div class="overlay-skill-list">${skillsHave.map(s => `<span class="overlay-skill-tag have">✓ ${escapeHtml(s)}</span>`).join('')}</div>
                 </div>` : ''}
                 ${skillsMissing.length ? `
                 <div>
                     <div style="font-size:0.7rem;color:var(--danger);font-weight:700;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.06em;">Missing</div>
-                    <div class="overlay-skill-list">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div>
+                    <div class="overlay-skill-list">${skillsMissing.map(s => `<span class="overlay-skill-tag missing">✗ ${escapeHtml(s)}</span>`).join('')}</div>
                 </div>` : ''}
             </div>` : ''}
 
             ${r.highlights?.length ? `
             <div class="overlay-section">
                 <div class="overlay-section-title">⭐ Key Highlights</div>
-                ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                ${r.highlights.map(h => `<div class="overlay-highlight-item">${escapeHtml(h)}</div>`).join('')}
             </div>` : ''}
 
             ${r.filename ? `
             <div class="overlay-section">
                 <div class="overlay-section-title">📁 Source File</div>
                 <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">
-                    <span class="filename-badge">📄 ${r.filename}</span>
+                    <span class="filename-badge">📄 ${escapeHtml(r.filename)}</span>
                     <button class="btn-view-in-overlay" onclick="openResumeViewer('${r.filename.replace(/'/g, "\\'")}')">📄 View Resume</button>
                 </div>
                 <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:0.4rem;">Google Drive Link <span style="font-weight:400;opacity:0.6;">(shared with interviewer)</span></div>
@@ -7843,7 +8416,7 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                         value="${r.drive_link || ''}"
                         style="flex:1;padding:0.45rem 0.75rem;background:rgba(4,8,20,0.8);border:1px solid var(--border);border-radius:7px;color:var(--text-primary);font-size:0.78rem;font-family:'Source Sans 3',sans-serif;"
                         oninput="saveDriveLink(${idx}, this.value)">
-                    ${r.drive_link ? `<a href="${r.drive_link}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:0.45rem 0.75rem;background:rgba(0,220,255,0.1);border:1px solid var(--border-accent);color:var(--accent);border-radius:7px;font-size:0.75rem;font-family:'Outfit',sans-serif;font-weight:600;text-decoration:none;">Open ↗</a>` : ''}
+                    ${r.drive_link ? `<a href="${escapeHtml(r.drive_link)}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:0.45rem 0.75rem;background:rgba(0,220,255,0.1);border:1px solid var(--border-accent);color:var(--accent);border-radius:7px;font-size:0.75rem;font-family:'Outfit',sans-serif;font-weight:600;text-decoration:none;">Open ↗</a>` : ''}
                 </div>
             </div>` : ''}
         `;
@@ -7968,10 +8541,10 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             const sb = r.score_breakdown || {};
             const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
 
-            const skillsPresent = (r.skills_present || []).map(s => `<span class="stag have">✓ ${s}</span>`).join('');
-            const skillsMissing = (r.skills_missing || []).map(s => `<span class="stag miss">✗ ${s}</span>`).join('');
+            const skillsPresent = (r.skills_present || []).map(s => `<span class="stag have">✓ ${escapeHtml(s)}</span>`).join('');
+            const skillsMissing = (r.skills_missing || []).map(s => `<span class="stag miss">✗ ${escapeHtml(s)}</span>`).join('');
 
-            const highlights = (r.highlights || []).slice(0, 3).map(h => `<li>${h}</li>`).join('');
+            const highlights = (r.highlights || []).slice(0, 3).map(h => `<li>${escapeHtml(h)}</li>`).join('');
 
             const questions = (r.screening_questions || []).map((sq, qi) => `
                 <div class="sq-item">
@@ -8014,16 +8587,16 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
                 <div class="card-header">
                     <div class="card-rank">${rank}</div>
                     <div class="card-info">
-                        <div class="card-name">${r.name}</div>
-                        <div class="card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + r.phone : ''}</div>
+                        <div class="card-name">${escapeHtml(r.name)}</div>
+                        <div class="card-meta">📍 ${escapeHtml(r.location || '—')} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + escapeHtml(r.email) : ''}${r.phone ? ' &nbsp;·&nbsp; 📞 ' + escapeHtml(r.phone) : ''}</div>
                     </div>
                     <div class="card-score-wrap">
-                        <div class="card-score" style="color:${recColor};">${r.match_score}%</div>
+                        <div class="card-score" style="color:${recColor};">${scoreLabel(r)}</div>
                         <div class="card-rec" style="color:${recColor};">${recLabel}</div>
                     </div>
                 </div>
 
-                ${r.rating_reason ? `<button class="reason-toggle" onclick="toggleReason(this)"><span>💬 Score Reasoning</span><span class="sq-arrow">▼</span></button><div class="reason-body">${r.rating_reason}</div>` : ''}
+                ${r.rating_reason ? `<button class="reason-toggle" onclick="toggleReason(this)"><span>💬 Score Reasoning</span><span class="sq-arrow">▼</span></button><div class="reason-body">${escapeHtml(r.rating_reason)}</div>` : ''}
 
                 <div class="two-col">
                     <div>
@@ -8047,8 +8620,8 @@ IMPORTANT: Exactly 5 questions. Cover: 1 role-fit, 1 on a missing/unverified ski
             const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
             return `<a class="toc-item" href="#rc-${i}" onclick="highlightCard(${i})">
                 <span class="toc-rank">${rank}</span>
-                <span class="toc-name">${r.name}</span>
-                <span class="toc-score" style="color:${recColor};">${r.match_score}%</span>
+                <span class="toc-name">${escapeHtml(r.name)}</span>
+                <span class="toc-score" style="color:${recColor};">${scoreLabel(r)}</span>
             </a>`;
         }).join('');
 
@@ -8277,7 +8850,8 @@ main.addEventListener('scroll',()=>{
 
     // ─── Push to Sheet ───
     let _pushScope = 'all';       // 'all' | 'shortlisted' | 'single'
-    let _pushSingleIdx = null;    // index into analysisResults when scope = 'single'
+    let _pushSingleKey = null;    // candKey() of the candidate when scope = 'single' (survives re-sorts)
+    function _pushSingleCandidate() { return _pushSingleKey === null ? null : analysisResults.find(r => candKey(r) === _pushSingleKey) || null; }
 
     function openPushModal(scope, singleIdx) {
         if (!appsScriptUrl) {
@@ -8285,14 +8859,14 @@ main.addEventListener('scroll',()=>{
             return;
         }
         _pushScope = scope || 'all';
-        _pushSingleIdx = (singleIdx !== undefined) ? singleIdx : null;
+        _pushSingleKey = (singleIdx !== undefined) ? candKey(analysisResults[singleIdx]) : null;
 
         // Restore saved sheet ID draft
         const saved = localStorage.getItem('pushTargetSheetId') || '';
         document.getElementById('pushTargetSheetId').value = saved;
 
         // Show/hide "This Candidate" scope button depending on how opened
-        document.getElementById('pushScopeSingle').style.display = (_pushSingleIdx !== null) ? '' : 'none';
+        document.getElementById('pushScopeSingle').style.display = (_pushSingleKey !== null) ? '' : 'none';
 
         setPushScope(_pushScope);
         document.getElementById('pushStatusMsg').style.display = 'none';
@@ -8324,11 +8898,11 @@ main.addEventListener('scroll',()=>{
             countEl.textContent = analysisResults.length;
             hint.textContent = `All ${analysisResults.length} analyzed candidates will be pushed.`;
         } else if (scope === 'shortlisted') {
-            const n = (_selectedCards || new Set()).size || 0;
+            const n = analysisResults.filter(r => isCandSelected(r)).length;
             countEl.textContent = n;
             hint.textContent = n ? `${n} shortlisted candidate(s) will be pushed.` : 'No shortlisted candidates yet — use the Shortlist checkbox on each card.';
-        } else if (scope === 'single' && _pushSingleIdx !== null) {
-            const r = analysisResults[_pushSingleIdx];
+        } else if (scope === 'single' && _pushSingleKey !== null) {
+            const r = _pushSingleCandidate();
             hint.textContent = `Only "${r?.name || 'this candidate'}" will be pushed.`;
         }
     }
@@ -8345,11 +8919,11 @@ main.addEventListener('scroll',()=>{
     }
 
     function _setCandidatesToPush() {
-        if (_pushScope === 'single' && _pushSingleIdx !== null) {
-            return [analysisResults[_pushSingleIdx]].filter(Boolean);
+        if (_pushScope === 'single' && _pushSingleKey !== null) {
+            return [_pushSingleCandidate()].filter(Boolean);
         }
         if (_pushScope === 'shortlisted') {
-            return analysisResults.filter((_, i) => (_selectedCards || new Set()).has(i));
+            return analysisResults.filter(r => isCandSelected(r));
         }
         return [...analysisResults];
     }
@@ -8447,7 +9021,23 @@ main.addEventListener('scroll',()=>{
     // ════════════════════════════════════════════
 
     let _shareCardIdx    = null;    // legacy single-card share (unused now)
-    let _selectedCards   = new Set(); // indices of all checked cards
+    let _selectedCards   = new Set(); // candKey() of every checked card (identity, not position)
+
+    // Stable identity for a candidate. Selection state is keyed by this instead of
+    // array position: analysisResults gets re-sorted, appended to and replaced (batch
+    // load), and a stored position would then silently point at a different person.
+    function candKey(r) { return r ? (r.filename || r.name || '') : ''; }
+    function isCandSelected(r) { return !!r && _selectedCards.has(candKey(r)); }
+
+    // Sort analysisResults by score while keeping the open detail panel on the same person.
+    function sortAnalysisResults() {
+        const openKey = _selectedMainIdx !== null ? candKey(analysisResults[_selectedMainIdx]) : null;
+        analysisResults.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
+        if (openKey === null) return;
+        const newIdx = analysisResults.findIndex(r => candKey(r) === openKey);
+        _selectedMainIdx = newIdx === -1 ? null : newIdx;
+    }
+
     let _interviewers    = [];      // [{name, email}] from Emails tab
     let _selectedEmails  = new Set();
     let appsScriptUrl    = localStorage.getItem('appsScriptUrl') || '';
@@ -8457,7 +9047,7 @@ main.addEventListener('scroll',()=>{
     function toggleSelectAll() {
         const btn     = document.getElementById('btnSelectAll');
         const allIdxs = analysisResults.map((_, i) => i);
-        const allSel  = allIdxs.every(i => _selectedCards.has(i));
+        const allSel  = analysisResults.every(r => isCandSelected(r));
 
         if (allSel) {
             // Deselect all
@@ -8466,7 +9056,7 @@ main.addEventListener('scroll',()=>{
             // Select all
             _selectedCards.clear();
             allIdxs.forEach(i => {
-                _selectedCards.add(i);
+                _selectedCards.add(candKey(analysisResults[i]));
                 // Card checkbox + highlight
                 const cb = document.getElementById(`main-shortlist-cb-${i}`);
                 if (cb) cb.checked = true;
@@ -8484,10 +9074,11 @@ main.addEventListener('scroll',()=>{
 
     // ─── Toggle checkbox → update floating bar + card highlight ───
     function toggleShareBtn(idx, checked) {
+        const key = candKey(analysisResults[idx]);
         if (checked) {
-            _selectedCards.add(idx);
+            _selectedCards.add(key);
         } else {
-            _selectedCards.delete(idx);
+            _selectedCards.delete(key);
         }
         // Highlight sidebar item with glow when shortlisted
         const item = document.getElementById(`main-cand-item-${idx}`);
@@ -8508,27 +9099,25 @@ main.addEventListener('scroll',()=>{
 
     // ─── Update the floating bar with current selections ───
     function updateFloatingBar() {
-        const bar   = document.getElementById('floatingShareBar');
-        const count = _selectedCards.size;
-        const total = analysisResults.length;
+        const bar      = document.getElementById('floatingShareBar');
+        const selected = analysisResults.filter(r => isCandSelected(r));
+        const count    = selected.length;
+        const total    = analysisResults.length;
 
         document.getElementById('floatingCount').textContent = count;
 
         // Build avatar chips (up to 5 shown, rest collapsed)
-        const sorted   = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const indices  = [..._selectedCards];
         const maxShow  = 5;
-        const shown    = indices.slice(0, maxShow);
-        const overflow = indices.length - maxShow;
+        const shown    = selected.slice(0, maxShow);
+        const overflow = count - maxShow;
 
         const stack = document.getElementById('floatingAvatarStack');
-        stack.innerHTML = shown.map(i => {
-            const r = sorted[i];
-            return r ? `<div class="floating-avatar-chip" title="${r.name}">${initials(r.name)}</div>` : '';
+        stack.innerHTML = shown.map(r => {
+            return `<div class="floating-avatar-chip" title="${escapeHtml(r.name || '')}">${initials(r.name || '')}</div>`;
         }).join('') + (overflow > 0 ? `<div class="floating-avatar-chip overflow-chip">+${overflow}</div>` : '');
 
         // Sub-label: show names of first 2 selected
-        const namePreview = shown.slice(0, 2).map(i => sorted[i]?.name?.split(' ')[0]).filter(Boolean).join(', ');
+        const namePreview = shown.slice(0, 2).map(r => r.name?.split(' ')[0]).filter(Boolean).join(', ');
         const sub = document.getElementById('floatingBarSub');
         sub.textContent = count > 0
             ? `${namePreview}${count > 2 ? ` +${count - 2} more` : ''}`
@@ -8565,16 +9154,9 @@ main.addEventListener('scroll',()=>{
 
     // ─── Open share modal for all selected cards (bulk) ───
     async function openBulkShareModal() {
-        if (_selectedCards.size === 0) { showToast('Select at least one candidate first', 'error'); return; }
-
-        const sorted    = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const count     = _selectedCards.size;
-        // Use filename as stable key — indices can shift after re-sort
-        const selectedFilenames = [..._selectedCards].map(i => {
-            const r = sorted[i] || analysisResults[i];
-            return r ? (r.filename || r.name) : null;
-        }).filter(Boolean);
-        const selected  = analysisResults.filter(r => selectedFilenames.includes(r.filename || r.name));
+        const selected  = analysisResults.filter(r => isCandSelected(r));
+        if (selected.length === 0) { showToast('Select at least one candidate first', 'error'); return; }
+        const count     = selected.length;
         const nameList  = selected.map(c => c.name);
         const position  = getCurrentPositionName() || 'Open Position';
 
@@ -8710,10 +9292,13 @@ main.addEventListener('scroll',()=>{
 
             analysisResults = json.candidates || [];
             _selectedMainIdx = null;
+            // A different batch means different people — drop the previous shortlist
+            // (clearAllSelections also resets the checkboxes and floating bar)
+            clearAllSelections();
 
             // Enrich candidates (re-run scoring helpers)
             analysisResults.forEach(r => _enrichCandidate(r));
-            analysisResults.sort((a, b) => b.match_score - a.match_score);
+            sortAnalysisResults();
 
             const badge = document.getElementById('resultBadge');
             badge.style.display = analysisResults.length ? 'inline-flex' : 'none';
@@ -8945,19 +9530,13 @@ main.addEventListener('scroll',()=>{
     async function sendShare() {
         if (!appsScriptUrl) { showToast('Add Apps Script URL first', 'error'); return; }
         if (_selectedEmails.size === 0) { showToast('Select at least one recipient', 'error'); return; }
-        if (_selectedCards.size === 0)  { showToast('No candidates selected', 'error'); return; }
+        const candidates = analysisResults.filter(r => isCandSelected(r));
+        if (candidates.length === 0)  { showToast('No candidates selected', 'error'); return; }
 
         const btn = document.getElementById('btnSendShare');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Sending…';
 
-        const sorted     = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        // Use filename as stable key — indices can shift after re-sort
-        const selFilenames = [..._selectedCards].map(i => {
-            const r = sorted[i] || analysisResults[i];
-            return r ? (r.filename || r.name) : null;
-        }).filter(Boolean);
-        const candidates = analysisResults.filter(r => selFilenames.includes(r.filename || r.name));
         const position   = getCurrentPositionName() || 'Open Position';
         const shareMode  = document.querySelector('input[name="shareMode"]:checked')?.value || 'full';
 
@@ -9209,10 +9788,10 @@ main.addEventListener('scroll',()=>{
     function _buildDecisionBtns(idx) {
         const dec = _shareFeedback[idx];
         return `
-            <button class="dh-btn proceed${dec === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+            <button class="chero-btn proceed${dec === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
                 ${dec === 'proceed' ? '✅ Proceeding' : '✓ Proceed'}
             </button>
-            <button class="dh-btn pass${dec === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+            <button class="chero-btn pass${dec === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
                 ${dec === 'pass' ? '✕ Passed' : '✕ Pass'}
             </button>`;
     }
@@ -9378,10 +9957,10 @@ main.addEventListener('scroll',()=>{
         <div class="share-cand-item" id="share-item-${idx}" onclick="selectShareCandidate(${idx})" style="animation:cardIn 0.35s ease-out ${idx*0.05}s backwards;">
             <div class="share-cand-item-rank">${rankLabel}</div>
             <div class="share-cand-item-info">
-                <div class="share-cand-item-name">${r.name}</div>
-                <div class="share-cand-item-meta">💼 ${_fmtExp(r.experience_years)} &nbsp;·&nbsp; 📍 ${r.location || '—'}</div>
+                <div class="share-cand-item-name">${escapeHtml(r.name)}</div>
+                <div class="share-cand-item-meta">💼 ${_fmtExp(r.experience_years)} &nbsp;·&nbsp; 📍 ${escapeHtml(r.location || '—')}</div>
             </div>
-            <div class="share-cand-item-score ${scoreCls}">${r.match_score}%</div>
+            <div class="share-cand-item-score ${scoreCls}">${scoreLabel(r)}</div>
             <div class="share-cand-decision-dot" id="share-dec-dot-${idx}"></div>
             <div class="share-cand-item-bar"><div class="share-cand-item-bar-fill ${fillCls}" style="width:${r.match_score}%"></div></div>
         </div>`;
@@ -9425,48 +10004,47 @@ main.addEventListener('scroll',()=>{
         const _sRecTxt   = r.match_score >= 75 ? '✅ Recommended — Move Forward' : r.match_score >= 50 ? '🔶 Consider — Further Review' : '❌ Not Recommended — Pass';
         const _sInitials = r.name.split(' ').slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
         const _decisionState = _shareFeedback[idx];
+        // Chip row: CTC / notice / internship — whatever's present, in mockup order
+        const chipItems = [
+            r.current_ctc  ? { lbl: 'Current CTC',  val: r.current_ctc }  : null,
+            r.expected_ctc ? { lbl: 'Expected CTC', val: r.expected_ctc } : null,
+            r.notice_period ? { lbl: 'Notice', val: r.notice_period } : null,
+            r.internship_months > 0 ? { lbl: 'Internship', val: `${r.internship_months} mo` } : null
+        ].filter(Boolean);
+
         document.getElementById('sharePgHero').innerHTML = `
-            <div class="dh-card">
-                <div class="dh-top-band">
-                    <div class="dh-name-area">
-                        <div class="dh-name-label">Candidate Profile</div>
-                        <div class="dh-name">${r.name}</div>
+            <div class="chero">
+                <div class="chero-stripe ${_sScoreCls}"></div>
+                <div class="chero-head">
+                    <div>
+                        <div class="chero-name">${escapeHtml(r.name)}</div>
+                        <div class="chero-role-line">${escapeHtml(r.location || '')}${r.location && r.experience_years > 0 ? ' · ' : ''}${r.experience_years > 0 ? _fmtExp(r.experience_years) + ' experience' : ''}${(r.email || r.phone) ? '<br>' : ''}${escapeHtml(r.email || '')}${r.email && r.phone ? ' · ' : ''}${escapeHtml(r.phone || '')}</div>
                     </div>
-                    <div class="dh-score-block">
-                        <div class="dh-score-num ${_sScoreCls}">${r.match_score}%</div>
-                        <div class="dh-score-lbl ${_sScoreCls}">AI Match</div>
+                    <div class="chero-score-chip ${_sScoreCls}">
+                        <div class="chero-score-num">${scoreLabel(r)}</div>
+                        <div class="chero-score-lbl">Match</div>
                     </div>
                 </div>
-                <div class="dh-rec-bar ${_sScoreCls}"><span class="dh-rec-dot"></span>${_sRecTxt}</div>
-                <div class="dh-kv-list">
-                    ${r.location ? `<div class="dh-kv"><span class="dh-kv-icon">📍</span><span class="dh-kv-value">${r.location}</span></div>` : ''}
-                    ${r.experience_years > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">💼</span><span class="dh-kv-value" style="color:var(--accent);">${_fmtExp(r.experience_years)}</span></div>` : ''}
-                    ${r.email ? `<div class="dh-kv full"><span class="dh-kv-icon">✉️</span><span class="dh-kv-value blue">${r.email}</span></div>` : ''}
-                    ${r.phone ? `<div class="dh-kv"><span class="dh-kv-icon">📞</span><span class="dh-kv-value blue">${r.phone}</span></div>` : ''}
-                    ${r.internship_months > 0 ? `<div class="dh-kv"><span class="dh-kv-icon">🎓</span><span class="dh-kv-value" style="color:#a78bfa;">${r.internship_months} mo internship</span></div>` : ''}
-                    ${r.current_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">💰</span><span class="dh-kv-value amber">Current: ${r.current_ctc}</span></div>` : ''}
-                    ${r.expected_ctc ? `<div class="dh-kv"><span class="dh-kv-icon">🎯</span><span class="dh-kv-value amber">Expected: ${r.expected_ctc}</span></div>` : ''}
-                    ${r.notice_period ? `<div class="dh-kv full"><span class="dh-kv-icon">📅</span><span class="dh-kv-value green">Notice: ${r.notice_period}</span></div>` : ''}
-                </div>
-                <div class="dh-decision-block">
-                    <div class="dh-actions" id="shareDecisionRow">
-                        <button class="dh-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
+                <div class="chero-rec-row ${_sScoreCls}">${_sRecTxt.replace(/^[^\s]+\s/, '')}</div>
+                ${chipItems.length ? `<div class="chero-chip-row">${chipItems.map(c => `<div class="chero-chip"><span class="chero-chip-lbl">${c.lbl}</span><b>${escapeHtml(c.val)}</b></div>`).join('')}</div>` : ''}
+                ${r.recruiter_comments ? `<div class="chero-note"><div class="chero-note-lbl">Recruiter Note</div><div class="chero-note-text">${escapeHtml(r.recruiter_comments)}</div></div>` : ''}
+                <div class="chero-actions-block">
+                    <div class="chero-actions" id="shareDecisionRow">
+                        <button class="chero-btn proceed${_decisionState === 'proceed' ? ' active' : ''}" onclick="setShareDecision(${idx},'proceed')">
                             ${_decisionState === 'proceed' ? '✅ Proceeding' : '✓ Proceed'}
                         </button>
-                        <button class="dh-btn pass${_decisionState === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
+                        <button class="chero-btn pass${_decisionState === 'pass' ? ' active' : ''}" onclick="setShareDecision(${idx},'pass')">
                             ${_decisionState === 'pass' ? '✕ Passed' : '✕ Pass'}
                         </button>
                     </div>
-                    <div class="dh-note-wrap">
-                        <textarea class="dh-note-input" id="share-note-${idx}" placeholder="Add a quick note for the recruiting team (optional)…" oninput="setShareNote(${idx}, this.value)">${escapeHtml(_shareNotes[idx] || '')}</textarea>
-                    </div>
+                    <textarea class="chero-note-input" id="share-note-${idx}" placeholder="Add a quick note for the recruiting team (optional)…" oninput="setShareNote(${idx}, this.value)">${escapeHtml(_shareNotes[idx] || '')}</textarea>
                 </div>
-                ${mobileResumeBtn ? `<div style="padding:0 1.25rem 0.75rem;">${mobileResumeBtn}</div>` : ''}
+                ${mobileResumeBtn ? `<div style="padding:0 1.25rem 1.1rem;">${mobileResumeBtn}</div>` : ''}
             </div>`;
 
         document.getElementById('sharePgBody').innerHTML = `
             <div class="share-detail-body">
-                ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${r.rating_reason}</div></div>` : ''}
+                ${r.rating_reason ? `<div class="share-pg-section"><div class="share-pg-section-title">🎯 Score Reasoning</div><div class="rating-box">${escapeHtml(r.rating_reason)}</div></div>` : ''}
                 ${_sharePageMode === 'full' && r.score_breakdown ? `
                 <div class="share-pg-section">
                     <div class="share-pg-section-title">📐 Score Breakdown</div>
@@ -9485,15 +10063,16 @@ main.addEventListener('scroll',()=>{
                         }).join('')}
                     </div>
                 </div>` : ''}
-                ${_sharePageMode === 'full' && r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${r.summary}</div></div>` : ''}
-                ${_sharePageMode === 'full' && r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}</div>` : ''}
-                ${_sharePageMode === 'full' && allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${s}</span>`).join('')}</div></div>` : ''}
+                ${_sharePageMode === 'full' && r.summary ? `<div class="share-pg-section"><div class="share-pg-section-title">👤 Profile Summary</div><div class="overlay-text">${escapeHtml(r.summary)}</div></div>` : ''}
+                ${_sharePageMode === 'full' ? _renderAdditionalInfo(r, 'share') : ''}
+                ${_sharePageMode === 'full' && r.highlights?.length ? `<div class="share-pg-section"><div class="share-pg-section-title">⭐ Key Highlights</div>${r.highlights.map(h => `<div class="overlay-highlight-item">${escapeHtml(h)}</div>`).join('')}</div>` : ''}
+                ${_sharePageMode === 'full' && allSkills.length ? `<div class="share-pg-section"><div class="share-pg-section-title">🛠 Key Skills</div><div class="share-skill-tags">${allSkills.map(s => `<span class="overlay-skill-tag neutral">${escapeHtml(s)}</span>`).join('')}</div></div>` : ''}
                 ${(have.length || missing.length) ? `
                 <div class="share-pg-section">
                     <div class="share-pg-section-title">✅ Skills vs JD</div>
                     <div class="share-skills-cols">
-                        ${have.length ? `<div><div class="share-skills-col-label have">✓ Present</div><div class="share-skill-tags">${have.map(s => `<span class="overlay-skill-tag have">✓ ${s}</span>`).join('')}</div></div>` : '<div></div>'}
-                        ${missing.length ? `<div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${missing.map(s => `<span class="overlay-skill-tag missing">✗ ${s}</span>`).join('')}</div></div>` : '<div></div>'}
+                        ${have.length ? `<div><div class="share-skills-col-label have">✓ Present</div><div class="share-skill-tags">${have.map(s => `<span class="overlay-skill-tag have">✓ ${escapeHtml(s)}</span>`).join('')}</div></div>` : '<div></div>'}
+                        ${missing.length ? `<div><div class="share-skills-col-label missing">✗ Missing</div><div class="share-skill-tags">${missing.map(s => `<span class="overlay-skill-tag missing">✗ ${escapeHtml(s)}</span>`).join('')}</div></div>` : '<div></div>'}
                     </div>
                 </div>` : ''}
                 <div class="share-pg-section" id="compResearchSec-share-${idx}">
@@ -9933,10 +10512,10 @@ main.addEventListener('scroll',()=>{
         <div class="bulk-candidate-card" style="animation-delay:${rank * 0.07}s">
             <div class="bulk-card-header">
                 <div class="bulk-card-info">
-                    <div class="bulk-card-name">${r.name}</div>
-                    <div class="bulk-card-meta">📍 ${r.location || '—'} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + r.email : ''}</div>
+                    <div class="bulk-card-name">${escapeHtml(r.name)}</div>
+                    <div class="bulk-card-meta">📍 ${escapeHtml(r.location || '—')} &nbsp;·&nbsp; 💼 ${_fmtExp(r.experience_years)}${r.email ? ' &nbsp;·&nbsp; 📧 ' + escapeHtml(r.email) : ''}</div>
                 </div>
-                <div class="bulk-card-score ${scoreCls}">${r.match_score}%</div>
+                <div class="bulk-card-score ${scoreCls}">${scoreLabel(r)}</div>
                 <div class="bulk-rank-badge ${rankCls}">${rankLabel}</div>
             </div>
 
@@ -9948,7 +10527,7 @@ main.addEventListener('scroll',()=>{
                 <!-- 4 Stat cards -->
                 <div class="share-cand-stat-row">
                     <div class="share-cand-stat">
-                        <span class="sc-val ${scoreCls}">${r.match_score}%</span>
+                        <span class="sc-val ${scoreCls}">${scoreLabel(r)}</span>
                         <div class="sc-lbl">Match</div>
                     </div>
                     <div class="share-cand-stat">
@@ -9978,32 +10557,32 @@ main.addEventListener('scroll',()=>{
                         ${r.summary ? `
                         <div style="margin-bottom:0.875rem;">
                             <div class="bulk-section-label">👤 Profile Summary</div>
-                            <div class="bulk-summary-text">${r.summary}</div>
+                            <div class="bulk-summary-text">${escapeHtml(r.summary)}</div>
                         </div>` : ''}
 
                         <div class="bulk-card-sections">
                             ${have.length ? `
                             <div>
                                 <div class="bulk-section-label">✓ Skills Present</div>
-                                <div class="bulk-skill-tags">${have.map(s => `<span class="bulk-skill-tag have">✓ ${s}</span>`).join('')}</div>
+                                <div class="bulk-skill-tags">${have.map(s => `<span class="bulk-skill-tag have">✓ ${escapeHtml(s)}</span>`).join('')}</div>
                             </div>` : ''}
                             ${missing.length ? `
                             <div>
                                 <div class="bulk-section-label">✗ Skills Missing</div>
-                                <div class="bulk-skill-tags">${missing.map(s => `<span class="bulk-skill-tag miss">✗ ${s}</span>`).join('')}</div>
+                                <div class="bulk-skill-tags">${missing.map(s => `<span class="bulk-skill-tag miss">✗ ${escapeHtml(s)}</span>`).join('')}</div>
                             </div>` : ''}
                         </div>
 
                         ${r.rating_reason ? `
                         <div style="margin-top:0.875rem;">
                             <div class="bulk-section-label">🎯 Score Reasoning</div>
-                            <div class="rating-box" style="margin-top:0.4rem;">${r.rating_reason}</div>
+                            <div class="rating-box" style="margin-top:0.4rem;">${escapeHtml(r.rating_reason)}</div>
                         </div>` : ''}
 
                         ${r.highlights?.length ? `
                         <div style="margin-top:0.875rem;">
                             <div class="bulk-section-label">⭐ Key Highlights</div>
-                            ${r.highlights.map(h => `<div class="overlay-highlight-item">${h}</div>`).join('')}
+                            ${r.highlights.map(h => `<div class="overlay-highlight-item">${escapeHtml(h)}</div>`).join('')}
                         </div>` : ''}
 
                         ${(r.email || r.phone) ? `` : ''}
@@ -10473,18 +11052,10 @@ main.addEventListener('scroll',()=>{
         document.querySelectorAll('.pearly-scope-btn').forEach(b => b.classList.toggle('active', b.dataset.scope === scope));
     }
 
-    // Resolves the candidate list the current scope should act on. Uses filename as the
-    // stable key (matching openBulkShareModal's approach) since _selectedCards holds
-    // indices into whatever order analysisResults was in when the checkbox was clicked,
-    // and that order can shift after a re-sort.
+    // Resolves the candidate list the current scope should act on (shortlist is keyed by candKey)
     function _pearlyGetScopedResults() {
         if (_pearlyScope !== 'shortlisted') return analysisResults;
-        const sorted = [...analysisResults].sort((a, b) => b.match_score - a.match_score);
-        const selectedFilenames = [..._selectedCards].map(i => {
-            const r = sorted[i] || analysisResults[i];
-            return r ? (r.filename || r.name) : null;
-        }).filter(Boolean);
-        return analysisResults.filter(r => selectedFilenames.includes(r.filename || r.name));
+        return analysisResults.filter(r => isCandSelected(r));
     }
 
     // ─── 📝 Generate Management Summary (counts + prose overview + auto table) ───
